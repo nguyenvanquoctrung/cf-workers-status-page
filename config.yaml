@@ -1,6 +1,6 @@
 settings:
-  title: 'Status Page'
-  url: 'https://status-page.eidam.dev' # used for Slack messages
+  title: ''
+  url: 'https://my.nextdns.io/' # used for Slack messages
   logo: logo-192x192.png # image in ./public/ folder
   daysInHistogram: 90 # number of days you want to display in histogram
   collectResponseTimes: true # collects avg response times from CRON locations
@@ -15,25 +15,83 @@ settings:
   dayInHistogramNotOperational: ' incident(s)' # xx incident(s) recorded
 
 monitors:
-  - id: workers-cloudflare-com # unique identifier
-    name: workers.cloudflare.com
-    description: 'You write code. They handle the rest.' # default=empty
-    url: 'https://workers.cloudflare.com/' # URL to fetch
-    method: GET # default=GET
-    expectStatus: 200 # operational status, default=200
-    followRedirect: false # should fetch follow redirects, default=false
-    linkable: false # allows the title to be a link, default=true
+  - id: hochiminh-lightnode
+    name: Hồ Chí Minh LightNode
+    description: 'lightnode-sgn-1.edge.nextdns.io'
+    url: 'https://lightnode-sgn-1.edge.nextdns.io/resolve?name=google.com' # URL to fetch
+    method: GET 
+    expectStatus: 200 
+    followRedirect: false 
+    linkable: false 
 
-  - id: www-cloudflare-com
-    name: www.cloudflare.com
-    description: 'Built for anything connected to the Internet.'
-    url: 'https://www.cloudflare.com'
+  - id: hochiminh-greencloud
+    name: Hồ Chí Minh GreenCloud
+    description: 'greencloud-sgn-1.edge.nextdns.io'
+    url: 'https://greencloud-sgn-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
-    linkable: true # allows the title to be a link, default=true
+    followRedirect: false 
+    linkable: false 
 
-  - id: blog-cloudflare-com
-    name: The Cloudflare Blog
-    url: 'https://blog.cloudflare.com/'
+  - id: hanoi-lightnode
+    name: Hà Nội LightNode
+    description: 'lightnode-han-1.edge.nextdns.io'
+    url: 'https://lightnode-han-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: hanoi-greencloud
+    name: Hà Nội GreenCloud
+    description: 'greencloud-han-1.edge.nextdns.io'
+    url: 'https://greencloud-han-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: zepto-sin
+    name: Singapore Zepto
+    description: 'zepto-sin-1.edge.nextdns.io'
+    url: 'https://zepto-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: vultr-sin
+    name: Singapore Vultr
+    description: 'vultr-sin-1.edge.nextdns.io'
+    url: 'https://vultr-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: anexia-sin
+    name: Singapore Anexia
+    description: 'anexia-sin-1.edge.nextdns.io'
+    url: 'https://anexia-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: anexia-hkg
+    name: HongKong Anexia
+    description: 'anexia-hkg-1.edge.nextdns.io'
+    url: 'https://anexia-hkg-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: zepto-hkg
+    name: HongKong Zepto
+    description: 'zepto-hkg-1.edge.nextdns.io'
+    url: 'https://zepto-hkg-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
