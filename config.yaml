@@ -95,3 +95,21 @@ monitors:
     expectStatus: 200
     followRedirect: false 
     linkable: false 
+    
+  - id: premiumrdp-bkk
+    name: Bangkok Premium RPD
+    description: 'premiumrdp-bkk-1.edge.nextdns.io'
+    url: 'https://premiumrdp-bkk-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
+
+  - id: bangmod-bkk
+    name: Bangkok Bangmod
+    description: 'bangmod-bkk-1.edge.nextdns.io'
+    url: 'https://bangmod-bkk-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false 
+    linkable: false 
