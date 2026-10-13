@@ -23,20 +23,30 @@ jobs:
           NODE_ENV: production
 
       - name: Ensure KV namespace exists
+        # Uses the Cloudflare REST API directly: `wrangler kv namespace`
+        # subcommands no longer accept --output json in v4.
         run: |
-          NS_ID=$(npx wrangler kv namespace list --output json | node -e "
+          API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces"
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          NS_ID=$(curl -s -H "$AUTH" "$API?per_page=100" | node -e "
             let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
               try {
-                const list=JSON.parse(d||'[]');
-                const f=list.find(n=>(n.title||'').includes('KV_STATUS_PAGE'));
+                const j=JSON.parse(d||'{}');
+                if(j.success===false){ console.error('KV list error: '+JSON.stringify(j.errors)); }
+                const f=(j.result||[]).find(n=>(n.title||'').includes('KV_STATUS_PAGE'));
                 console.log(f?f.id:'');
               } catch(e){ console.log(''); }
             })")
           if [ -z "$NS_ID" ]; then
-            echo "Creating KV namespace KV_STATUS_PAGE ..."
-            NS_ID=$(npx wrangler kv namespace create KV_STATUS_PAGE --output json | node -e "
+            echo "Creating KV namespace nextdns-KV_STATUS_PAGE ..."
+            NS_ID=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              --data '{"title":"nextdns-KV_STATUS_PAGE"}' "$API" | node -e "
               let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
-                try { console.log(JSON.parse(d).id); } catch(e){ console.log(''); }
+                try {
+                  const j=JSON.parse(d||'{}');
+                  if(j.success===false){ console.error('KV create error: '+JSON.stringify(j.errors)); }
+                  console.log((j.result&&j.result.id)||'');
+                } catch(e){ console.log(''); }
               })")
           fi
           if [ -z "$NS_ID" ]; then echo "Failed to resolve KV namespace id"; exit 1; fi
