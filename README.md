@@ -62,7 +62,7 @@ no servers, no build step for the frontend.
 
 ## Run locally
 
-Requirements: Node 20+, a Cloudflare account.
+Requirements: Node 22+, a Cloudflare account.
 
 ```bash
 npm install
