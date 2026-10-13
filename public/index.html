@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Status Page</title>
+  <link rel="icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // Apply theme before first paint (avoids flash)
+    (function () {
+      function setTheme(t) {
+        document.documentElement.dataset.theme = t;
+        try { localStorage.theme = t; } catch (e) {}
+      }
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', function () { setTheme(mq.matches ? 'dark' : 'light'); });
+      var saved = null;
+      try { saved = localStorage.theme; } catch (e) {}
+      if (saved === 'dark' || saved === 'light') setTheme(saved);
+      else setTheme(mq.matches ? 'dark' : 'light');
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="brand">
+        <img id="logo" class="logo" alt="logo" />
+        <h1 id="pageTitle">Status Page</h1>
+      </div>
+      <div class="controls">
+        <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme"></button>
+        <div class="filter-wrap">
+          <input id="filterInput" type="text" placeholder="Tap '/' to search" autocomplete="off" />
+          <span class="filter-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z"/><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd"/></svg>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <div id="statusHeader"></div>
+    <main id="monitors"></main>
+
+    <footer class="footer">
+      <div>Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a></div>
+      <div><a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a></div>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

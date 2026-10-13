@@ -1,19 +1,19 @@
+# cf-workers-status-page v2 — wrangler v4 config
+# NOTE: the real KV namespace id is injected by .github/workflows/deploy.yml
+# on every deploy (it creates the namespace if missing). For local dev,
+# `wrangler dev --local` uses local storage and ignores the placeholder.
+
 name = "nextdns"
+main = "src/index.js"
+compatibility_date = "2026-10-13"
 workers_dev = true
-account_id = ""
-type = "webpack"
-webpack_config = "node_modules/flareact/webpack"
-compatibility_date = "2021-07-23"
 
 [triggers]
 crons = ["*/2 * * * *"]
 
-[site]
-bucket = "out"
-entry-point = "./"
+[[kv_namespaces]]
+binding = "KV_STATUS_PAGE"
+id = "KV_NAMESPACE_ID_PLACEHOLDER"
 
-# uncomment and adjust following if you are not using GitHub Actions
-#[env.production]
-#kv-namespaces = [{binding="KV_STATUS_PAGE", id="xxxx", preview_id=""}]
-#zone_id="xxx"
-#route="xxx"
+[assets]
+directory = "public"

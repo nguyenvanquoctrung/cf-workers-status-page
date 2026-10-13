@@ -1,170 +1,97 @@
-# Cloudflare Worker - Status Page
+# Cloudflare Workers — Status Page
 
-Monitor your websites, showcase status including daily history, and get Slack notification whenever your website status changes. Using **Cloudflare Workers**, **CRON Triggers,** and **KV storage**. Check [my status page](https://status-page.eidam.dev) out! 🚀
+Monitor your websites/APIs, showcase status including daily history, and get
+Slack / Telegram / Discord notifications whenever a status changes.
+Powered by **Cloudflare Workers**, **Cron Triggers** and **KV storage** —
+no servers, no build step for the frontend.
 
 ![Status Page](.gitbook/assets/status_page_screenshot.png)
 
-![Slack notifications](.gitbook/assets/slack_screenshot.png)
+## How it works
 
-## Pre-requisites
+- Every 2 minutes a Cron Trigger runs the Worker (`src/index.js`), which
+  fetches every URL in `config.yaml` and stores results in KV
+  (key `monitors_data_v1_1` — same as v1, so history survives upgrades).
+- Old entries are garbage-collected automatically (monitors removed from
+  config, days older than `daysInHistogram`).
+- The frontend (`public/`) is plain HTML/CSS/JS served via
+  [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/);
+  it polls `GET /api/state` every 30 seconds.
+- On status change the Worker can notify Slack, Telegram and/or Discord.
 
-You'll need a [Cloudflare Workers account](https://dash.cloudflare.com/sign-up/workers) with
+## Deploy with GitHub Actions (recommended)
 
-- A workers domain set up
-- The Workers Bundled subscription \($5/mo\)
-  - [It works with Workers Free!](https://blog.cloudflare.com/workers-kv-free-tier/) Check [more info](#workers-kv-free-tier) on how to run on Workers Free.
-- Some websites/APIs to watch 🙂
-
-Also, prepare the following secrets
-
-- Cloudflare API token with `Edit Cloudflare Workers` permissions
-- Slack incoming webhook \(optional\)
-- Discord incoming webhook \(optional\)
-
-## Getting started
-
-You can either deploy with **Cloudflare Deploy Button** using GitHub Actions or deploy on your own.
-
-### Deploy with Cloudflare Deploy Button
-
-[![Deploy to Cloudflare Workers](https://camo.githubusercontent.com/1f3d0b4d44a2c3f12c78bd02bae907169430e04d728006db9f97a4befa64c886/68747470733a2f2f6465706c6f792e776f726b6572732e636c6f7564666c6172652e636f6d2f627574746f6e3f706169643d74727565)](https://deploy.workers.cloudflare.com/?url=https://github.com/eidam/cf-workers-status-page)
-
-1. Click the button and follow the instructions, you should end up with a clone of this repository
-2. Navigate to your new **GitHub repository &gt; Settings &gt; Secrets** and add the following secrets:
+1. Fork/clone this repository.
+2. In your repo go to **Settings → Secrets and variables → Actions** and add:
+   - `CF_API_TOKEN` — Cloudflare API token with `Edit Cloudflare Workers`
+     (and Workers KV) permissions
+   - `CF_ACCOUNT_ID` — your Cloudflare account ID
+   - _(optional)_ `SECRET_SLACK_WEBHOOK_URL`
+   - _(optional)_ `SECRET_TELEGRAM_API_TOKEN` + `SECRET_TELEGRAM_CHAT_ID`
+     (see "Telegram notifications" below)
+   - _(optional)_ `SECRET_DISCORD_WEBHOOK_URL`
+3. Edit [`config.yaml`](./config.yaml) — list the monitors you want to watch:
 
    ```yaml
-   - Name: CF_API_TOKEN (should be added automatically)
-
-   - Name: CF_ACCOUNT_ID (should be added automatically)
-
-   - Name: SECRET_SLACK_WEBHOOK_URL (optional)
-   - Value: your-slack-webhook-url
-
-   - Name: SECRET_DISCORD_WEBHOOK_URL (optional)
-   - Value: your-discord-webhook-url
-   ```
-
-3. Navigate to the **Actions** settings in your repository and enable them
-4. Edit [config.yaml](./config.yaml) to adjust configuration and list all of your websites/APIs you want to monitor
-
-   ```yaml
-   settings:
-     title: 'Status Page'
-     url: 'https://status-page.eidam.dev' # used for Slack & Discord messages
-     logo: logo-192x192.png # image in ./public/ folder
-     daysInHistogram: 90 # number of days you want to display in histogram
-     collectResponseTimes: false # experimental feature, enable only for <5 monitors or on paid plans
-
-     # configurable texts across the status page
-     allmonitorsOperational: 'All Systems Operational'
-     notAllmonitorsOperational: 'Not All Systems Operational'
-     monitorLabelOperational: 'Operational'
-     monitorLabelNotOperational: 'Not Operational'
-     monitorLabelNoData: 'No data'
-     dayInHistogramNoData: 'No data'
-     dayInHistogramOperational: 'All good'
-     dayInHistogramNotOperational: 'Some checks failed'
-
-   # list of monitors
    monitors:
-     - id: workers-cloudflare-com # unique identifier
-       name: workers.cloudflare.com
-       description: 'You write code. They handle the rest.' # default=empty
-       url: 'https://workers.cloudflare.com/' # URL to fetch
+     - id: my-site # unique identifier
+       name: example.com
+       description: 'My website' # shown as tooltip, optional
+       url: 'https://example.com/' # URL to fetch
        method: GET # default=GET
        expectStatus: 200 # operational status, default=200
-       followRedirect: false # should fetch follow redirects, default=false
-       linkable: false # should the titles be links to the service, default=true
+       followRedirect: false # default=false
+       linkable: true # make the title a link, default=true
    ```
 
-5. Push to `main` branch to trigger the deployment
-6. 🎉
-7. _\(optional\)_ Go to [Cloudflare Workers settings](https://dash.cloudflare.com/?to=/workers) and assign custom domain/route
-   - e.g. `status-page.eidam.dev/*` _\(make sure you include `/*` as the Worker also serve static files\)_
-8. _\(optional\)_ Edit [wrangler.toml](./wrangler.toml) to adjust Worker settings or CRON Trigger schedule, especially if you are on [Workers Free plan](#workers-kv-free-tier)
+4. Push to `main` (or run the **Deploy** workflow manually). The workflow
+   builds the config, creates the `KV_STATUS_PAGE` namespace if missing,
+   sets secrets and deploys.
+5. _(optional)_ In the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/workers)
+   assign a custom domain/route to the Worker.
 
-### Telegram notifications
+## Telegram notifications
 
-To enable telegram notifications, you'll need to take a few additional steps.
+1. [Create a bot](https://core.telegram.org/bots#creating-a-new-bot) and copy
+   its token → `SECRET_TELEGRAM_API_TOKEN`.
+2. Send any message to the bot from the account that should receive alerts.
+3. Get the chat id:
+   `curl https://api.telegram.org/bot<TOKEN>/getUpdates`
+   → `.result[0].message.chat.id` → `SECRET_TELEGRAM_CHAT_ID`.
+4. Redeploy (push or run the workflow).
 
-1. [Create a new Bot](https://core.telegram.org/bots#creating-a-new-bot)
-2. Set the api token you received when creating the bot as content of the `SECRET_TELEGRAM_API_TOKEN` secret in your github repository.
-3. Send a message to the bot from the telegram account which should receive the alerts (Something more than `/start`)
-4. Get the chat id with `curl https://api.telegram.org/bot<YOUR TELEGRAM API TOKEN>/getUpdates | jq '.result[0] .message .chat .id'`
-5. Set the retrieved chat id in the `SECRET_TELEGRAM_CHAT_ID` secret variable
-6. Redeploy the status page using the github action
+## Run locally
 
-### Deploy on your own
+Requirements: Node 20+, a Cloudflare account.
 
-You can clone the repository yourself and use Wrangler CLI to develop/deploy, extra list of things you need to take care of:
-
-- create KV namespace and add the `KV_STATUS_PAGE` binding to [wrangler.toml](./wrangler.toml)
-- create Worker secrets _\(optional\)_
-  - `SECRET_SLACK_WEBHOOK_URL`
-  - `SECRET_DISCORD_WEBHOOK_URL`
-
-## Workers KV free tier
-
-The Workers Free plan includes limited KV usage, but the quota is sufficient for 2-minute checks only
-
-- Change the CRON trigger to 2 minutes interval (`crons = ["*/2 * * * *"]`) in [wrangler.toml](./wrangler.toml)
-
-## Known issues
-
-- **Max 25 monitors to watch in case you are using Slack notifications**, due to the limit of subrequests Cloudflare Worker can make \(50\).
-
-  The plan is to support up to 49 by sending only one Slack notification per scheduled run.
-
-- **KV replication lag** - You might get Slack notification instantly, however it may take couple of more seconds to see the change on your status page as [Cron Triggers are usually running on underutilized quiet hours machines](https://blog.cloudflare.com/introducing-cron-triggers-for-cloudflare-workers/#how-are-you-able-to-offer-this-feature-at-no-additional-cost).
-
-- **Initial delay (no data)** - It takes couple of minutes to schedule and run CRON Triggers for the first time
-
-## Future plans
-
-WIP - Support for Durable Objects - Cloudflare's product for low-latency coordination and consistent storage for the Workers platform. There is a working prototype, however, we are waiting for at least open beta.
-
-There is also a managed version of this project, currently in beta. Feel free to check it out https://statusflare.com (https://twitter.com/statusflare_com).
-
-## Running project locally
-**Requirements**
-- Linux or WSL
-- Yarn (`npm i -g yarn`)
-- Node 14+
-
-### Steps to get server up and running
-**Install wrangler**
-```
-npm i -g wrangler
+```bash
+npm install
+npm run dev        # builds config, starts wrangler dev with local KV
 ```
 
-**Login With Wrangler to Cloudflare**
-```
+Open http://localhost:8787. Manually trigger a check cycle:
+`curl http://localhost:8787/api/trigger`.
+
+## Deploy manually (without GitHub Actions)
+
+```bash
+npm install
 wrangler login
+wrangler kv namespace create KV_STATUS_PAGE   # copy the id ...
+# ... and put it into wrangler.toml (replace KV_NAMESPACE_ID_PLACEHOLDER)
+wrangler secret put SECRET_SLACK_WEBHOOK_URL  # repeat for other secrets (optional)
+npm run deploy
 ```
 
-**Create your KV namespace in cloudflare**
-```
-On the workers page navigate to KV, and create a namespace
-```
+## Notes
 
-**Update your wrangler.toml with**
-```
-kv-namespaces = [{binding="KV_STATUS_PAGE", id="<KV_ID>", preview_id="<KV_ID>"}]
-```
-_Note: you may need to change `kv-namespaces` to `kv_namespaces`_
+- **Upgrading from v1:** the KV data key is unchanged, so deploying v2 over
+  an existing v1 namespace keeps all history. The v1 Flareact frontend and
+  `wrangler.toml` format are gone — do not mix old and new files.
+- Free plan: KV quota is enough for the default 2-minute interval. To check
+  less often, edit the `crons` line in `wrangler.toml`.
+- Max ~25 monitors when using Slack notifications (Cloudflare subrequest limit).
 
-**Install packages**
-```
-yarn install
-```
+## License
 
-**Create CSS**
-```
-yarn run css
-```
-
-**Run**
-```
-yarn run dev
-```
-_Note: If the styles do not come through try using `localhost:8787` instead of `localhost:8080`_
+MIT — see [LICENSE](./LICENSE).
