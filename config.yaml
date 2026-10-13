@@ -2,7 +2,7 @@ settings:
   title: 'Status Page'
   url: 'https://nextdns.jeremienguyen.workers.dev' # used for Slack messages
   logo: logo-192x192.png # image in ./public/ folder
-  daysInHistogram: 30 # number of days you want to display in histogram
+  daysInHistogram: 30 # number of days you want to display in the chart
   collectResponseTimes: true # collects avg response times from CRON locations
 
   allmonitorsOperational: 'All Systems Operational'
@@ -14,11 +14,22 @@ settings:
   dayInHistogramOperational: 'All good'
   dayInHistogramNotOperational: ' incident(s)' # xx incident(s) recorded
 
+# NextDNS edge PoPs, ordered by latency measured from Vietnam (2026-10-14).
+# URL pattern: https://<id>-1.edge.nextdns.io/resolve?name=google.com
 monitors:
-  - id: zepto-sin
-    name: Singapore Zepto
-    description: 'zepto-sin-1.edge.nextdns.io'
-    url: 'https://zepto-sin-1.edge.nextdns.io/resolve?name=google.com'
+  - id: lightnode-sgn
+    name: Hồ Chí Minh LightNode
+    description: 'lightnode-sgn-1.edge.nextdns.io'
+    url: 'https://lightnode-sgn-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: viettel-sgn
+    name: Hồ Chí Minh Viettel
+    description: 'viettel-sgn-1.edge.nextdns.io'
+    url: 'https://viettel-sgn-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
     followRedirect: false
@@ -33,19 +44,19 @@ monitors:
     followRedirect: false
     linkable: false
 
-  - id: anexia-sin
-    name: Singapore Anexia
-    description: 'anexia-sin-1.edge.nextdns.io'
-    url: 'https://anexia-sin-1.edge.nextdns.io/resolve?name=google.com'
+  - id: lightnode-han
+    name: Hà Nội LightNode
+    description: 'lightnode-han-1.edge.nextdns.io'
+    url: 'https://lightnode-han-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
     followRedirect: false
     linkable: false
 
-  - id: anexia-hkg
-    name: HongKong Anexia
-    description: 'anexia-hkg-1.edge.nextdns.io'
-    url: 'https://anexia-hkg-1.edge.nextdns.io/resolve?name=google.com'
+  - id: viettel-han
+    name: Hà Nội Viettel
+    description: 'viettel-han-1.edge.nextdns.io'
+    url: 'https://viettel-han-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
     followRedirect: false
@@ -55,6 +66,69 @@ monitors:
     name: HongKong Zepto
     description: 'zepto-hkg-1.edge.nextdns.io'
     url: 'https://zepto-hkg-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: anexia-sin
+    name: Singapore Anexia
+    description: 'anexia-sin-1.edge.nextdns.io'
+    url: 'https://anexia-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: anexia-kul
+    name: Kuala Lumpur Anexia
+    description: 'anexia-kul-1.edge.nextdns.io'
+    url: 'https://anexia-kul-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: lightnode-kul
+    name: Kuala Lumpur LightNode
+    description: 'lightnode-kul-1.edge.nextdns.io'
+    url: 'https://lightnode-kul-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: vultr-tyo
+    name: Tokyo Vultr
+    description: 'vultr-tyo-1.edge.nextdns.io'
+    url: 'https://vultr-tyo-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: lightnode-bkk
+    name: Bangkok LightNode
+    description: 'lightnode-bkk-1.edge.nextdns.io'
+    url: 'https://lightnode-bkk-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: bangmod-bkk
+    name: Bangkok Bangmod
+    description: 'bangmod-bkk-1.edge.nextdns.io'
+    url: 'https://bangmod-bkk-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: hostinginside-tpe
+    name: Taipei HostingInside
+    description: 'hostinginside-tpe-1.edge.nextdns.io'
+    url: 'https://hostinginside-tpe-1.edge.nextdns.io/resolve?name=google.com'
     method: GET
     expectStatus: 200
     followRedirect: false

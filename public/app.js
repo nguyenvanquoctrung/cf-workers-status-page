@@ -42,48 +42,142 @@ function statusPill(data) {
     : `<span class="pill pill-yellow">${esc(s.monitorLabelNotOperational)}</span>`
 }
 
-function histogram(monitor, data) {
+let CHARTS = []
+
+function latencyChart(monitor, data, ci) {
   const s = CONFIG.settings
   const n = s.daysInHistogram
-  const start = new Date()
-  start.setDate(start.getDate() - n)
-
-  let bars = ''
+  const days = []
+  const d = new Date()
+  d.setDate(d.getDate() - n)
   for (let i = 0; i < n; i++) {
-    start.setDate(start.getDate() + 1)
-    const day = dayStr(start)
-
-    let cls = 'bar-empty'
-    let label = s.dayInHistogramNoData
-    let avgs = ''
+    d.setDate(d.getDate() + 1)
+    const day = dayStr(d)
+    let avg = null
+    let fails = 0
+    let locs = []
     if (data && data.firstCheck <= day) {
-      const entry = data.checks && data.checks[day]
-      if (entry && entry.fails > 0) {
-        cls = 'bar-yellow'
-        label = `${entry.fails} ${s.dayInHistogramNotOperational}`
-      } else {
-        cls = 'bar-green'
-        label = s.dayInHistogramOperational
-      }
-      if (entry && entry.res) {
-        avgs = Object.keys(entry.res)
-          .map(
-            (loc) =>
-              `<span class="tip-avg">${esc(LOCATIONS[loc] || loc)}: ${entry.res[loc].a}ms</span>`,
-          )
-          .join('')
+      const e = data.checks && data.checks[day]
+      if (e) {
+        fails = e.fails || 0
+        let tot = 0
+        let cnt = 0
+        for (const loc of Object.keys(e.res || {})) {
+          const r = e.res[loc]
+          tot += r.a * r.n
+          cnt += r.n
+          locs.push({ loc, a: r.a })
+        }
+        if (cnt > 0) avg = tot / cnt
       }
     }
-
-    bars +=
-      `<div class="hitbox tooltip"><div class="bar ${cls}"></div>` +
-      `<div class="tip"><span class="tip-date">${day}</span>` +
-      `<span class="tip-label">${esc(label)}</span>${avgs}</div></div>`
+    days.push({ day, avg, fails, locs })
   }
-  return `<div class="histogram">${bars}</div>`
+  CHARTS[ci] = days
+
+  const W = 600
+  const H = 132
+  const padT = 14
+  const padB = 26
+  const padX = 8
+  const maxV = Math.max(1, ...days.map((x) => x.avg || 0))
+  const X = (i) => padX + (i * (W - padX * 2)) / (n - 1)
+  const Y = (v) => padT + (1 - v / maxV) * (H - padT - padB)
+  const base = H - padB
+
+  let line = ''
+  let area = ''
+  let dots = ''
+  let hovers = ''
+  const step = (W - padX * 2) / (n - 1)
+  let seg = []
+  const flush = () => {
+    if (seg.length === 1) {
+      const p = seg[0]
+      dots += `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.avg).toFixed(1)}" r="3.5" class="cdot${p.fails > 0 ? ' bad' : ''}"/>`
+    } else if (seg.length > 1) {
+      const pts = seg
+        .map((p) => `${X(p.i).toFixed(1)},${Y(p.avg).toFixed(1)}`)
+        .join(' ')
+      line += `<polyline points="${pts}" class="cline" vector-effect="non-scaling-stroke"/>`
+      area += `<polygon points="${X(seg[0].i).toFixed(1)},${base} ${pts} ${X(seg[seg.length - 1].i).toFixed(1)},${base}" class="carea"/>`
+      for (const p of seg) {
+        if (p.fails > 0) {
+          dots += `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.avg).toFixed(1)}" r="4.5" class="cdot bad"/>`
+        }
+      }
+    }
+    seg = []
+  }
+  days.forEach((dd, i) => {
+    hovers += `<rect x="${(X(i) - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" class="hov" data-i="${i}"/>`
+    if (dd.avg == null) {
+      flush()
+      if (dd.fails > 0) {
+        dots += `<circle cx="${X(i).toFixed(1)}" cy="${base.toFixed(1)}" r="4.5" class="cdot bad"/>`
+      }
+    } else {
+      seg.push({ i, avg: dd.avg, fails: dd.fails })
+    }
+  })
+  flush()
+
+  return (
+    `<div class="chart-wrap" data-ci="${ci}">` +
+    `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">` +
+    `<text x="${W - padX}" y="${padT - 4}" text-anchor="end" class="cmax">max ${Math.round(maxV)}ms</text>` +
+    `<line x1="${padX}" y1="${base}" x2="${W - padX}" y2="${base}" class="caxis" vector-effect="non-scaling-stroke"/>` +
+    area +
+    line +
+    dots +
+    hovers +
+    `</svg><div class="chart-tip" hidden></div></div>`
+  )
 }
 
-function monitorCard(monitor, data) {
+function bindCharts() {
+  document.querySelectorAll('.chart-wrap').forEach((wrap) => {
+    const days = CHARTS[parseInt(wrap.dataset.ci, 10)]
+    if (!days) return
+    const svg = wrap.querySelector('svg')
+    const tip = wrap.querySelector('.chart-tip')
+    const s = CONFIG.settings
+    svg.addEventListener('mousemove', (e) => {
+      const r = svg.getBoundingClientRect()
+      const i = Math.max(
+        0,
+        Math.min(days.length - 1, Math.round(((e.clientX - r.left) / r.width) * (days.length - 1))),
+      )
+      const dd = days[i]
+      let label
+      if (dd.avg == null && dd.fails === 0) {
+        label = esc(s.dayInHistogramNoData)
+      } else if (dd.fails > 0) {
+        label = `${dd.fails} ${esc(s.dayInHistogramNotOperational)}`
+      } else {
+        label = esc(s.dayInHistogramOperational)
+      }
+      const avgs = dd.locs
+        .map((l) => `<span class="tip-avg">${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms</span>`)
+        .join('')
+      tip.innerHTML =
+        `<span class="tip-date">${dd.day}</span>` +
+        (dd.avg != null ? `<span class="tip-label">${Math.round(dd.avg)}ms avg</span>` : '') +
+        `<span class="tip-label2">${label}</span>${avgs}`
+      tip.hidden = false
+      const wr = wrap.getBoundingClientRect()
+      let left = e.clientX - wr.left + 14
+      left = Math.max(4, Math.min(left, wr.width - 150))
+      tip.style.left = left + 'px'
+      tip.style.top = Math.max(4, e.clientY - wr.top - 10) + 'px'
+    })
+    svg.addEventListener('mouseleave', () => {
+      tip.hidden = true
+    })
+  })
+}
+
+function monitorCard(monitor, data, ci) {
   const nameHtml =
     monitor.linkable === false
       ? `<span>${esc(monitor.name)}</span>`
@@ -96,7 +190,7 @@ function monitorCard(monitor, data) {
     `<div class="card" data-monitor="${esc(monitor.id)}">` +
     `<div class="monitor-head"><div class="monitor-name">${descHtml}${nameHtml}</div>` +
     `${statusPill(data)}</div>` +
-    `${histogram(monitor, data)}` +
+    `${latencyChart(monitor, data, ci)}` +
     `<div class="hist-legend"><span>${CONFIG.settings.daysInHistogram} days ago</span><span>Today</span></div>` +
     `</div>`
   )
@@ -124,9 +218,11 @@ function renderMonitors() {
   const list = CONFIG.monitors.filter((m) =>
     !term || m.name.toLowerCase().includes(term),
   )
+  CHARTS = []
   $('#monitors').innerHTML = list.length
-    ? list.map((m) => monitorCard(m, STATE.monitors[m.id])).join('')
+    ? list.map((m, i) => monitorCard(m, STATE.monitors[m.id], i)).join('')
     : `<div class="empty">No monitors match "${esc(FILTER)}".</div>`
+  bindCharts()
 }
 
 function render() {
