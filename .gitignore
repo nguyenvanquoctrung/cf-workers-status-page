@@ -132,5 +132,8 @@ worker/
 .envrc
 .direnv/
 out/
-package-lock.json
-public/style.css
+
+# v2 generated / local files (do not commit)
+src/config.js
+.wrangler/
+.dev.vars
