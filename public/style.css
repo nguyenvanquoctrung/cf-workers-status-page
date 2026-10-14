@@ -574,7 +574,7 @@ a:hover { text-decoration: underline; }
 
 /* Responsive header: hamburger menu */
 .nav-toggle { display: none; }
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
   .nav-toggle { display: inline-flex; }
   .nav {
     display: none;
