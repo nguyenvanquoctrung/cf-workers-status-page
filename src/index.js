@@ -287,6 +287,7 @@ export default {
         colo: cf.colo || null,
         country: cf.country || null,
         asOrganization: cf.asOrganization || null,
+        asn: cf.asn || null,
         latitude: cf.latitude || null,
         longitude: cf.longitude || null,
         ip:

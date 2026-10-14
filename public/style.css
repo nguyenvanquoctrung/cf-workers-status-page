@@ -545,3 +545,12 @@ a:hover { text-decoration: underline; }
 .wping-table th, .wping-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
 .wping-table th { color: var(--muted); font-weight: 600; white-space: nowrap; }
 .wping-table td:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+/* Connection info card (speed.cloudflare.com-style server location) */
+.conn-card { margin: 18px 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.conn-card .blat-title { margin: 0 0 12px; }
+.conn-map { border-radius: 8px; overflow: hidden; background: var(--bg-soft, #f4f4f5); }
+.conn-map svg { display: block; width: 100%; height: auto; }
+.conn-rows { margin-top: 12px; display: grid; gap: 8px; }
+.conn-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+.conn-label { color: var(--muted); min-width: 150px; }
+.conn-val { font-weight: 600; word-break: break-all; }

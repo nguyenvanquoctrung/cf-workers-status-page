@@ -87,6 +87,12 @@ en: {
 'speedtest.start': 'Start test',
 'speedtest.detail.title': 'Detailed test',
 'speedtest.detail.note': 'Test files hosted by Real-Debrid (vietcdn.net infrastructure), except the Cloudflare edge row served from this site.',
+'conn.title': 'Server Location',
+'conn.via': 'Connected via',
+'conn.server': 'Server location',
+'conn.network': 'Your network',
+'conn.ip': 'Your IP address',
+'conn.you': 'You',
 'speedtest.detail.start': 'Start detailed test',
 'speedtest.detail.stop': 'Stop',
 'speedtest.closest': '📍 Closest server: <strong>{name}</strong>',
@@ -281,6 +287,12 @@ vi: {
 'speedtest.start': 'Bắt đầu đo',
 'speedtest.detail.title': 'Đo chi tiết',
 'speedtest.detail.note': 'File test do Real-Debrid lưu trữ (hạ tầng vietcdn.net), trừ hàng Cloudflare edge dùng worker này.',
+'conn.title': 'Vị trí máy chủ',
+'conn.via': 'Kết nối qua',
+'conn.server': 'Vị trí máy chủ',
+'conn.network': 'Nhà mạng của bạn',
+'conn.ip': 'Địa chỉ IP của bạn',
+'conn.you': 'Bạn',
 'speedtest.detail.start': 'Bắt đầu đo chi tiết',
 'speedtest.detail.stop': 'Dừng',
 'speedtest.closest': '📍 Máy chủ gần nhất: <strong>{name}</strong>',
@@ -1206,6 +1218,96 @@ function renderIncidents() {
   })
 }
 
+// ---- Speedtest: connection info (speed.cloudflare.com-style) ----
+// Colo code -> city/country/coordinates for the server-location mini map.
+const COLO_MAP = {
+  SGN: { city: 'Ho Chi Minh City', country: 'Vietnam', lat: 10.82, lon: 106.65 },
+  HAN: { city: 'Hanoi', country: 'Vietnam', lat: 21.03, lon: 105.85 },
+  SIN: { city: 'Singapore', country: 'Singapore', lat: 1.35, lon: 103.82 },
+  HKG: { city: 'Hong Kong', country: 'Hong Kong', lat: 22.32, lon: 114.17 },
+  TPE: { city: 'Taipei', country: 'Taiwan', lat: 25.05, lon: 121.57 },
+  TYO: { city: 'Tokyo', country: 'Japan', lat: 35.68, lon: 139.69 },
+  NRT: { city: 'Tokyo', country: 'Japan', lat: 35.68, lon: 139.69 },
+  ICN: { city: 'Seoul', country: 'South Korea', lat: 37.57, lon: 126.98 },
+  SEL: { city: 'Seoul', country: 'South Korea', lat: 37.57, lon: 126.98 },
+  BOM: { city: 'Mumbai', country: 'India', lat: 19.08, lon: 72.88 },
+  DXB: { city: 'Dubai', country: 'UAE', lat: 25.2, lon: 55.27 },
+  SYD: { city: 'Sydney', country: 'Australia', lat: -33.87, lon: 151.21 },
+  FRA: { city: 'Frankfurt', country: 'Germany', lat: 50.11, lon: 8.68 },
+  AMS: { city: 'Amsterdam', country: 'Netherlands', lat: 52.37, lon: 4.9 },
+  LHR: { city: 'London', country: 'United Kingdom', lat: 51.5, lon: -0.13 },
+  CDG: { city: 'Paris', country: 'France', lat: 48.86, lon: 2.35 },
+  PAR: { city: 'Paris', country: 'France', lat: 48.86, lon: 2.35 },
+  MAD: { city: 'Madrid', country: 'Spain', lat: 40.42, lon: -3.7 },
+  MIL: { city: 'Milan', country: 'Italy', lat: 45.46, lon: 9.19 },
+  ZRH: { city: 'Zurich', country: 'Switzerland', lat: 47.38, lon: 8.54 },
+  ARN: { city: 'Stockholm', country: 'Sweden', lat: 59.33, lon: 18.07 },
+  WAW: { city: 'Warsaw', country: 'Poland', lat: 52.23, lon: 21.01 },
+  IAD: { city: 'Ashburn', country: 'United States', lat: 39.04, lon: -77.49 },
+  EWR: { city: 'Newark', country: 'United States', lat: 40.69, lon: -74.17 },
+  ORD: { city: 'Chicago', country: 'United States', lat: 41.88, lon: -87.63 },
+  DFW: { city: 'Dallas', country: 'United States', lat: 32.78, lon: -96.8 },
+  LAX: { city: 'Los Angeles', country: 'United States', lat: 34.05, lon: -118.24 },
+  SFO: { city: 'San Francisco', country: 'United States', lat: 37.77, lon: -122.42 },
+  SEA: { city: 'Seattle', country: 'United States', lat: 47.61, lon: -122.34 },
+  MIA: { city: 'Miami', country: 'United States', lat: 25.76, lon: -80.19 },
+  YYZ: { city: 'Toronto', country: 'Canada', lat: 43.65, lon: -79.38 },
+  YUL: { city: 'Montreal', country: 'Canada', lat: 45.5, lon: -73.57 },
+  GRU: { city: 'São Paulo', country: 'Brazil', lat: -23.55, lon: -46.63 },
+  SCL: { city: 'Santiago', country: 'Chile', lat: -33.45, lon: -70.67 },
+  JNB: { city: 'Johannesburg', country: 'South Africa', lat: -26.2, lon: 28.05 },
+}
+
+async function renderConnInfo() {
+  const el = $('#connInfo')
+  if (!el || el.dataset.done) return
+  el.dataset.done = '1'
+  let j = null
+  try {
+    const r = await fetch('/api/conn', { cache: 'no-store' })
+    j = await r.json()
+  } catch (e) {}
+  if (!j) {
+    el.innerHTML = `<span class="dns-note">--</span>`
+    return
+  }
+  const colo = COLO_MAP[j.colo] || null
+  const ip = j.ip || '--'
+  const isV6 = ip.includes(':')
+  const net = [j.asOrganization, j.asn != null ? `(AS${j.asn})` : null].filter(Boolean).join(' ') || '--'
+  // Mini map: world silhouette, user dot, server pin, connecting line.
+  const W = 480, H = 240
+  const x = (lon) => ((lon + 180) / 360) * W
+  const y = (lat) => ((90 - lat) / 180) * H
+  const land = WORLD_MAP.map(
+    (ring) => '<path d="M' + ring.map(([lo, la]) => x(lo).toFixed(1) + ' ' + y(la).toFixed(1)).join('L') + 'Z"/>',
+  ).join('')
+  let markers = ''
+  const uLat = +j.latitude, uLon = +j.longitude
+  if (Number.isFinite(uLat) && Number.isFinite(uLon)) {
+    markers += `<circle cx="${x(uLon).toFixed(1)}" cy="${y(uLat).toFixed(1)}" r="5" fill="#f97316" opacity="0.9"><title>${t('conn.you')}</title></circle>`
+  }
+  if (colo) {
+    const cx = x(colo.lon).toFixed(1), cy = y(colo.lat).toFixed(1)
+    markers += `<g><circle cx="${cx}" cy="${cy}" r="6" fill="#dc2626"/><circle cx="${cx}" cy="${cy}" r="11" fill="#dc2626" opacity="0.25"/></g>`
+    if (Number.isFinite(uLat) && Number.isFinite(uLon)) {
+      markers += `<line x1="${x(uLon).toFixed(1)}" y1="${y(uLat).toFixed(1)}" x2="${cx}" y2="${cy}" stroke="#dc2626" stroke-width="1.5" opacity="0.6"/>`
+    }
+  }
+  const row = (label, val) =>
+    `<div class="conn-row"><span class="conn-label">${label}</span><span class="conn-val">${val}</span></div>`
+  el.innerHTML =
+    `<h3 class="blat-title" data-i18n-key="conn.title">${t('conn.title')}</h3>` +
+    `<div class="conn-map"><svg viewBox="0 0 ${W} ${H}" class="wping-map" role="img" aria-label="${t('conn.title')}">` +
+    `<g fill="#d4d4d8">${land}</g>${markers}</svg></div>` +
+    `<div class="conn-rows">` +
+    row(t('conn.via'), isV6 ? 'IPv6' : 'IPv4') +
+    row(t('conn.server'), colo ? esc(colo.city + ', ' + colo.country) : esc(j.colo || '--')) +
+    row(t('conn.network'), esc(net)) +
+    row(t('conn.ip'), esc(ip)) +
+    `</div>`
+}
+
 // ---- Speedtest (self-hosted, vietcdn.net-style) ----
 // Measures ping/download/upload from the visitor's browser to the
 // Cloudflare edge serving this page. All test data is self-hosted:
@@ -1283,6 +1385,7 @@ function renderSpeedtest() {
     `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
     `<div class="st-detail">` +
     `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
+    `<div id="connInfo" class="conn-card"></div>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
     `<div class="st-summary" id="stDetailSummary"></div>` +
@@ -1290,6 +1393,7 @@ function renderSpeedtest() {
     `<button class="btn" id="stDetailStop" disabled data-i18n-key="speedtest.detail.stop">${t('speedtest.detail.stop')}</button>` +
     `<span class="st-status" id="stDetailStatus"></span></div></div>`
   $('#stDetailStart').addEventListener('click', runDetailedTest)
+  renderConnInfo()
   $('#stDetailStop').addEventListener('click', () => {
     ST2.stop = true
   })
