@@ -2620,18 +2620,32 @@ async function rdapRegistrant(ip) {
   const svc = await rdapServiceFor(ip)
   if (!svc) return null
   const base = svc.endsWith('/') ? svc : svc + '/'
-  const r = await fetch(`${base}ip/${encodeURIComponent(ip)}`, {
+  const r = await fetchT(`${base}ip/${encodeURIComponent(ip)}`, 8000, {
     headers: { accept: 'application/rdap+json' },
   })
-  if (!r.ok) return null
+  if (!r || !r.ok) return null
   return rdapRegistrantName(await r.json())
+}
+
+// fetch with timeout (ms); returns null on timeout/error
+async function fetchT(url, ms, opts) {
+  const c = new AbortController()
+  const to = setTimeout(() => c.abort(), ms)
+  try {
+    const r = await fetch(url, { ...opts, signal: c.signal })
+    return r
+  } catch (e) {
+    return null
+  } finally {
+    clearTimeout(to)
+  }
 }
 
 // "City, Region, CC" via ip.addr.tools (CORS-open), like the original's getGeo.
 async function geoFor(ip) {
   if (isPrivateIp(ip)) return null
-  const r = await fetch(`https://ip.addr.tools/${encodeURIComponent(ip)}`)
-  if (!r.ok) return null
+  const r = await fetchT(`https://ip.addr.tools/${encodeURIComponent(ip)}`, 8000)
+  if (!r || !r.ok) return null
   const o = await r.json()
   const s = [o.city, o.region, o.country].filter(Boolean).join(', ')
   return s || null
