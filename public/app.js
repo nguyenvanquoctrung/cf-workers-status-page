@@ -453,6 +453,20 @@ function curMonthStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+// Earliest month that can still hold incident data: KV only retains
+// daysInHistogram days, and each monitor starts at its own firstCheck.
+// Paging earlier would misleadingly show "no incidents" for months whose
+// data no longer exists.
+function earliestMonthStr() {
+  let earliest = null
+  for (const m of CONFIG.monitors) {
+    const data = STATE.monitors[m.id]
+    const fc = data && data.firstCheck
+    if (fc && (!earliest || fc < earliest)) earliest = fc
+  }
+  return (earliest || dayStr(new Date())).slice(0, 7)
+}
+
 function monthShift(ym, delta) {
   const [y, m] = ym.split('-').map(Number)
   const d = new Date(y, m - 1 + delta, 1)
@@ -469,6 +483,8 @@ function fmtMonth(ym) {
 
 function renderIncidents() {
   const month = INC_MONTH || curMonthStr()
+  const minMonth = earliestMonthStr()
+  const maxMonth = curMonthStr()
   const entries = incidentEntries().filter(
     (e) =>
       e.day.startsWith(month) && (!INC_MONITOR || e.monitor.id === INC_MONITOR),
@@ -500,10 +516,11 @@ function renderIncidents() {
     `<div class="inc-controls"><select id="incMonitorFilter" aria-label="Filter by monitor">${options}</select></div>` +
     list +
     `<div class="inc-pager">` +
-    `<button class="btn" id="incPrev">&larr; Backwards</button>` +
+    `<button class="btn" id="incPrev"${month <= minMonth ? ' disabled' : ''}>&larr; Backwards</button>` +
     `<span class="month-label">${esc(fmtMonth(month))}</span>` +
-    `<button class="btn" id="incNext">Forward &rarr;</button>` +
-    `</div>`
+    `<button class="btn" id="incNext"${month >= maxMonth ? ' disabled' : ''}>Forward &rarr;</button>` +
+    `</div>` +
+    `<div class="inc-note">${esc(`Incident history is kept for the last ${CONFIG.settings.daysInHistogram} days.`)}</div>`
   $('#incMonitorFilter').addEventListener('change', (e) => {
     INC_MONITOR = e.target.value
     renderIncidents()

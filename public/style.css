@@ -312,6 +312,9 @@ a:hover { text-decoration: underline; }
   padding: 8px 14px; cursor: pointer;
 }
 .btn:hover { background: var(--group-hover-bg); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled:hover { background: var(--input-bg); }
+.inc-note { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
 
 @media (max-width: 640px) {
   .header-inner { padding: 0 12px; gap: 8px; }
