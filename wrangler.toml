@@ -8,11 +8,10 @@ main = "src/index.js"
 compatibility_date = "2026-10-13"
 workers_dev = true
 
-[triggers]
-crons = ["*/5 * * * *"]
-
-# Phase 1: pin fetch handler (incl. /api/check) to Singapore colo.
-# NOTE: placement does NOT affect the cron scheduled handler.
+# Checks are triggered externally (GitHub Actions -> POST /api/check every 5 min)
+# so they run from the placed colo (Singapore). The built-in Workers cron is
+# intentionally disabled: placement does not affect the scheduled handler,
+# and it would run from a random global colo with high latency to VN/SEA.
 [placement]
 region = "aws:ap-southeast-1"
 
