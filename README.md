@@ -1,40 +1,54 @@
 # Cloudflare Workers — Status Page
 
-Monitor your websites/APIs, showcase status including daily history, and get
-Slack / Telegram / Discord notifications whenever a status changes.
-Powered by **Cloudflare Workers**, **Cron Triggers** and **KV storage** —
-no servers, no frontend build step.
+Monitor your websites/APIs with a fast, serverless status page. Checks run on
+a schedule via Cron Triggers, history lives in KV, and the frontend is a
+dependency-free static page in the visual language of
+[UptimeFlare](https://github.com/lyc8503/UptimeFlare).
 
-![Status Page](.gitbook/assets/status_page_screenshot.png)
+**Live demo:** https://nextdns.jeremienguyen.workers.dev
 
-## What stayed the same (from v1)
+## Features
 
-- Checks run every 2 minutes via Cron Trigger; results are stored in KV
-  under the same key (`monitors_data_v1_1`) — **history survives upgrades**.
-- `config.yaml` is still the single source of truth for monitors and texts.
-- Slack / Telegram / Discord notifications on status change.
-- Stale data cleanup (monitors removed from config, days older than
-  `daysInHistogram`) — previously a post-deploy script, now built into the Worker.
-- MIT license.
+- **90-day uptime bar strip** per monitor (UptimeFlare color tiers; gray days =
+  no data yet — history grows over time, nothing is fabricated)
+- **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
+  per-group "X/Y Operational" counts; collapse state remembered in localStorage
+- **Incidents view** (`#incidents`) with month pager and monitor filter
+- **Live ticker**: hero shows "Last updated on … (N sec ago)" with N ticking
+  every second; page auto-reloads when data is stale
+- **Latency chart** per monitor with red markers on incident days; click a bar
+  for incident details (est. downtime, episodes, avg response, per location)
+- Dark mode toggle, search filter, responsive layout (bar strip hides on small
+  screens like the reference)
+- Slack / Telegram / Discord notifications on status change
+- No servers, no frontend build step — Cloudflare Workers + KV only
 
-## What changed in v2
+## How it works
+
+- A Cron Trigger checks monitors every 10 minutes (`crons` in
+  `wrangler.toml`); results are stored in KV under `monitors_data_v1_1` —
+  **history survives redeploys and upgrades**
+- `config.yaml` is the single source of truth for monitors and texts
+- Stale-data cleanup (monitors removed from config, days older than
+  `daysInHistogram`) runs inside the Worker — no post-deploy scripts
+- Free-plan friendly: ~144 KV writes/day at the default 10-minute interval,
+  well under the 1,000/day quota; 90 days of daily history per monitor
+
+## What changed in the 2026 rewrite
 
 - **Removed Flareact** (unmaintained since 2021, incompatible with modern
-  wrangler) → dependency-free static frontend (plain HTML/CSS/JS).
-- **Worker rewritten** to modules format (`src/index.js`: `fetch` + `scheduled`).
-- **wrangler v4** config: Workers Static Assets, `kv_namespaces`, cron triggers.
+  wrangler) → dependency-free static frontend (plain HTML/CSS/JS)
+- **Worker rewritten** to modules format (`src/index.js`: `fetch` + `scheduled`)
+- **wrangler v4** config: Workers Static Assets, `kv_namespaces`, cron triggers
 - **Deploy workflow rebuilt**: Node 22, wrangler CLI directly, KV namespace
-  auto-created/reused via API; runs on push to `main` or manually.
-- **Histogram → latency chart**: each monitor now shows a 30-day daily
-  average response-time chart with red markers on incident days
-  (hover for per-day details).
-- **Monitor list refreshed**: NextDNS edge PoPs ordered by measured latency
-  from Vietnam (13 monitors: VN, SG, HK, KL, Tokyo, Bangkok, Taipei).
-- Dependencies updated; vulnerable `node-fetch`/`postcss` era packages gone.
+  auto-created/reused via API; runs on push to `main` or manually
+- Frontend restyled to match UptimeFlare (bar strip, groups, incidents view,
+  live ticker); uptime math is time-weighted like the reference
+- Dependencies updated; vulnerable `node-fetch`/`postcss` era packages gone
 
 ## Deploy with GitHub Actions (recommended)
 
-1. Fork/clone this repository.
+1. Clone this repository (or use it as a template).
 2. **Settings → Secrets and variables → Actions**, add:
    - `CF_API_TOKEN` — token with `Edit Cloudflare Workers` permissions
    - `CF_ACCOUNT_ID` — your Cloudflare account ID
@@ -92,10 +106,10 @@ npm run deploy
 
 ## Notes
 
-- Upgrading from v1: the KV key is unchanged, so deploying v2 over an
-  existing namespace keeps all history. Do not mix old and new files.
-- Free plan: KV quota covers the default 2-minute interval; change `crons`
-  in `wrangler.toml` to check less often.
+- The KV key is unchanged across rewrites, so redeploying over an existing
+  namespace keeps all history. Do not mix old and new files.
+- Free plan: KV quota covers the default 10-minute interval (~144 writes/day);
+  change `crons` in `wrangler.toml` to check more or less often.
 - Max ~25 monitors with Slack notifications (Cloudflare subrequest limit).
 
 ## Credits
