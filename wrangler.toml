@@ -9,7 +9,7 @@ compatibility_date = "2026-10-13"
 workers_dev = true
 
 [triggers]
-crons = ["*/2 * * * *"]
+crons = ["*/10 * * * *"]
 
 [[kv_namespaces]]
 binding = "KV_STATUS_PAGE"
