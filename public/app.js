@@ -747,16 +747,14 @@ function niceStep(v) {
   return (n >= 5 ? 10 : n >= 2 ? 5 : 2) * p
 }
 
-// Hour tick label in Asia/Saigon, 12h format without leading zero: "3AM", "12PM"
+// Hour tick label in Asia/Saigon, 24h format: "15", "3" (no AM/PM).
 function hourLabel(ts) {
   const parts = new Intl.DateTimeFormat(LOCALE(), {
     timeZone: TIME_ZONE,
     hour: 'numeric',
-    hour12: true,
+    hourCycle: 'h23',
   }).formatToParts(new Date(ts * 1000))
-  const h = parts.find((p) => p.type === 'hour').value
-  const ap = parts.find((p) => p.type === 'dayPeriod').value
-  return h + ap
+  return parts.find((p) => p.type === 'hour').value
 }
 
 // Bold tooltip timestamp like UptimeFlare, in Asia/Saigon:

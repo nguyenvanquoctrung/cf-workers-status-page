@@ -275,18 +275,19 @@ export default {
       })
     }
 
-    if (url.pathname === '/api/trigger') {
-      // manual trigger (local debugging); CRON normally calls scheduled()
-      const ctx = { waitUntil: (p) => p.catch((e) => console.error(e)) }
-      return processChecks(env, ctx)
-    }
-
     if (url.pathname === '/speedtest/upload' && request.method === 'POST') {
       // Speedtest upload probe: read and discard the body, report bytes.
       // No KV writes; used by the Speedtest tab's upload measurement.
+      // Capped: a malicious huge body would burn Worker CPU/memory.
+      const MAX_UPLOAD_BYTES = 64 * 1024 * 1024
       let received = 0
       try {
-        for await (const chunk of request.body) received += chunk.byteLength
+        for await (const chunk of request.body) {
+          received += chunk.byteLength
+          if (received > MAX_UPLOAD_BYTES) {
+            return Response.json({ error: 'body too large' }, { status: 413 })
+          }
+        }
       } catch (e) {
         return Response.json({ error: 'failed to read body' }, { status: 400 })
       }
