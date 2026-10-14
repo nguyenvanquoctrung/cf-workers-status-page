@@ -24,8 +24,9 @@ dependency-free static page in the visual language of
   the recent median exceeds the configured `latencyThresholdMs`
 - **Ping tab** (`#ping`): one click measures live RTT from the
   visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first;
-  manual start only. **World Ping Test** (meter.net-style): browser pings 15
-  regional endpoints worldwide (3 probes each), plotted on a world map with
+  manual start only. **World Ping Test** (meter.net-style): browser pings 33 verified
+  NextDNS PoPs worldwide via each PoP's /info endpoint (3 probes each,
+  sequential, nearest-first), plotted on a world map with
   green <100 ms / red >250 ms markers plus a detailed min/avg/max table.
   (A test.nextdns.io-style NextDNS status check was prototyped but is
   quarantined — unreliable on the owner's network.)

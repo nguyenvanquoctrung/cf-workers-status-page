@@ -8,7 +8,7 @@ múi giờ Asia/Saigon (GMT+7).
 ## 2026-10-14 21:15 — Phase 13: Kiểm tra ping toàn cầu + Ping thủ công
 
 - **Kiểm tra ping toàn cầu** (kiểu meter.net) trong tab Ping: trình duyệt
-  ping 15 endpoint S3 theo vùng trên khắp thế giới (mỗi nơi 3 lần, song
+  ping 33 PoP NextDNS đã xác minh trên khắp thế giới (mỗi nơi 3 lần, song
   song), kết quả vẽ lên bản đồ thế giới SVG nhúng sẵn (xanh <100 ms, vàng
   100–250 ms, đỏ >250 ms) kèm bảng chi tiết xếp theo nhanh nhất: Vị trí |
   nhỏ nhất | trung bình | lớn nhất | các giá trị. Marker cập nhật trực

@@ -204,11 +204,11 @@ en: {
 'webrtc.noRtc': 'WebRTC is not available in this browser.',
 // ---- world ping ----
 'wping.title': 'World Ping Test',
-'wping.powered': 'Measures the response time from your browser to servers around the world. Values under 100 ms are good, over 250 ms are poor.',
+'wping.powered': 'Measures the response time from your browser to NextDNS PoPs around the world (via each PoP\u2019s /info endpoint, like ping.nextdns.io). Values under 100 ms are good, over 250 ms are poor.',
 'wping.run': 'Run test',
 'wping.testing': 'Pinging\u2026',
 'wping.progress': 'Pinging {done}/{total}\u2026',
-'wping.mapTitle': 'Location of all test servers',
+'wping.mapTitle': 'Location of NextDNS PoPs',
 'wping.detailTitle': 'Detailed view',
 'wping.col.location': 'Location',
 'wping.col.distance': 'Distance',
@@ -412,11 +412,11 @@ vi: {
 'webrtc.noRtc': 'Trình duyệt này không hỗ trợ WebRTC.',
 // ---- kiểm tra ping toàn cầu ----
 'wping.title': 'Kiểm tra ping toàn cầu',
-'wping.powered': 'Đo thời gian phản hồi từ trình duyệt của bạn tới các máy chủ trên khắp thế giới. Dưới 100 ms là tốt, trên 250 ms là kém.',
+'wping.powered': 'Đo thời gian phản hồi từ trình duyệt của bạn tới các PoP NextDNS trên toàn thế giới (qua endpoint /info của từng PoP, như ping.nextdns.io). Dưới 100 ms là tốt, trên 250 ms là kém.',
 'wping.run': 'Chạy kiểm tra',
 'wping.testing': 'Đang ping\u2026',
 'wping.progress': 'Đang ping {done}/{total}\u2026',
-'wping.mapTitle': 'Vị trí các máy chủ kiểm tra',
+'wping.mapTitle': 'Vị trí các PoP NextDNS',
 'wping.detailTitle': 'Chi tiết',
 'wping.col.location': 'Vị trí',
 'wping.col.distance': 'Khoảng cách',
@@ -1959,22 +1959,40 @@ async function measureBrowserLatency() {
 // ---- Phase 13: World Ping (meter.net-style) ----
 // Browser measures RTT to regional (non-anycast) endpoints worldwide.
 // S3 regional endpoints are stable, regional, and timing-safe via no-cors.
-const WORLD_PING_SERVERS = [
-  { city: 'N. Virginia, USA', host: 's3.us-east-1.amazonaws.com', lat: 38.13, lon: -78.45 },
-  { city: 'Oregon, USA', host: 's3.us-west-2.amazonaws.com', lat: 45.87, lon: -119.69 },
-  { city: 'Montreal, Canada', host: 's3.ca-central-1.amazonaws.com', lat: 45.5, lon: -73.57 },
-  { city: 'S\u00e3o Paulo, Brazil', host: 's3.sa-east-1.amazonaws.com', lat: -23.55, lon: -46.63 },
-  { city: 'Ireland', host: 's3.eu-west-1.amazonaws.com', lat: 53.33, lon: -6.26 },
-  { city: 'Frankfurt, Germany', host: 's3.eu-central-1.amazonaws.com', lat: 50.11, lon: 8.68 },
-  { city: 'Stockholm, Sweden', host: 's3.eu-north-1.amazonaws.com', lat: 59.33, lon: 18.07 },
-  { city: 'Cape Town, South Africa', host: 's3.af-south-1.amazonaws.com', lat: -33.92, lon: 18.42 },
-  { city: 'Bahrain', host: 's3.me-south-1.amazonaws.com', lat: 26.07, lon: 50.55 },
-  { city: 'Mumbai, India', host: 's3.ap-south-1.amazonaws.com', lat: 19.08, lon: 72.88 },
-  { city: 'Singapore', host: 's3.ap-southeast-1.amazonaws.com', lat: 1.35, lon: 103.82 },
-  { city: 'Sydney, Australia', host: 's3.ap-southeast-2.amazonaws.com', lat: -33.87, lon: 151.21 },
-  { city: 'Tokyo, Japan', host: 's3.ap-northeast-1.amazonaws.com', lat: 35.68, lon: 139.69 },
-  { city: 'Seoul, Korea', host: 's3.ap-northeast-2.amazonaws.com', lat: 37.56, lon: 126.97 },
-  { city: 'Hong Kong', host: 's3.ap-east-1.amazonaws.com', lat: 22.32, lon: 114.17 },
+const NEXTDNS_POPS = [
+  { host: 'zepto-ams-1.edge.nextdns.io', city: 'Amsterdam', lat: 52.37, lon: 4.9 },
+  { host: 'lightnode-bkk-1.edge.nextdns.io', city: 'Bangkok', lat: 13.76, lon: 100.5 },
+  { host: 'lightnode-bog-1.edge.nextdns.io', city: 'Bogota', lat: 4.71, lon: -74.07 },
+  { host: 'vultr-bom-1.edge.nextdns.io', city: 'Mumbai', lat: 19.08, lon: 72.88 },
+  { host: 'anexia-chi-1.edge.nextdns.io', city: 'Chicago', lat: 41.88, lon: -87.63 },
+  { host: 'anexia-dal-1.edge.nextdns.io', city: 'Dallas', lat: 32.78, lon: -96.8 },
+  { host: 'anexia-dxb-1.edge.nextdns.io', city: 'Dubai', lat: 25.2, lon: 55.27 },
+  { host: 'anexia-ewr-1.edge.nextdns.io', city: 'Newark', lat: 40.69, lon: -74.17 },
+  { host: 'zepto-fra-1.edge.nextdns.io', city: 'Frankfurt', lat: 50.11, lon: 8.68 },
+  { host: 'lightnode-han-1.edge.nextdns.io', city: 'Hanoi', lat: 21.03, lon: 105.85 },
+  { host: 'zepto-hkg-1.edge.nextdns.io', city: 'Hong Kong', lat: 22.32, lon: 114.17 },
+  { host: 'zepto-iad-1.edge.nextdns.io', city: 'Ashburn', lat: 39.04, lon: -77.49 },
+  { host: 'zepto-jnb-1.edge.nextdns.io', city: 'Johannesburg', lat: -26.2, lon: 28.05 },
+  { host: 'anexia-kul-1.edge.nextdns.io', city: 'Kuala Lumpur', lat: 3.14, lon: 101.69 },
+  { host: 'anexia-lax-1.edge.nextdns.io', city: 'Los Angeles', lat: 34.05, lon: -118.24 },
+  { host: 'zepto-lon-1.edge.nextdns.io', city: 'London', lat: 51.5, lon: -0.13 },
+  { host: 'zepto-mad-1.edge.nextdns.io', city: 'Madrid', lat: 40.42, lon: -3.7 },
+  { host: 'anexia-mia-1.edge.nextdns.io', city: 'Miami', lat: 25.76, lon: -80.19 },
+  { host: 'zepto-mil-1.edge.nextdns.io', city: 'Milan', lat: 45.46, lon: 9.19 },
+  { host: 'anexia-par-1.edge.nextdns.io', city: 'Paris', lat: 48.86, lon: 2.35 },
+  { host: 'zepto-sao-1.edge.nextdns.io', city: 'Sao Paulo', lat: -23.55, lon: -46.63 },
+  { host: 'anexia-scl-1.edge.nextdns.io', city: 'Santiago', lat: -33.45, lon: -70.67 },
+  { host: 'zepto-sea-1.edge.nextdns.io', city: 'Seattle', lat: 47.61, lon: -122.34 },
+  { host: 'vultr-sel-1.edge.nextdns.io', city: 'Seoul', lat: 37.57, lon: 126.98 },
+  { host: 'lightnode-sgn-1.edge.nextdns.io', city: 'Ho Chi Minh', lat: 10.82, lon: 106.63 },
+  { host: 'zepto-sin-1.edge.nextdns.io', city: 'Singapore', lat: 1.35, lon: 103.82 },
+  { host: 'zepto-sjc-1.edge.nextdns.io', city: 'SanFrancisco', lat: 37.77, lon: -122.42 },
+  { host: 'zepto-sto-1.edge.nextdns.io', city: 'Stockholm', lat: 59.33, lon: 18.07 },
+  { host: 'vultr-syd-1.edge.nextdns.io', city: 'Sydney', lat: -33.87, lon: 151.21 },
+  { host: 'zepto-tpe-1.edge.nextdns.io', city: 'Taipei', lat: 25.05, lon: 121.57 },
+  { host: 'zepto-tyo-1.edge.nextdns.io', city: 'Tokyo', lat: 35.68, lon: 139.69 },
+  { host: 'zepto-waw-1.edge.nextdns.io', city: 'Warsaw', lat: 52.23, lon: 21.01 },
+  { host: 'zepto-zrh-1.edge.nextdns.io', city: 'Zurich', lat: 47.38, lon: 8.54 },
 ]
 
 function wpingColor(ms) {
@@ -2010,16 +2028,18 @@ function renderWorldPingMap(results) {
   ).join('')
   const dots = results
     .map((r) => {
+      if (r.lat == null || r.lon == null) return ''
       const vals = r.values.filter((v) => v != null)
       const best = vals.length ? Math.min(...vals) : null
       const cx = x(r.lon).toFixed(1),
         cy = y(r.lat).toFixed(1)
       const color = wpingColor(best)
       const label = best == null ? '-- ms' : best + ' ms'
+      const name = r.liveName || r.city
       return (
         `<g><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" opacity="0.85"/>` +
         `<text x="${cx}" y="${+cy + 24}" text-anchor="middle" font-size="14" fill="currentColor">${label}</text>` +
-        `<title>${esc(r.city)}: ${label}</title></g>`
+        `<title>${esc(name)}: ${label}</title></g>`
       )
     })
     .join('')
@@ -2052,7 +2072,7 @@ function renderWorldPingTable(results) {
     rows
       .map(
         (r) =>
-          `<tr><td>${esc(r.city)}</td>` +
+          `<tr><td>${esc(r.liveName || r.city)}</td>` +
           (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
@@ -2074,22 +2094,51 @@ function renderWorldPing() {
     `<h4 class="wping-sec" data-i18n-key="wping.detailTitle">${t('wping.detailTitle')}</h4>` +
     `<div id="wpingTable"></div></div>`
   $('#wpingGo').addEventListener('click', runWorldPing)
-  const empty = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
+  const empty = NEXTDNS_POPS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
   renderWorldPingMap(empty)
   renderWorldPingTable(empty)
 }
 
-async function wpingProbe(url) {
+async function wpingProbe(host) {
+  // Ping one specific NextDNS PoP via its /info endpoint
+  // (same technique as ping.nextdns.io). Returns { ms, locationName }.
   const t0 = performance.now()
   try {
-    await fetch(url + '?t=' + Date.now(), {
-      mode: 'no-cors',
-      cache: 'no-store',
-      signal: timeoutSignal(10000),
-    })
-    return Math.round(performance.now() - t0)
+    const ctrl = new AbortController()
+    const to = setTimeout(() => ctrl.abort(), 15000)
+    const r = await fetch('https://ipv4-' + host + '/info', { cache: 'no-store', signal: ctrl.signal })
+    clearTimeout(to)
+    if (!r.ok) return null
+    const j = await r.json().catch(() => null)
+    return { ms: Math.round(performance.now() - t0), locationName: (j && j.locationName) || null }
   } catch (e) {
     return null
+  }
+}
+
+// Nearby PoPs straight from NextDNS (dynamic, always fresh). Merged with the
+// curated worldwide list; coordinates resolved from NEXTDNS_POPS when known.
+async function wpingNearbyPops() {
+  try {
+    const r = await fetch('https://dns.nextdns.io/servers', { cache: 'no-store' })
+    const list = await r.json()
+    if (!Array.isArray(list)) return []
+    const known = new Map(NEXTDNS_POPS.map((p) => [p.host, p]))
+    return list
+      .filter((s) => s && s.hostname && !known.has(s.hostname))
+      .map((s) => {
+        const code = s.hostname.split('.')[0].split('-').slice(1, -1).join('-')
+        const ref = [...known.values()].find((p) => p.host.includes('-' + code + '-'))
+        return {
+          host: s.hostname,
+          city: ref ? ref.city : code.toUpperCase(),
+          lat: ref ? ref.lat : null,
+          lon: ref ? ref.lon : null,
+          dynamic: true,
+        }
+      })
+  } catch (e) {
+    return []
   }
 }
 
@@ -2107,7 +2156,11 @@ async function runWorldPing() {
   // Nearest-first: get the visitor's approximate location from the edge,
   // sort servers by haversine distance, then ping strictly sequentially
   // (parallel probes skew each other's timings).
-  let results = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
+  let results = NEXTDNS_POPS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
+  for (const d of await wpingNearbyPops()) {
+    if (!results.some((r) => r.host === d.host))
+      results.push({ ...d, values: [], min: null, avg: null, max: null, distKm: null })
+  }
   try {
     const r = await fetch('/api/conn', { cache: 'no-store' })
     const j = await r.json()
@@ -2128,7 +2181,9 @@ async function runWorldPing() {
   tick()
   for (const r of results) {
     for (let i = 0; i < 3; i++) {
-      r.values.push(await wpingProbe('https://' + r.host + '/'))
+      const probe = await wpingProbe(r.host)
+      r.values.push(probe ? probe.ms : null)
+      if (probe && probe.locationName && !r.liveName) r.liveName = probe.locationName
       const vals = r.values.filter((v) => v != null)
       r.min = vals.length ? Math.min(...vals) : null
       done++

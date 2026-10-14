@@ -8,10 +8,13 @@ Asia/Saigon (GMT+7).
 ## 2026-10-14 21:15 — Phase 13: World Ping Test + manual Ping
 
 - **World Ping Test** (meter.net-style) in the Ping tab: the browser pings
-  15 regional S3 endpoints worldwide (3 probes each, parallel), results
-  plotted on an embedded SVG world map (green <100 ms, amber 100–250 ms,
-  red >250 ms) plus a detailed table sorted by fastest: Location | min |
-  avg | max | values. Live marker updates as probes complete.
+  33 verified NextDNS PoPs worldwide via each PoP's `/info` endpoint
+  (same technique as ping.nextdns.io; 3 probes each, strictly sequential,
+  nearest-first by geo distance), results plotted on an embedded SVG world
+  map (green <100 ms, amber 100–250 ms, red >250 ms) plus a detailed table
+  sorted by fastest: Location | Distance | min | avg | max | values.
+  Nearby PoPs are also discovered live via `dns.nextdns.io/servers`.
+  Live marker updates as probes complete.
 - **Ping tab is now manual-only** — the NextDNS POP latency test no longer
   auto-starts on tab open; it runs on button click.
 - Full VI/EN i18n (13 keys × 2).
