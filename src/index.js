@@ -275,6 +275,23 @@ export default {
       })
     }
 
+    if (url.pathname === '/api/vietcdn-ipinfo') {
+      // Proxy VietCDN's IP info (their endpoint has no CORS headers).
+      // Returns { status, country, countryCode, city, isp, as, query }.
+      try {
+        const r = await fetch('https://vietcdn.net/index.php?action=ipinfo', {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          cf: { cacheTtl: 0 },
+        })
+        const j = await r.json()
+        return Response.json(j, {
+          headers: { 'Access-Control-Allow-Origin': '*' },
+        })
+      } catch (e) {
+        return Response.json({ status: 'error' }, { status: 502 })
+      }
+    }
+
     if (url.pathname === '/api/conn') {
       // Connection diagnostics for the QUIC/TLS tools: what the edge saw.
       // No KV, no secrets. httpProtocol is "h3"/"HTTP/3" when the client

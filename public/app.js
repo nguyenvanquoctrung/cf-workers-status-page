@@ -93,6 +93,8 @@ en: {
 'conn.network': 'Your network',
 'conn.ip': 'Your IP address',
 'conn.you': 'You',
+'ipinfo.loading': 'Getting IP info\u2026',
+'ipinfo.failed': 'Could not get IP info',
 'speedtest.detail.start': 'Start detailed test',
 'speedtest.detail.stop': 'Stop',
 'speedtest.closest': '📍 Closest server: <strong>{name}</strong>',
@@ -293,6 +295,8 @@ vi: {
 'conn.network': 'Nhà mạng của bạn',
 'conn.ip': 'Địa chỉ IP của bạn',
 'conn.you': 'Bạn',
+'ipinfo.loading': 'Đang lấy thông tin IP\u2026',
+'ipinfo.failed': 'Không lấy được thông tin IP',
 'speedtest.detail.start': 'Bắt đầu đo chi tiết',
 'speedtest.detail.stop': 'Dừng',
 'speedtest.closest': '📍 Máy chủ gần nhất: <strong>{name}</strong>',
@@ -1258,6 +1262,39 @@ const COLO_MAP = {
   JNB: { city: 'Johannesburg', country: 'South Africa', lat: -26.2, lon: 28.05 },
 }
 
+// VietCDN-style IP info header: masked IP + location pill + ASN pill.
+// Data proxied through /api/vietcdn-ipinfo (their endpoint lacks CORS).
+function maskIp(ip) {
+  if (!ip) return '--'
+  if (ip.includes(':')) {
+    const parts = ip.split(':').filter(Boolean)
+    return parts.slice(0, 4).join(':') + ':****' + ':****'.repeat(Math.max(0, 8 - parts.slice(0, 4).length - 1))
+  }
+  const p = ip.split('.')
+  return p.length === 4 ? `${p[0]}.${p[1]}.***.***` : ip
+}
+async function renderIpInfo() {
+  const el = $('#ipInfo')
+  if (!el || el.dataset.done) return
+  el.dataset.done = '1'
+  el.innerHTML = `<div class="ipinfo-ip">${t('ipinfo.loading')}</div>`
+  try {
+    const r = await fetch('/api/vietcdn-ipinfo', { cache: 'no-store' })
+    const j = await r.json()
+    if (j.status !== 'success' || !j.query) throw new Error('bad')
+    const cc = (j.countryCode || '').toLowerCase()
+    const flag = cc ? `<img src="https://flagcdn.com/24x18/${cc}.png" alt="" width="24" height="18"> ` : ''
+    el.innerHTML =
+      `<div class="ipinfo-ip">${esc(maskIp(j.query))}</div>` +
+      `<div class="ipinfo-pills">` +
+      `<span class="ipinfo-pill">${flag}${esc([j.city, j.country].filter(Boolean).join(', '))}</span>` +
+      `<span class="ipinfo-pill">${esc(j.as || j.isp || '')}</span>` +
+      `</div>`
+  } catch (e) {
+    el.innerHTML = `<div class="ipinfo-ip" style="font-size:15px">${t('ipinfo.failed')}</div>`
+  }
+}
+
 async function renderConnInfo() {
   const el = $('#connInfo')
   if (!el || el.dataset.done) return
@@ -1384,6 +1421,7 @@ function renderSpeedtest() {
   $('#speedtest').innerHTML =
     `<div class="st-head"><h2 data-i18n-key="speedtest.title">${t('speedtest.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
+    `<div id="ipInfo" class="ipinfo"></div>` +
     `<div class="st-detail">` +
     `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
@@ -1394,6 +1432,7 @@ function renderSpeedtest() {
     `<span class="st-status" id="stDetailStatus"></span></div></div>` +
     `<div id="connInfo" class="conn-card" hidden></div>`
   $('#stDetailStart').addEventListener('click', runDetailedTest)
+  renderIpInfo()
   $('#stDetailStop').addEventListener('click', () => {
     ST2.stop = true
   })

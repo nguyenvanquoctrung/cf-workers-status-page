@@ -554,3 +554,9 @@ a:hover { text-decoration: underline; }
 .conn-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
 .conn-label { color: var(--muted); min-width: 150px; }
 .conn-val { font-weight: 600; word-break: break-all; }
+/* VietCDN-style IP info header */
+.ipinfo { background: var(--bg-soft, #eef4ff); border-radius: 12px; padding: 16px 18px; margin: 4px 0 18px; text-align: center; }
+.ipinfo-ip { font-size: 24px; font-weight: 700; color: var(--primary, #1d4ed8); letter-spacing: .5px; }
+.ipinfo-pills { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+.ipinfo-pill { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 500; }
+.ipinfo-pill img { border-radius: 2px; }
