@@ -1920,7 +1920,7 @@ async function measureNextdnsPops() {
       hostname: p.hostname,
       ok: !!probe,
       ms: probe ? probe.ms : null,
-      name: (probe && probe.locationName) || p.hostname,
+      name: popShort(p.hostname),
     })
     tick(results.length, total)
   }
@@ -2028,7 +2028,7 @@ function renderWorldPingMap(results) {
         cy = y(r.lat).toFixed(1)
       const color = wpingColor(best)
       const label = best == null ? '-- ms' : best + ' ms'
-      const name = r.liveName || r.city
+      const name = popShort(r.host)
       return (
         `<g><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" opacity="0.85"/>` +
         `<text x="${cx}" y="${+cy + 24}" text-anchor="middle" font-size="14" fill="currentColor">${label}</text>` +
@@ -2065,7 +2065,7 @@ function renderWorldPingTable(results) {
     rows
       .map(
         (r) =>
-          `<tr><td>${esc(r.liveName || r.city)}</td>` +
+          `<tr><td>${esc(popShort(r.host))}</td>` +
           (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
@@ -2090,6 +2090,12 @@ function renderWorldPing() {
   const empty = NEXTDNS_POPS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
   renderWorldPingMap(empty)
   renderWorldPingTable(empty)
+}
+
+// Short PoP name exactly like ping.nextdns.io:
+// 'lightnode-sgn-1.edge.nextdns.io' -> 'lightnode-sgn'
+function popShort(host) {
+  return String(host || '').split('.')[0].replace(/-\d+$/, '')
 }
 
 async function wpingProbe(host) {
@@ -2146,7 +2152,6 @@ async function runWorldPing() {
     for (let i = 0; i < 3; i++) {
       const probe = await wpingProbe(r.host)
       r.values.push(probe ? probe.ms : null)
-      if (probe && probe.locationName && !r.liveName) r.liveName = probe.locationName
       const vals = r.values.filter((v) => v != null)
       r.min = vals.length ? Math.min(...vals) : null
       done++
