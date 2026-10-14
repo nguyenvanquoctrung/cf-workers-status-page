@@ -98,6 +98,15 @@ npm run deploy
   in `wrangler.toml` to check less often.
 - Max ~25 monitors with Slack notifications (Cloudflare subrequest limit).
 
+## Credits
+
+- Original project: [eidam/cf-workers-status-page](https://github.com/eidam/cf-workers-status-page)
+  (via [yue374/cf-workers-status-page](https://github.com/yue374/cf-workers-status-page),
+  which this repository was forked from). The git history was restarted in
+  October 2026 from the full rewrite, but the idea and the early work belong
+  to the upstream authors — thank you.
+- UI/UX design language inspired by [lyc8503/UptimeFlare](https://github.com/lyc8503/UptimeFlare).
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
