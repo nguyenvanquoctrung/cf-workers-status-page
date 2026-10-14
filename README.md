@@ -16,7 +16,7 @@ dependency-free static page in the visual language of
   hover tooltip, gaps on failed checks); per-monitor **latency threshold
   alerts** — an orange "High latency" pill plus a dashed threshold line when
   the recent median exceeds the configured `latencyThresholdMs`
-- **"Latency from your browser"**: one click measures live RTT from the
+- **Ping tab** (`#ping`): one click measures live RTT from the
   visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first
 - **Speedtest tab** (`#speedtest`): self-hosted ping/download/upload test
   (vietcdn.net-style) against the Cloudflare edge — 20&nbsp;MB random test

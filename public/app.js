@@ -7,7 +7,7 @@ let CONFIG = null
 let LOCATIONS = {}
 let STATE = { monitors: {}, lastUpdate: {} }
 let FILTER = ''
-let VIEW = 'status' // 'status' | 'incidents' | 'speedtest'
+let VIEW = 'status' // 'status' | 'incidents' | 'ping' | 'speedtest' | 'dns'
 let INC_MONTH = null // 'YYYY-MM' for the incidents view; null = current month
 let INC_MONITOR = '' // monitor id filter for the incidents view
 const OPENED_AT = Date.now()
@@ -25,7 +25,8 @@ function expandedGroups() {
     const saved = JSON.parse(localStorage.getItem('expandedGroups') || 'null')
     if (Array.isArray(saved)) return new Set(saved)
   } catch (e) {}
-  return null // null = default: everything collapsed (click a group to expand)
+  // default: Vietnam expanded, International collapsed (click a group to toggle)
+  return new Set(['Vietnam'])
 }
 function saveExpandedGroups(set) {
   try {
@@ -1074,6 +1075,7 @@ function setView(v) {
   VIEW = v
   $('#statusView').hidden = v !== 'status'
   $('#incidentsView').hidden = v !== 'incidents'
+  $('#pingView').hidden = v !== 'ping'
   $('#speedtestView').hidden = v !== 'speedtest'
   $('#dnsView').hidden = v !== 'dns'
   document.querySelectorAll('.nav a').forEach((a) => {
@@ -1082,12 +1084,15 @@ function setView(v) {
   document.title =
     (v === 'incidents'
       ? 'Incidents — '
-      : v === 'speedtest'
-        ? 'Speedtest — '
-        : v === 'dns'
-          ? 'DNS Tools — '
-          : '') + CONFIG.settings.title
+      : v === 'ping'
+        ? 'Ping — '
+        : v === 'speedtest'
+          ? 'Speedtest — '
+          : v === 'dns'
+            ? 'DNS Tools — '
+            : '') + CONFIG.settings.title
   if (v === 'incidents') renderIncidents()
+  if (v === 'ping') renderBrowserLatency()
   if (v === 'speedtest') renderSpeedtest()
   if (v === 'dns') renderDnsTools()
 }
@@ -1288,10 +1293,12 @@ function timeoutSignal(ms) {
 let BLAT_RUNNING = false
 
 function renderBrowserLatency() {
+  // Never wipe an in-progress measurement or existing results on re-render.
+  if (BLAT_RUNNING || document.getElementById('blatBtn')) return
   $('#browserLatency').innerHTML =
     `<div class="blat">` +
-    `<h3 class="blat-title">Latency from your browser</h3>` +
-    `<p class="blat-sub">Measured live from your device to each endpoint — unlike the charts above, which are measured from the Cloudflare server.</p>` +
+    `<h3 class="blat-title">Ping</h3>` +
+    `<p class="blat-sub">Measures latency from your browser to each monitored endpoint.</p>` +
     `<button class="btn" id="blatBtn">Measure now</button>` +
     `<div class="blat-progress" id="blatProgress" hidden></div>` +
     `<div class="blat-results" id="blatResults"></div>` +
@@ -2701,15 +2708,16 @@ async function init() {
 
   await refreshState()
   render()
-  renderBrowserLatency()
   const viewFromHash = () =>
     location.hash === '#incidents'
       ? 'incidents'
-      : location.hash === '#speedtest'
-        ? 'speedtest'
-        : location.hash === '#dns'
-          ? 'dns'
-          : 'status'
+      : location.hash === '#ping'
+        ? 'ping'
+        : location.hash === '#speedtest'
+          ? 'speedtest'
+          : location.hash === '#dns'
+            ? 'dns'
+            : 'status'
   setView(viewFromHash())
   window.addEventListener('hashchange', () => setView(viewFromHash()))
   setInterval(refreshState, 30000)

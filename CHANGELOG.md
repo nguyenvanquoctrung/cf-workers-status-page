@@ -5,6 +5,15 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Ping tab + Vietnam-expanded groups
+
+- **"Latency from your browser" card became a dedicated Ping tab**
+  (`#ping`, nav: Status | Incidents | Ping | Speedtest | DNS Tools):
+  same one-click browser-to-POP latency measurement, now with its own view
+  instead of sitting under the monitor groups.
+- **Monitor groups default: Vietnam expanded, International collapsed**
+  (was: all collapsed). localStorage still remembers manual toggles.
+
 ## 2026-10-14 — Phase 9c: leak test full info parity (+ DNSSEC probe fix)
 
 - **DNSSEC probe fixed (was broken, now works):** the 9b `<link
