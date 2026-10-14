@@ -28,12 +28,12 @@ en: {
 'nav.speedtest': 'Speedtest',
 'nav.dns': 'Network Tools',
 'nav.setup': 'Setup',
-'search.placeholder': "Tap '/' to search",
 'lang.toggle': 'Switch language',
 'theme.toggle': 'Theme: {mode} — click to change',
 'theme.auto': 'Auto',
 'theme.light': 'Light',
 'theme.dark': 'Dark',
+'theme.workbench': 'Workbench',
 'doc.title': 'Status Page',
 'footer.powered': 'Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, made with ❤ by <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a>',
 // ---- hero / status ----
@@ -266,6 +266,7 @@ vi: {
 'theme.auto': 'Tự động',
 'theme.light': 'Sáng',
 'theme.dark': 'Tối',
+'theme.workbench': 'Workbench',
 'doc.title': 'Trang trạng thái',
 'footer.powered': 'Vận hành bởi <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, tạo với ❤ bởi <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Tạo trang Status của bạn</a>',
 // ---- hero / status ----
@@ -639,7 +640,7 @@ const tabler = (paths, size, color, cls) =>
 function themeMode() {
   try {
     const v = localStorage.getItem('theme')
-    return v === 'light' || v === 'dark' || v === 'auto' ? v : 'auto'
+    return v === 'light' || v === 'dark' || v === 'workbench' || v === 'auto' ? v : 'auto'
   } catch (e) {
     return 'auto'
   }
@@ -663,13 +664,15 @@ function applyTheme() {
         ? `${t('theme.auto')} (${eff === 'dark' ? t('theme.dark') : t('theme.light')})`
         : mode === 'dark'
           ? t('theme.dark')
-          : t('theme.light')
+          : mode === 'workbench'
+            ? t('theme.workbench')
+            : t('theme.light')
     btn.title = t('theme.toggle', { mode: modeName })
     btn.setAttribute('aria-label', btn.title)
   }
 }
 function cycleTheme() {
-  const order = ['auto', 'light', 'dark']
+  const order = ['auto', 'light', 'dark', 'workbench']
   const next = order[(order.indexOf(themeMode()) + 1) % order.length]
   try {
     localStorage.setItem('theme', next)

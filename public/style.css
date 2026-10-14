@@ -601,3 +601,82 @@ a:hover { text-decoration: underline; }
   .filter-wrap { display: none; }
   .nav-toggle { display: inline-flex; }
 }
+
+/* ---- Workbench theme (KV TRIMUI workbench aesthetic) ---- */
+[data-theme="workbench"] {
+  --bg: #ecebe5;
+  --card-bg: #ffffff;
+  --card-border: #dedcd5;
+  --divider: #dedcd5;
+  --text: #3f3e3a;
+  --muted: #78756d;
+  --shadow: 0 1px 2px rgba(63,62,58,.06);
+  --green: #047857;
+  --red: #df484a;
+  --red-dark: #b91c1c;
+  --orange: #ff8533;
+  --chart-line: #78756d;
+  --bar-nodata: #f0eee8;
+  --input-bg: #f6f5f0;
+  --input-border: #dedcd5;
+  --link: #ff8533;
+  --tooltip-bg: #3f3e3a;
+  --tooltip-text: #f6f5f0;
+  --group-open-bg: #f6f5f0;
+  --group-hover-bg: #f6f5f0;
+}
+/* Square corners everywhere */
+[data-theme="workbench"] .monitors-card,
+[data-theme="workbench"] .dns-card,
+[data-theme="workbench"] .conn-card,
+[data-theme="workbench"] .btn,
+[data-theme="workbench"] input,
+[data-theme="workbench"] select,
+[data-theme="workbench"] .search-dropdown,
+[data-theme="workbench"] .pill,
+[data-theme="workbench"] .leak-pill,
+[data-theme="workbench"] .modal,
+[data-theme="workbench"] .ipinfo-pill,
+[data-theme="workbench"] .setup-step-n {
+  border-radius: 0 !important;
+}
+/* Monospace for headings, nav, labels */
+[data-theme="workbench"] .site-title,
+[data-theme="workbench"] .nav a,
+[data-theme="workbench"] h1,
+[data-theme="workbench"] h2,
+[data-theme="workbench"] h3,
+[data-theme="workbench"] .blat-title,
+[data-theme="workbench"] .hero-title,
+[data-theme="workbench"] .monitor-name,
+[data-theme="workbench"] .search-head {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+[data-theme="workbench"] h1,
+[data-theme="workbench"] h2,
+[data-theme="workbench"] .hero-title {
+  font-weight: 900;
+}
+/* Orange accent */
+[data-theme="workbench"] .btn {
+  background: #ff8533;
+  border-color: #ff8533;
+  color: #fff;
+}
+[data-theme="workbench"] .btn:hover { background: #f07422; border-color: #f07422; }
+[data-theme="workbench"] .btn:disabled { background: #c8c4b8; border-color: #c8c4b8; }
+[data-theme="workbench"] .nav a.active { background: #3f3e3a; color: #fff; }
+[data-theme="workbench"] ::selection { background: #ff8533; color: #fff; }
+/* Header */
+[data-theme="workbench"] .site-header {
+  background: rgba(246,245,240,.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #dedcd5;
+}
+/* Thicker card borders */
+[data-theme="workbench"] .monitors-card,
+[data-theme="workbench"] .dns-card {
+  border-width: 2px;
+}
