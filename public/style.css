@@ -339,6 +339,26 @@ a:hover { text-decoration: underline; }
 .btn:disabled:hover { background: var(--input-bg); }
 .inc-note { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
 
+/* Phase 7: browser-based latency measurement */
+.blat { padding: 20px 24px; }
+.blat-title { margin: 0 0 6px; font-size: 1.05rem; font-weight: 600; }
+.blat-sub { margin: 0 0 14px; color: var(--muted); font-size: 0.85rem; }
+.blat-progress { margin: 12px 0 4px; color: var(--muted); font-size: 0.85rem; }
+.blat-results { margin-top: 12px; }
+.blat-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 7px 2px; border-top: 1px solid var(--divider); font-size: 0.92rem;
+}
+.blat-row:first-child { border-top: none; }
+.blat-name { color: var(--text); }
+.blat-fastest .blat-name { font-weight: 700; }
+.blat-ms { color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.blat-server { color: var(--muted); font-size: 0.78rem; margin-left: 8px; }
+.blat-failed .blat-ms { color: var(--muted); font-style: italic; }
+@media (max-width: 640px) {
+  .blat { padding: 16px; }
+}
+
 /* ---- maintenance alerts (UptimeFlare MaintenanceAlert style) ---- */
 :root {
   --maint-bg: #fff9db;

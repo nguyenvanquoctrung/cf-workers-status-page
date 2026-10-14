@@ -904,6 +904,114 @@ function render() {
   renderMonitors()
 }
 
+// ---- Phase 7: browser-based latency measurement (ping.nextdns.io-style).
+// Measures RTT from the VISITOR's browser to each endpoint via /info
+// (which sends Access-Control-Allow-Origin: *; /resolve does not).
+// Display-only and on-demand — no Worker/KV involvement.
+
+function infoUrlFor(monitor) {
+  try {
+    const u = new URL(monitor.url)
+    if (!/^https?:$/.test(u.protocol)) return null
+    return `${u.protocol}//${u.host}/info`
+  } catch {
+    return null
+  }
+}
+
+function timeoutSignal(ms) {
+  if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms)
+  const c = new AbortController()
+  setTimeout(() => c.abort(), ms)
+  return c.signal
+}
+
+let BLAT_RUNNING = false
+
+function renderBrowserLatency() {
+  $('#browserLatency').innerHTML =
+    `<div class="blat">` +
+    `<h3 class="blat-title">Latency from your browser</h3>` +
+    `<p class="blat-sub">Measured live from your device to each endpoint — unlike the charts above, which are measured from the Cloudflare server.</p>` +
+    `<button class="btn" id="blatBtn">Measure now</button>` +
+    `<div class="blat-progress" id="blatProgress" hidden></div>` +
+    `<div class="blat-results" id="blatResults"></div>` +
+    `</div>`
+  $('#blatBtn').addEventListener('click', measureBrowserLatency)
+}
+
+async function measureOne(monitor) {
+  const url = infoUrlFor(monitor)
+  if (!url) return { monitor, ok: false }
+  const t0 = performance.now()
+  try {
+    const res = await fetch(url, { cache: 'no-store', signal: timeoutSignal(5000) })
+    const ms = Math.round(performance.now() - t0)
+    let serverMs = null
+    try {
+      const j = await res.json()
+      const rtt = Number(j && j.rtt)
+      if (Number.isFinite(rtt)) serverMs = Math.round(rtt / 1000)
+    } catch {
+      /* server-reported number is optional */
+    }
+    if (!res.ok) return { monitor, ok: false }
+    return { monitor, ok: true, ms, serverMs }
+  } catch {
+    return { monitor, ok: false }
+  }
+}
+
+async function measureBrowserLatency() {
+  if (BLAT_RUNNING) return
+  BLAT_RUNNING = true
+  const btn = $('#blatBtn')
+  const prog = $('#blatProgress')
+  const out = $('#blatResults')
+  btn.disabled = true
+  btn.textContent = 'Measuring…'
+  prog.hidden = false
+  out.innerHTML = ''
+  const monitors = CONFIG.monitors.filter((m) => infoUrlFor(m))
+  const total = monitors.length
+  let done = 0
+  prog.textContent = `Measuring 0/${total}…`
+  const results = await Promise.all(
+    monitors.map((m) =>
+      measureOne(m).then((r) => {
+        done++
+        prog.textContent = `Measuring ${done}/${total}…`
+        return r
+      }),
+    ),
+  )
+  const okRows = results.filter((r) => r.ok).sort((a, b) => a.ms - b.ms)
+  const failRows = results.filter((r) => !r.ok)
+  out.innerHTML =
+    okRows
+      .map(
+        (r, i) =>
+          `<div class="blat-row${i === 0 ? ' blat-fastest' : ''}">` +
+          `<span class="blat-name">${i === 0 ? '■ ' : ''}${esc(r.monitor.name)}</span>` +
+          `<span class="blat-ms">${r.ms} ms` +
+          (r.serverMs != null ? ` <span class="blat-server">server: ${r.serverMs} ms</span>` : '') +
+          `</span></div>`,
+      )
+      .join('') +
+    failRows
+      .map(
+        (r) =>
+          `<div class="blat-row blat-failed">` +
+          `<span class="blat-name">${esc(r.monitor.name)}</span>` +
+          `<span class="blat-ms">failed</span></div>`,
+      )
+      .join('')
+  prog.hidden = true
+  btn.disabled = false
+  btn.textContent = 'Measure again'
+  BLAT_RUNNING = false
+}
+
 async function refreshState() {
   try {
     const res = await fetch('api/state', { cache: 'no-store' })
@@ -982,6 +1090,7 @@ async function init() {
 
   await refreshState()
   render()
+  renderBrowserLatency()
   setView(location.hash === '#incidents' ? 'incidents' : 'status')
   setInterval(refreshState, 30000)
   setInterval(tickHero, 1000)
