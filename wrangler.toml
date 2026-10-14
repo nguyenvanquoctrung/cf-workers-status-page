@@ -11,6 +11,11 @@ workers_dev = true
 [triggers]
 crons = ["*/5 * * * *"]
 
+# Phase 1: pin fetch handler (incl. /api/check) to Singapore colo.
+# NOTE: placement does NOT affect the cron scheduled handler.
+[placement]
+region = "aws:ap-southeast-1"
+
 [[kv_namespaces]]
 binding = "KV_STATUS_PAGE"
 id = "KV_NAMESPACE_ID_PLACEHOLDER"

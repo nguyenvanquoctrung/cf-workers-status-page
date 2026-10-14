@@ -1,0 +1,24 @@
+name: Run monitor checks
+
+# Triggers the worker's /api/check endpoint every 5 minutes.
+# The worker is placement-pinned to Singapore, so checks run from
+# the SIN colo (low latency to VN/SEA monitors) instead of a random
+# global colo like the built-in Workers cron would.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger monitor checks
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CHECK_SECRET }}" \
+            --max-time 60 \
+            https://nextdns.jeremienguyen.workers.dev/api/check)
+          echo "HTTP $code"
+          [ "$code" = "202" ] || { echo "check trigger failed"; exit 1; }

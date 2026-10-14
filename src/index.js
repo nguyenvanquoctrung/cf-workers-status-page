@@ -298,6 +298,18 @@ export default {
       })
     }
 
+    if (url.pathname === '/api/check' && request.method === 'POST') {
+      // External trigger (GitHub Actions) so checks run from the placed
+      // colo (Singapore) instead of a random global colo.
+      const secret = env.CHECK_SECRET || ''
+      const auth = request.headers.get('authorization') || ''
+      if (!secret || secret === 'default-gh-action-secret' || auth !== `Bearer ${secret}`) {
+        return new Response(secret ? 'Unauthorized' : 'Check endpoint not configured', { status: secret ? 401 : 503 })
+      }
+      ctx.waitUntil(processChecks(env, ctx))
+      return new Response('Accepted', { status: 202 })
+    }
+
     if (url.pathname === '/speedtest/upload' && request.method === 'POST') {
       // Speedtest upload probe: read and discard the body, report bytes.
       // No KV writes; used by the Speedtest tab's upload measurement.
