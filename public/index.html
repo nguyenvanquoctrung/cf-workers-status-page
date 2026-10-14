@@ -29,7 +29,7 @@
       </div>
       <div class="header-actions">
         <nav class="nav" aria-label="Views">
-          <a data-view="status" class="active">Status</a><a data-view="incidents">Incidents</a><a data-view="ping">Ping</a><a data-view="speedtest">Speedtest</a><a data-view="dns">DNS Tools</a>
+          <a data-view="status" class="active">Status</a><a data-view="incidents">Incidents</a><a data-view="ping">Ping</a><a data-view="speedtest">Speedtest</a><a data-view="dns" data-i18n-key="nav.dns">DNS Tools</a><a data-view="setup" data-i18n-key="nav.setup">Setup</a>
         </nav>
         <div class="filter-wrap">
           <input id="filterInput" type="text" placeholder="Tap '/' to search" autocomplete="off" />
@@ -73,6 +73,11 @@
     <div id="dnsView" hidden>
       <div class="monitors-card">
         <div id="dnsTools"></div>
+      </div>
+    </div>
+    <div id="setupView" hidden>
+      <div class="monitors-card">
+        <div id="setupTools"></div>
       </div>
     </div>
 

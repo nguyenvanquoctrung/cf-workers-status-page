@@ -27,6 +27,7 @@ en: {
 'nav.ping': 'Ping',
 'nav.speedtest': 'Speedtest',
 'nav.dns': 'Network Tools',
+'nav.setup': 'Setup',
 'search.placeholder': "Tap '/' to search",
 'lang.toggle': 'Switch language',
 'theme.toggle': 'Theme: {mode} — click to change',
@@ -197,6 +198,24 @@ en: {
 'webrtc.mdnsNote': 'Modern browsers mask local IPs as .local names \u2014 that is expected.',
 'webrtc.none': 'No ICE candidates gathered.',
 'webrtc.noRtc': 'WebRTC is not available in this browser.',
+'setup.title': 'Set up DNS',
+'setup.sub': 'Generate a configuration profile for Apple devices or follow the guides below.',
+'setup.endpoint': 'DNS-over-HTTPS endpoint',
+'setup.endpointPh': 'https://dns.example.com/dns-query',
+'setup.generate': 'Download profile (.mobileconfig)',
+'setup.copyDoh': 'Copy DoH URL',
+'setup.copied': 'Copied!',
+'setup.ios': 'iOS / iPadOS',
+'setup.macos': 'macOS',
+'setup.iosSteps': 'Download the profile|Open Settings|Tap Profile Downloaded|Tap Install and follow the instructions',
+'setup.macosSteps': 'Download the profile|Open the .mobileconfig file|Go to System Settings > General > Device Management|Double-click the profile under Downloaded|Review and click Install',
+'setup.windows': 'Windows 11',
+'setup.windowsSteps': 'Settings > Network > Wi-Fi/Ethernet > DNS server assignment > Edit|Set to Manual, enable IPv4|Enter preferred DNS, set Preferred DNS encryption to Encrypted only (DNS over HTTPS)|Save',
+'setup.android': 'Android 9+',
+'setup.androidSteps': 'Settings > Network > Private DNS|Select Private DNS provider hostname|Enter the hostname (without https://)|Save',
+'setup.router': 'Router (OpenWrt)',
+'setup.routerSteps': 'Install https-dns-proxy: opkg update && opkg install https-dns-proxy|Set the DoH URL in the config|Restart the service',
+'setup.note': 'The profile only changes DNS settings. Remove it anytime in Settings.',
 // ---- world ping ----
 'wping.title': 'World Ping Test',
 'wping.powered': 'Measures the response time from your browser to NextDNS PoPs around the world (via each PoP\u2019s /info endpoint, like ping.nextdns.io). Values under 100 ms are good, over 250 ms are poor.',
@@ -231,6 +250,7 @@ vi: {
 'nav.ping': 'Ping',
 'nav.speedtest': 'Đo tốc độ',
 'nav.dns': 'Công cụ mạng',
+'nav.setup': 'Cài đặt',
 'search.placeholder': "Nhấn '/' để tìm kiếm",
 'lang.toggle': 'Chuyển ngôn ngữ',
 'theme.toggle': 'Giao diện: {mode} — nhấn để đổi',
@@ -401,6 +421,24 @@ vi: {
 'webrtc.mdnsNote': 'Trình duyệt hiện đại che IP nội bộ thành tên .local \u2014 đó là bình thường.',
 'webrtc.none': 'Không thu thập được ICE candidate nào.',
 'webrtc.noRtc': 'Trình duyệt này không hỗ trợ WebRTC.',
+'setup.title': 'Cài đặt DNS',
+'setup.sub': 'Tạo profile cấu hình cho thiết bị Apple hoặc làm theo hướng dẫn bên dưới.',
+'setup.endpoint': 'Endpoint DNS-over-HTTPS',
+'setup.endpointPh': 'https://dns.example.com/dns-query',
+'setup.generate': 'Tải profile (.mobileconfig)',
+'setup.copyDoh': 'Chép URL DoH',
+'setup.copied': 'Đã chép!',
+'setup.ios': 'iOS / iPadOS',
+'setup.macos': 'macOS',
+'setup.iosSteps': 'Tải profile cấu hình|Mở Cài đặt|Chạm Hồ sơ đã tải về|Chạm Cài đặt và làm theo hướng dẫn',
+'setup.macosSteps': 'Tải profile cấu hình|Mở file .mobileconfig|Vào Cài đặt hệ thống > Cài đặt chung > Quản lý thiết bị|Nháy đúp profile trong mục Đã tải về|Xem lại và bấm Cài đặt',
+'setup.windows': 'Windows 11',
+'setup.windowsSteps': 'Cài đặt > Mạng > Wi-Fi/Ethernet > Gán máy chủ DNS > Sửa|Chuyển sang Thủ công, bật IPv4|Nhập DNS ưu tiên, đặt Mã hóa DNS thành Chỉ mã hóa (DNS over HTTPS)|Lưu',
+'setup.android': 'Android 9+',
+'setup.androidSteps': 'Cài đặt > Mạng > DNS riêng tư|Chọn Tên máy chủ của nhà cung cấp DNS riêng tư|Nhập hostname (không có https://)|Lưu',
+'setup.router': 'Router (OpenWrt)',
+'setup.routerSteps': 'Cài https-dns-proxy: opkg update && opkg install https-dns-proxy|Đặt URL DoH trong config|Khởi động lại dịch vụ',
+'setup.note': 'Profile chỉ đổi cài đặt DNS. Gỡ bất cứ lúc nào trong Cài đặt.',
 // ---- kiểm tra ping toàn cầu ----
 'wping.title': 'Kiểm tra ping toàn cầu',
 'wping.powered': 'Đo thời gian phản hồi từ trình duyệt của bạn tới các PoP NextDNS trên toàn thế giới (qua endpoint /info của từng PoP, như ping.nextdns.io). Dưới 100 ms là tốt, trên 250 ms là kém.',
@@ -1611,6 +1649,7 @@ function setView(v) {
   $('#pingView').hidden = v !== 'ping'
   $('#speedtestView').hidden = v !== 'speedtest'
   $('#dnsView').hidden = v !== 'dns'
+  $('#setupView').hidden = v !== 'setup'
   document.querySelectorAll('.nav a').forEach((a) => {
     a.classList.toggle('active', a.dataset.view === v)
   })
@@ -1623,13 +1662,16 @@ function setView(v) {
           ? t('nav.speedtest') + ' — '
           : v === 'dns'
             ? t('nav.dns') + ' — '
-            : '') + t('doc.title')
+            : v === 'setup'
+              ? t('nav.setup') + ' — '
+              : '') + t('doc.title')
   if (v === 'incidents') renderIncidents()
   if (v === 'ping') {
     renderWorldPing()
   }
   if (v === 'speedtest') renderSpeedtest()
   if (v === 'dns') renderDnsTools()
+  if (v === 'setup') renderSetup()
 }
 
 function monitorCard(monitor, data, ci) {
@@ -2276,6 +2318,119 @@ function renderDnsTools() {
   $('#quicGo').addEventListener('click', runQuicTest)
   $('#tlsGo').addEventListener('click', runTlsInfo)
   $('#webrtcGo').addEventListener('click', runWebrtcTest)
+}
+
+// ---- DNS Setup page (apple.nextdns.io-style) ----
+function uuid4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
+
+function mobileconfigXml(dohUrl, name) {
+  const id = uuid4(), pid = uuid4()
+  const escXml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>HTTPS</string>
+        <key>ServerURL</key>
+        <string>${escXml(dohUrl)}</string>
+      </dict>
+      <key>PayloadDescription</key>
+      <string>Configures DNS over HTTPS</string>
+      <key>PayloadDisplayName</key>
+      <string>DNS over HTTPS</string>
+      <key>PayloadIdentifier</key>
+      <string>com.apple.dnsSettings.managed.${pid}</string>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadUUID</key>
+      <string>${pid}</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+    </dict>
+  </array>
+  <key>PayloadDisplayName</key>
+  <string>${escXml(name || 'DNS')}</string>
+  <key>PayloadIdentifier</key>
+  <string>com.jeremie.dns.${id}</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>${id}</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>`
+}
+
+function downloadMobileconfig() {
+  const input = $('#setupEndpoint')
+  const url = (input && input.value.trim()) || ''
+  if (!url || !/^https:\/\/.+\/dns-query/.test(url)) {
+    if (input) {
+      input.focus()
+      input.style.borderColor = '#dc2626'
+      setTimeout(() => { input.style.borderColor = '' }, 2000)
+    }
+    return
+  }
+  let host = ''
+  try { host = new URL(url).hostname } catch (e) {}
+  const xml = mobileconfigXml(url, host ? `DNS (${host})` : 'DNS')
+  const blob = new Blob([xml], { type: 'application/x-apple-aspen-config' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'dns.mobileconfig'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove() }, 1000)
+}
+
+function renderSetup() {
+  const el = $('#setupTools')
+  if (!el || el.dataset.done) return
+  el.dataset.done = '1'
+  const steps = (key) =>
+    t(key).split('|').map((s, i) => `<li><span class="setup-step-n">${i + 1}</span>${esc(s)}</li>`).join('')
+  const card = (titleKey, stepsKey) =>
+    `<div class="dns-card"><h3 class="blat-title">${t(titleKey)}</h3><ol class="setup-steps">${steps(stepsKey)}</ol></div>`
+  el.innerHTML =
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="setup.title">${t('setup.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="setup.sub">${t('setup.sub')}</p></div>` +
+    `<div class="dns-form">` +
+    `<input id="setupEndpoint" type="url" placeholder="${t('setup.endpointPh')}" autocomplete="off" spellcheck="false" aria-label="${t('setup.endpoint')}" style="flex:1;min-width:200px">` +
+    `<button class="btn" id="setupDl" data-i18n-key="setup.generate">${t('setup.generate')}</button>` +
+    `<button class="btn" id="setupCopy" data-i18n-key="setup.copyDoh">${t('setup.copyDoh')}</button>` +
+    `</div>` +
+    `<p class="dns-note" data-i18n-key="setup.note">${t('setup.note')}</p></div>` +
+    card('setup.ios', 'setup.iosSteps') +
+    card('setup.macos', 'setup.macosSteps') +
+    card('setup.windows', 'setup.windowsSteps') +
+    card('setup.android', 'setup.androidSteps') +
+    card('setup.router', 'setup.routerSteps')
+  $('#setupDl').addEventListener('click', downloadMobileconfig)
+  $('#setupCopy').addEventListener('click', async () => {
+    const input = $('#setupEndpoint')
+    const url = (input && input.value.trim()) || ''
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      const b = $('#setupCopy')
+      const old = b.textContent
+      b.textContent = t('setup.copied')
+      setTimeout(() => { b.textContent = old }, 1500)
+    } catch (e) {}
+  })
 }
 
 let DNS_LOOKUP_RUNNING = false
