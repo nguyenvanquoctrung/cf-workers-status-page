@@ -152,6 +152,15 @@ npm run deploy
   October 2026 from the full rewrite, but the idea and the early work belong
   to the upstream authors — thank you.
 - UI/UX design language inspired by [lyc8503/UptimeFlare](https://github.com/lyc8503/UptimeFlare).
+- **DNS Leak Test & DNS Lookup** powered by [dnscheck.tools](https://dnscheck.tools)
+  ([brianshea2/addr.tools](https://github.com/brianshea2/addr.tools), AGPL-3.0)
+  infrastructure — the leak test mirrors its logic and behavior; thank you for
+  keeping the endpoints CORS-open.
+- **Detailed speedtest** uses [vietcdn.net](https://vietcdn.net)'s 8 test
+  servers and test files, hosted by Real-Debrid — thank you.
+- **Ping tab** inspired by [ping.nextdns.io](https://ping.nextdns.io); the
+  (currently quarantined) NextDNS status check uses the
+  [test.nextdns.io](https://test.nextdns.io) technique — thank you, NextDNS.
 
 ## License
 
