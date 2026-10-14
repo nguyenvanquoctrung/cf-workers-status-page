@@ -1,5 +1,7 @@
 # Cloudflare Workers — Status Page
 
+**English** | [Bản tiếng Việt](README.vi.md)
+
 Monitor your websites/APIs with a fast, serverless status page. Checks run on
 a schedule via Cron Triggers, history lives in KV, and the frontend is a
 dependency-free static page in the visual language of
