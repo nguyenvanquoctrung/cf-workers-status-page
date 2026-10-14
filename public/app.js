@@ -2926,6 +2926,8 @@ function askForMicAndReveal() {
 }
 
 function detectIps() {
+  // Show loading state immediately (drawIps is otherwise only called from addIp).
+  drawIps()
   // Primary: our own edge always knows the user's IP (no third-party dep).
   fetch('/api/conn', { cache: 'no-store' })
     .then((r) => r.json())
