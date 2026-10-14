@@ -5,6 +5,18 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 20:20 — Fixes & polish
+
+- **Latency chart x-axis now 24-hour** ("15", "16"…) instead of AM/PM.
+- **Removed public `/api/trigger`** — anyone could hit it to force a full
+  check cycle and burn the KV write quota; cron is the only trigger now.
+- **Capped `/speedtest/upload` body at 64MB** (413 beyond) so a malicious
+  huge POST can't burn Worker CPU/memory.
+- **Review fixes**: `renderDnsTools` no longer wipes a running leak test on
+  tab switch; chart drops non-finite points instead of NaN-ing; `<html
+  lang="vi">`; logo no longer flashes a broken-image icon; auto-reload skips
+  while the user is filtering.
+
 ## 2026-10-14 19:30–20:15 — Phase 11: Vietnamese/English UI
 
 - **Full VI/EN language switch** (`#langBtn` in header, persists via

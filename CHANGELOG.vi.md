@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 20:20 — Sửa lỗi & tinh chỉnh
+
+- **Trục giờ biểu đồ latency dùng 24 giờ** ("15", "16"…) thay vì AM/PM.
+- **Xóa `/api/trigger` public** — ai cũng gọi được để ép chạy full check,
+  đốt quota KV write; giờ chỉ còn cron kích hoạt.
+- **Giới hạn body `/speedtest/upload` ở 64MB** (quá thì 413) để POST khổng lồ
+  không đốt CPU/memory của Worker.
+- **Fix từ review**: `renderDnsTools` không xóa leak test đang chạy khi
+  chuyển tab; chart bỏ điểm không hợp lệ thay vì NaN; `<html lang="vi">`;
+  logo không nháy icon ảnh vỡ; auto-reload bỏ qua khi user đang lọc.
+
 ## 2026-10-14 19:30–20:15 — Phase 11: Giao diện Việt/Anh
 
 - **Chuyển đổi ngôn ngữ VI/EN đầy đủ** (nút `#langBtn` trên header, lưu qua
