@@ -39,6 +39,16 @@ config.monitors.forEach((m, i) => {
   m.followRedirect = m.followRedirect ?? false
   // linkable defaults to true when unset
   if (m.linkable === undefined) m.linkable = true
+  // latencyThresholdMs is optional; when present it must be a positive number
+  if (m.latencyThresholdMs !== undefined) {
+    if (
+      typeof m.latencyThresholdMs !== 'number' ||
+      !Number.isFinite(m.latencyThresholdMs) ||
+      m.latencyThresholdMs <= 0
+    ) {
+      fail(`monitor "${m.id}" has an invalid "latencyThresholdMs" (must be a positive number)`)
+    }
+  }
   // group is optional; must be a string when present (frontend renders
   // one accordion section per group, in first-appearance order)
   if (m.group !== undefined && typeof m.group !== 'string') {

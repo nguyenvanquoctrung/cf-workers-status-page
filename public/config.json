@@ -24,6 +24,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 500,
       "linkable": true
     },
     {
@@ -35,6 +36,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 250,
       "linkable": true
     },
     {
@@ -46,6 +48,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 200,
       "linkable": true
     },
     {
@@ -57,6 +60,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 300,
       "linkable": true
     },
     {
@@ -68,6 +72,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 250,
       "linkable": true
     },
     {
@@ -79,6 +84,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 250,
       "linkable": true
     },
     {
@@ -90,6 +96,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 400,
       "linkable": true
     },
     {
@@ -101,6 +108,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 200,
       "linkable": true
     },
     {
@@ -112,6 +120,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 200,
       "linkable": true
     },
     {
@@ -123,6 +132,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 300,
       "linkable": true
     },
     {
@@ -134,6 +144,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 250,
       "linkable": true
     },
     {
@@ -145,6 +156,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 250,
       "linkable": true
     },
     {
@@ -156,6 +168,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
+      "latencyThresholdMs": 1000,
       "linkable": true
     }
   ]

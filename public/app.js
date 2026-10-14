@@ -225,6 +225,36 @@ function monitorStatusIcon(monitor, data) {
     : tabler(ALERT_PATHS, '1.25em', 'var(--red-dark)', 'micon')
 }
 
+// Phase 6: latency threshold alerts ("degraded" state). Purely client-side:
+// median of the last 12 ring-buffer points (~2h). Needs >= 3 points; a single
+// spike can't trigger it (median, not mean). Never touches uptime math.
+function latencyMedianMs(data) {
+  const vals = ((data && data.latency) || [])
+    .filter((p) => p && Number.isFinite(p.ms))
+    .slice(-12)
+    .map((p) => p.ms)
+    .sort((a, b) => a - b)
+  if (vals.length < 3) return null
+  const mid = Math.floor(vals.length / 2)
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2
+}
+
+function latencyDegraded(monitor, data) {
+  const t = monitor.latencyThresholdMs
+  if (!Number.isFinite(t) || t <= 0) return false
+  const med = latencyMedianMs(data)
+  return med != null && med > t
+}
+
+function latencyPill(monitor, data) {
+  if (!latencyDegraded(monitor, data)) return ''
+  const med = latencyMedianMs(data)
+  const n = ((data && data.latency) || []).filter((p) => p && Number.isFinite(p.ms)).slice(-12)
+    .length
+  const tip = `Median latency ${Math.round(med)}ms over last ${n} checks (threshold ${monitor.latencyThresholdMs}ms)`
+  return `<span class="lat-pill" title="${esc(tip)}">High latency</span>`
+}
+
 // ---- Scheduled maintenances (UptimeFlare-style). Display only: config-driven
 // windows shown on the Incidents view; affected monitors get a yellow triangle.
 
@@ -369,7 +399,11 @@ function latencyChart(monitor, data, ci) {
   const padR = 8
   const padT = 8
   const padB = 20
-  const rawMax = Math.max(1, ...pts.map((p) => p.ms))
+  const thr =
+    Number.isFinite(monitor.latencyThresholdMs) && monitor.latencyThresholdMs > 0
+      ? monitor.latencyThresholdMs
+      : 0
+  const rawMax = Math.max(1, ...pts.map((p) => p.ms), thr)
   const step = niceStep(rawMax / 4)
   const maxV = Math.ceil(rawMax / step) * step
   const X = (t) => padL + ((t - from) / (now - from)) * (W - padL - padR)
@@ -391,6 +425,16 @@ function latencyChart(monitor, data, ci) {
     t += 3600
   ) {
     xticks += `<text x="${f1(X(t))}" y="${H - 6}" text-anchor="middle" class="ctick xt">${hourLabel(t)}</text>`
+  }
+
+  // Phase 6: dashed threshold line (always inside the plot: rawMax covers thr).
+  let threshLine = ''
+  if (thr > 0) {
+    const ty = Y(thr)
+    const ly = Math.max(ty - 5, 12)
+    threshLine =
+      `<line x1="${padL}" y1="${f1(ty)}" x2="${W - padR}" y2="${f1(ty)}" class="cthresh" vector-effect="non-scaling-stroke"/>` +
+      `<text x="${W - padR - 4}" y="${f1(ly)}" text-anchor="end" class="cthresh-label">${thr.toLocaleString()}ms</text>`
   }
 
   // Break the line where a gap exceeds ~1.8x the median check interval
@@ -419,6 +463,7 @@ function latencyChart(monitor, data, ci) {
     `<div class="chart-wrap" data-ci="${ci}">` +
     `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">` +
     grid +
+    threshLine +
     `<g class="xticks">${xticks}</g>` +
     line +
     `</svg><div class="chart-tip" hidden></div></div>`
@@ -703,7 +748,7 @@ function monitorCard(monitor, data, ci) {
 
   return (
     `<section class="monitor" data-monitor="${esc(monitor.id)}">` +
-    `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(monitor, data)}${nameHtml}</div>` +
+    `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(monitor, data)}${nameHtml}${latencyPill(monitor, data)}</div>` +
     `${overallHtml}</div>` +
     `${uptimeStrip(monitor, data, ci)}` +
     `${latencyChart(monitor, data, ci)}` +

@@ -25,6 +25,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 500
 
   - id: viettel-sgn
     group: Vietnam
@@ -34,6 +35,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 250
 
   - id: vultr-sin
     group: International
@@ -43,6 +45,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 200
 
   - id: lightnode-han
     group: Vietnam
@@ -52,6 +55,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 300
 
   - id: viettel-han
     group: Vietnam
@@ -61,6 +65,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 250
 
   - id: zepto-hkg
     group: International
@@ -70,6 +75,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 250
 
   - id: anexia-sin
     group: International
@@ -79,6 +85,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 400
 
   - id: anexia-kul
     group: International
@@ -88,6 +95,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 200
 
   - id: lightnode-kul
     group: International
@@ -97,6 +105,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 200
 
   - id: vultr-tyo
     group: International
@@ -106,6 +115,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 300
 
   - id: lightnode-bkk
     group: International
@@ -115,6 +125,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 250
 
   - id: bangmod-bkk
     group: International
@@ -124,6 +135,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 250
 
   - id: hostinginside-tpe
     group: International
@@ -133,6 +145,7 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
+    latencyThresholdMs: 1000
 
 # Scheduled maintenances, shown on the Incidents view (UptimeFlare-style).
 # Each entry:
