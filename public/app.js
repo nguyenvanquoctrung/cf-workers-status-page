@@ -785,7 +785,7 @@ function fmtTs(ts) {
 function latencyChart(monitor, data, ci) {
   const now = Date.now() / 1000
   const from = now - 12 * 3600
-  const pts = ((data && data.latency) || []).filter((p) => p && p.t >= from - 1)
+  const pts = ((data && data.latency) || []).filter((p) => p && p.t >= from - 1 && Number.isFinite(p.ms))
   CHARTS[ci] = { pts, from, now }
 
   const title = `<div class="chart-title">${t('chart.title')}</div>`
@@ -1554,7 +1554,7 @@ function tickHero() {
   const measuring = (typeof ST !== 'undefined' && ST.running)
     || (typeof ST2 !== 'undefined' && ST2.running)
     || (typeof LEAK !== 'undefined' && LEAK.running)
-  if (secs > 1800 && !measuring && Date.now() - OPENED_AT > 30000) location.reload()
+  if (secs > 1800 && !measuring && !FILTER && Date.now() - OPENED_AT > 30000) location.reload()
 }
 
 // Number of monitors in a group currently NOT operational (last check failed).
@@ -2029,6 +2029,9 @@ const DNS_LOOKUP_TYPES = [
 ]
 
 function renderDnsTools() {
+  // Never wipe an in-progress leak test / lookup or existing results on
+  // re-render (tab switch, language change) — same guard as ping/speedtest.
+  if (LEAK.running || DNS_LOOKUP_RUNNING || document.getElementById('dnsGo')) return
   $('#dnsTools').innerHTML =
     `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="dns.lookup.title">${t('dns.lookup.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="dns.lookup.powered">${t('dns.lookup.powered')}</p></div>` +
