@@ -2926,6 +2926,11 @@ function askForMicAndReveal() {
 }
 
 function detectIps() {
+  // Primary: our own edge always knows the user's IP (no third-party dep).
+  fetch('/api/conn', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((j) => { if (j && j.ip) addIp(j.ip, 'net') })
+    .catch(() => {})
   fetch('https://myipv4.addr.tools/plain')
     .then((r) => {
       if (!r.ok) throw new Error('bad status')
