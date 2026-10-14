@@ -2759,11 +2759,13 @@ async function init() {
         const h =
           a.dataset.view === 'incidents'
             ? '#incidents'
-            : a.dataset.view === 'speedtest'
-              ? '#speedtest'
-              : a.dataset.view === 'dns'
-                ? '#dns'
-                : '#'
+            : a.dataset.view === 'ping'
+              ? '#ping'
+              : a.dataset.view === 'speedtest'
+                ? '#speedtest'
+                : a.dataset.view === 'dns'
+                  ? '#dns'
+                  : '#'
         history.replaceState(null, '', h)
       } catch (err) {}
     })
