@@ -1136,8 +1136,9 @@ function renderStatusHeader() {
     `</div>`
 }
 
-// Live "N sec ago" ticker (UptimeFlare behavior): updates every second and
-// reloads the page when data is older than 300s (avoids a stale dashboard).
+// Live "N sec ago" ticker: updates every second. Reloads only when monitor data
+// is genuinely stale (>30 min ~= 3 missed 10-min cron runs) AND no measurement
+// is running — a reload mid-test would destroy speedtest/leak-test results.
 function tickHero() {
   const lu = STATE.lastUpdate || {}
   const el = document.querySelector('.hero-sub')
@@ -1145,7 +1146,10 @@ function tickHero() {
   const next = heroMeta(lu)
   if (el.textContent !== next) el.textContent = next
   const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-  if (secs > 300 && Date.now() - OPENED_AT > 30000) location.reload()
+  const measuring = (typeof ST !== 'undefined' && ST.running)
+    || (typeof ST2 !== 'undefined' && ST2.running)
+    || (typeof LEAK !== 'undefined' && LEAK.running)
+  if (secs > 1800 && !measuring && Date.now() - OPENED_AT > 30000) location.reload()
 }
 
 // Number of monitors in a group currently NOT operational (last check failed).
