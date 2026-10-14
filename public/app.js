@@ -121,25 +121,15 @@ function dayStats(data) {
   return days
 }
 
-// Uptime % over the daysInHistogram window (day granularity: a day counts as
-// "down" when it recorded any failed check). Returns null when no day has data.
+// UptimeFlare-style overall: 1 - (estimated down seconds / monitored seconds),
+// aggregated over the daysInHistogram window. Days without data (or before
+// firstCheck) count toward neither side. Returns null when no day has data.
 function overallInfo(data) {
-  const n = CONFIG.settings.daysInHistogram
-  let total = 0
-  let down = 0
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  for (let i = 0; i < n; i++) {
-    d.setDate(d.getDate() + 1)
-    const day = dayStr(d)
-    const e = data && data.checks && data.checks[day]
-    if (!e) continue
-    if (data.firstCheck && data.firstCheck > day) continue
-    total++
-    if ((e.fails || 0) > 0) down++
-  }
-  if (total === 0) return null
-  return { pct: ((total - down) / total) * 100 }
+  const days = dayStats(data).filter((dd) => dd.hasData && dd.pct != null)
+  if (days.length === 0) return null
+  const monSecs = days.length * 86400
+  const downSecs = days.reduce((s, dd) => s + (dd.downSecs || 0), 0)
+  return { pct: Math.max(0, (1 - downSecs / monSecs) * 100) }
 }
 
 // UptimeFlare 4-tier status colors.
@@ -150,13 +140,15 @@ function overallColor(pct) {
   return '#DF484A'
 }
 
-// UptimeFlare-style bar colors, driven by fail presence with the same
-// day-granularity logic as overallInfo: any recorded fail colors the day
-// non-green (an estimated ~99.5% day must not look "all good").
+// UptimeFlare bar colors (util/color.ts, darker=false):
+// >=99.9% green, 99-99.9% light green, 95-99% orange, <95% red, no data gray.
 function barColor(dd) {
-  if (!dd.hasData || dd.pct == null) return 'var(--bar-nodata)'
-  if (dd.fails === 0) return '#3BD671'
-  return dd.pct >= 99 ? '#F29030' : '#DF484A'
+  if (!dd.hasData || dd.pct == null || Number.isNaN(dd.pct))
+    return 'var(--bar-nodata)'
+  if (dd.pct >= 99.9) return '#3BD671'
+  if (dd.pct >= 99) return '#9DEAB8'
+  if (dd.pct >= 95) return '#F29030'
+  return '#DF484A'
 }
 
 function fmtDur(s) {
