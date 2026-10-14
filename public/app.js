@@ -1953,39 +1953,39 @@ async function measureNextdnsPops() {
 // Browser measures RTT to regional (non-anycast) endpoints worldwide.
 // S3 regional endpoints are stable, regional, and timing-safe via no-cors.
 const NEXTDNS_POPS = [
-  { host: 'zepto-ams-1.edge.nextdns.io', city: 'Amsterdam', lat: 52.37, lon: 4.9 },
-  { host: 'lightnode-bkk-1.edge.nextdns.io', city: 'Bangkok', lat: 13.76, lon: 100.5 },
-  { host: 'lightnode-bog-1.edge.nextdns.io', city: 'Bogota', lat: 4.71, lon: -74.07 },
-  { host: 'vultr-bom-1.edge.nextdns.io', city: 'Mumbai', lat: 19.08, lon: 72.88 },
-  { host: 'anexia-chi-1.edge.nextdns.io', city: 'Chicago', lat: 41.88, lon: -87.63 },
-  { host: 'anexia-dal-1.edge.nextdns.io', city: 'Dallas', lat: 32.78, lon: -96.8 },
-  { host: 'anexia-dxb-1.edge.nextdns.io', city: 'Dubai', lat: 25.2, lon: 55.27 },
-  { host: 'anexia-ewr-1.edge.nextdns.io', city: 'Newark', lat: 40.69, lon: -74.17 },
-  { host: 'zepto-fra-1.edge.nextdns.io', city: 'Frankfurt', lat: 50.11, lon: 8.68 },
-  { host: 'lightnode-han-1.edge.nextdns.io', city: 'Hanoi', lat: 21.03, lon: 105.85 },
-  { host: 'zepto-hkg-1.edge.nextdns.io', city: 'Hong Kong', lat: 22.32, lon: 114.17 },
-  { host: 'zepto-iad-1.edge.nextdns.io', city: 'Ashburn', lat: 39.04, lon: -77.49 },
-  { host: 'zepto-jnb-1.edge.nextdns.io', city: 'Johannesburg', lat: -26.2, lon: 28.05 },
-  { host: 'anexia-kul-1.edge.nextdns.io', city: 'Kuala Lumpur', lat: 3.14, lon: 101.69 },
-  { host: 'anexia-lax-1.edge.nextdns.io', city: 'Los Angeles', lat: 34.05, lon: -118.24 },
-  { host: 'zepto-lon-1.edge.nextdns.io', city: 'London', lat: 51.5, lon: -0.13 },
-  { host: 'zepto-mad-1.edge.nextdns.io', city: 'Madrid', lat: 40.42, lon: -3.7 },
-  { host: 'anexia-mia-1.edge.nextdns.io', city: 'Miami', lat: 25.76, lon: -80.19 },
-  { host: 'zepto-mil-1.edge.nextdns.io', city: 'Milan', lat: 45.46, lon: 9.19 },
-  { host: 'anexia-par-1.edge.nextdns.io', city: 'Paris', lat: 48.86, lon: 2.35 },
-  { host: 'zepto-sao-1.edge.nextdns.io', city: 'Sao Paulo', lat: -23.55, lon: -46.63 },
-  { host: 'anexia-scl-1.edge.nextdns.io', city: 'Santiago', lat: -33.45, lon: -70.67 },
-  { host: 'zepto-sea-1.edge.nextdns.io', city: 'Seattle', lat: 47.61, lon: -122.34 },
-  { host: 'vultr-sel-1.edge.nextdns.io', city: 'Seoul', lat: 37.57, lon: 126.98 },
-  { host: 'lightnode-sgn-1.edge.nextdns.io', city: 'Ho Chi Minh', lat: 10.82, lon: 106.63 },
-  { host: 'zepto-sin-1.edge.nextdns.io', city: 'Singapore', lat: 1.35, lon: 103.82 },
-  { host: 'zepto-sjc-1.edge.nextdns.io', city: 'SanFrancisco', lat: 37.77, lon: -122.42 },
-  { host: 'zepto-sto-1.edge.nextdns.io', city: 'Stockholm', lat: 59.33, lon: 18.07 },
-  { host: 'vultr-syd-1.edge.nextdns.io', city: 'Sydney', lat: -33.87, lon: 151.21 },
-  { host: 'zepto-tpe-1.edge.nextdns.io', city: 'Taipei', lat: 25.05, lon: 121.57 },
-  { host: 'zepto-tyo-1.edge.nextdns.io', city: 'Tokyo', lat: 35.68, lon: 139.69 },
-  { host: 'zepto-waw-1.edge.nextdns.io', city: 'Warsaw', lat: 52.23, lon: 21.01 },
-  { host: 'zepto-zrh-1.edge.nextdns.io', city: 'Zurich', lat: 47.38, lon: 8.54 },
+  { host: 'zepto-ams-1.edge.nextdns.io', city: 'Amsterdam', lat: 52.37, lon: 4.9, country: 'Netherlands' },
+  { host: 'lightnode-bkk-1.edge.nextdns.io', city: 'Bangkok', lat: 13.76, lon: 100.5, country: 'Thailand' },
+  { host: 'lightnode-bog-1.edge.nextdns.io', city: 'Bogota', lat: 4.71, lon: -74.07, country: 'Colombia' },
+  { host: 'vultr-bom-1.edge.nextdns.io', city: 'Mumbai', lat: 19.08, lon: 72.88, country: 'India' },
+  { host: 'anexia-chi-1.edge.nextdns.io', city: 'Chicago', lat: 41.88, lon: -87.63, country: 'United States' },
+  { host: 'anexia-dal-1.edge.nextdns.io', city: 'Dallas', lat: 32.78, lon: -96.8, country: 'United States' },
+  { host: 'anexia-dxb-1.edge.nextdns.io', city: 'Dubai', lat: 25.2, lon: 55.27, country: 'United Arab Emirates' },
+  { host: 'anexia-ewr-1.edge.nextdns.io', city: 'Newark', lat: 40.69, lon: -74.17, country: 'United States' },
+  { host: 'zepto-fra-1.edge.nextdns.io', city: 'Frankfurt', lat: 50.11, lon: 8.68, country: 'Germany' },
+  { host: 'lightnode-han-1.edge.nextdns.io', city: 'Hanoi', lat: 21.03, lon: 105.85, country: 'Viet Nam' },
+  { host: 'zepto-hkg-1.edge.nextdns.io', city: 'Hong Kong', lat: 22.32, lon: 114.17, country: 'Hong Kong' },
+  { host: 'zepto-iad-1.edge.nextdns.io', city: 'Ashburn', lat: 39.04, lon: -77.49, country: 'United States' },
+  { host: 'zepto-jnb-1.edge.nextdns.io', city: 'Johannesburg', lat: -26.2, lon: 28.05, country: 'South Africa' },
+  { host: 'anexia-kul-1.edge.nextdns.io', city: 'Kuala Lumpur', lat: 3.14, lon: 101.69, country: 'Malaysia' },
+  { host: 'anexia-lax-1.edge.nextdns.io', city: 'Los Angeles', lat: 34.05, lon: -118.24, country: 'United States' },
+  { host: 'zepto-lon-1.edge.nextdns.io', city: 'London', lat: 51.5, lon: -0.13, country: 'United Kingdom' },
+  { host: 'zepto-mad-1.edge.nextdns.io', city: 'Madrid', lat: 40.42, lon: -3.7, country: 'Spain' },
+  { host: 'anexia-mia-1.edge.nextdns.io', city: 'Miami', lat: 25.76, lon: -80.19, country: 'United States' },
+  { host: 'zepto-mil-1.edge.nextdns.io', city: 'Milan', lat: 45.46, lon: 9.19, country: 'Italy' },
+  { host: 'anexia-par-1.edge.nextdns.io', city: 'Paris', lat: 48.86, lon: 2.35, country: 'France' },
+  { host: 'zepto-sao-1.edge.nextdns.io', city: 'Sao Paulo', lat: -23.55, lon: -46.63, country: 'Brazil' },
+  { host: 'anexia-scl-1.edge.nextdns.io', city: 'Santiago', lat: -33.45, lon: -70.67, country: 'Chile' },
+  { host: 'zepto-sea-1.edge.nextdns.io', city: 'Seattle', lat: 47.61, lon: -122.34, country: 'United States' },
+  { host: 'vultr-sel-1.edge.nextdns.io', city: 'Seoul', lat: 37.57, lon: 126.98, country: 'South Korea' },
+  { host: 'lightnode-sgn-1.edge.nextdns.io', city: 'Ho Chi Minh', lat: 10.82, lon: 106.63, country: 'Viet Nam' },
+  { host: 'zepto-sin-1.edge.nextdns.io', city: 'Singapore', lat: 1.35, lon: 103.82, country: 'Singapore' },
+  { host: 'zepto-sjc-1.edge.nextdns.io', city: 'SanFrancisco', lat: 37.77, lon: -122.42, country: 'United States' },
+  { host: 'zepto-sto-1.edge.nextdns.io', city: 'Stockholm', lat: 59.33, lon: 18.07, country: 'Sweden' },
+  { host: 'vultr-syd-1.edge.nextdns.io', city: 'Sydney', lat: -33.87, lon: 151.21, country: 'Australia' },
+  { host: 'zepto-tpe-1.edge.nextdns.io', city: 'Taipei', lat: 25.05, lon: 121.57, country: 'Taiwan' },
+  { host: 'zepto-tyo-1.edge.nextdns.io', city: 'Tokyo', lat: 35.68, lon: 139.69, country: 'Japan' },
+  { host: 'zepto-waw-1.edge.nextdns.io', city: 'Warsaw', lat: 52.23, lon: 21.01, country: 'Poland' },
+  { host: 'zepto-zrh-1.edge.nextdns.io', city: 'Zurich', lat: 47.38, lon: 8.54, country: 'Switzerland' },
 ]
 
 function wpingColor(ms) {
@@ -2028,7 +2028,7 @@ function renderWorldPingMap(results) {
         cy = y(r.lat).toFixed(1)
       const color = wpingColor(best)
       const label = best == null ? '-- ms' : best + ' ms'
-      const name = popShort(r.host)
+      const name = popShort(r.host) + (r.country ? ' · ' + r.country : '')
       return (
         `<g><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" opacity="0.85"/>` +
         `<text x="${cx}" y="${+cy + 24}" text-anchor="middle" font-size="14" fill="currentColor">${label}</text>` +
@@ -2065,7 +2065,7 @@ function renderWorldPingTable(results) {
     rows
       .map(
         (r) =>
-          `<tr><td>${esc(popShort(r.host))}</td>` +
+          `<tr><td>${esc(popShort(r.host))}${r.country ? ' · ' + esc(r.country) : ''}</td>` +
           (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
