@@ -3239,6 +3239,9 @@ async function runLeakTest() {
 
   const s4 = $('#leakStatus')
   if (s4) s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('leak.status.sending')}`
+  // IP detection is independent of the WebSocket — run it first so IPs show
+  // even when dnscheck.tools is unreachable.
+  detectIps()
   // Resolver-discovery triggers (ported from the original's testDNS), plus the
   // IPv6 trigger. no-cors: their CORS only allows their own origin; the DNS
   // still resolves server-side and results arrive over the WebSocket.
@@ -3253,7 +3256,6 @@ async function runLeakTest() {
 
   // Independent sub-tasks run concurrently (the original runs them in order;
   // each result is independent, so this only shortens the run).
-  detectIps()
   runRtt()
   runDnssecMatrix(id)
 }
