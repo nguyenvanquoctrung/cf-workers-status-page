@@ -2144,18 +2144,86 @@ async function runRtt() {
   }
 }
 
-// "Your IP addresses", ported from the original's testIPs minus the
-// microphone-permission flow: myipv4/myipv6 endpoints (CORS-open, text/plain)
-// plus best-effort WebRTC ICE candidates via STUN. Source is tracked so the
-// extended (WebRTC) list hides behind "(show more)" like the original.
-function detectIps() {
-  const addIp = (str, src) => {
-    str = String(str || '').trim()
-    if (!str || !/^[0-9a-fA-F.:]+$/.test(str) || !LS || LS.ips[str]) return
-    LS.ips[str] = src || 'net'
-    leakUiIps = Object.entries(LS.ips)
+// "Your IP addresses", ported from the original's testIPs: myipv4/myipv6
+// endpoints (CORS-open, text/plain) plus best-effort WebRTC ICE candidates via
+// STUN. Source is tracked so the extended (WebRTC) list hides behind
+// "(show more)" like the original. Clicking it asks for microphone permission
+// (RFC 8828) to discover additional addresses, like the original.
+function addIp(str, src) {
+  str = String(str || '').trim()
+  if (!str || !/^[0-9a-fA-F.:]+$/.test(str)) return
+  if (leakUiIps.some(([ip]) => ip === str)) return
+  if (LS) LS.ips[str] = src || 'net'
+  leakUiIps.push([str, src || 'net'])
+  drawIps()
+}
+
+function startIceGathering(stream) {
+  try {
+    if (typeof RTCPeerConnection === 'undefined') return
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:myip.addr.tools:3478' }, { urls: 'stun:stun.l.google.com:19302' }],
+    })
+    pc.addEventListener('icecandidate', ({ candidate }) => {
+      if (!candidate || !candidate.candidate) return
+      const ip = candidate.candidate.split(' ')[4]
+      if (ip && /^[0-9a-fA-F.:]+$/.test(ip) && !ip.endsWith('.local')) addIp(ip, 'webrtc')
+    })
+    if (stream) {
+      try {
+        pc.addTrack(stream.getTracks()[0], stream)
+      } catch (e) {}
+    } else {
+      try {
+        pc.createDataChannel('dummy')
+      } catch (e) {}
+    }
+    pc.createOffer()
+      .then((d) => pc.setLocalDescription(d))
+      .catch(() => {})
+    setTimeout(() => {
+      try {
+        pc.close()
+      } catch (e) {}
+    }, 8000)
+  } catch (e) {}
+}
+
+// "(show more)" handler, mirroring the original's askForMicPermission: asks
+// for microphone permission (no audio is recorded), re-gathers ICE candidates
+// with the audio track (may reveal additional IPs per RFC 8828), then reveals
+// the extended list. Cancelling just reveals what was already gathered.
+function askForMicAndReveal() {
+  const reveal = () => {
+    leakUiShowMore = true
     drawIps()
   }
+  const msg =
+    'Websites with camera and/or microphone permission may have access to additional IP addresses (RFC 8828).\n\n' +
+    'Grant microphone permission to detect these additional IP addresses.\n\nNo audio will be recorded or transmitted.'
+  if (!window.confirm(msg)) {
+    reveal()
+    return
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    reveal()
+    return
+  }
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      setTimeout(() => {
+        try {
+          stream.getTracks().forEach((tr) => tr.stop())
+        } catch (e) {}
+      }, 1000)
+      startIceGathering(stream)
+      reveal()
+    })
+    .catch(() => reveal())
+}
+
+function detectIps() {
   fetch('https://myipv4.addr.tools/plain')
     .then((r) => {
       if (!r.ok) throw new Error('bad status')
@@ -2170,28 +2238,38 @@ function detectIps() {
     })
     .then((s) => addIp(s, 'net'))
     .catch(() => {})
+  // Like the original: if microphone permission was already granted, use it
+  // for ICE gathering (no prompt). Otherwise gather without it; the
+  // "(show more)" link offers the permission flow.
+  const startBaseline = () => startIceGathering(null)
   try {
-    if (typeof RTCPeerConnection === 'undefined') return
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:myip.addr.tools:3478' }, { urls: 'stun:stun.l.google.com:19302' }],
-    })
-    pc.addEventListener('icecandidate', ({ candidate }) => {
-      if (!candidate || !candidate.candidate) return
-      const ip = candidate.candidate.split(' ')[4]
-      if (ip && /^[0-9a-fA-F.:]+$/.test(ip) && !ip.endsWith('.local')) addIp(ip, 'webrtc')
-    })
-    try {
-      pc.createDataChannel('dummy')
-    } catch (e) {}
-    pc.createOffer()
-      .then((d) => pc.setLocalDescription(d))
-      .catch(() => {})
-    setTimeout(() => {
-      try {
-        pc.close()
-      } catch (e) {}
-    }, 6000)
-  } catch (e) {}
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: 'microphone' })
+        .then(({ state }) => {
+          if (state === 'granted' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices
+              .getUserMedia({ audio: true })
+              .then((stream) => {
+                setTimeout(() => {
+                  try {
+                    stream.getTracks().forEach((tr) => tr.stop())
+                  } catch (e) {}
+                }, 1000)
+                startIceGathering(stream)
+              })
+              .catch(startBaseline)
+          } else {
+            startBaseline()
+          }
+        })
+        .catch(startBaseline)
+    } else {
+      startBaseline()
+    }
+  } catch (e) {
+    startBaseline()
+  }
 }
 
 // Mirrors the original's IP list: registrant name above the IP, "City, Region,
@@ -2228,11 +2306,7 @@ function drawIps() {
     if (extra.length && !leakUiShowMore) {
       wrap.innerHTML = `(<span class="link" id="leakShowMore">show more</span>)`
       const t = document.getElementById('leakShowMore')
-      if (t)
-        t.addEventListener('click', () => {
-          leakUiShowMore = true
-          drawIps()
-        })
+      if (t) t.addEventListener('click', askForMicAndReveal)
     } else {
       wrap.innerHTML = ''
     }
