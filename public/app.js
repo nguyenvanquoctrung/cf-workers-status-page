@@ -3832,29 +3832,10 @@ function goSearchHit(view, elId) {
     }
   })
 
-  // Hamburger menu toggle
-  const navToggle = $('#navToggle')
-  const nav = document.querySelector('.nav')
-  if (navToggle && nav) {
-    navToggle.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const open = nav.classList.toggle('open')
-      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
-    })
-    document.addEventListener('click', (e) => {
-      if (nav.classList.contains('open') && !nav.contains(e.target) && e.target !== navToggle) {
-        nav.classList.remove('open')
-        navToggle.setAttribute('aria-expanded', 'false')
-      }
-    })
-  }
-
   // View navigation (UptimeFlare-style header links)
   document.querySelectorAll('.nav a').forEach((a) => {
     a.addEventListener('click', (e) => {
       e.preventDefault()
-      if (nav) nav.classList.remove('open')
-      if (navToggle) navToggle.setAttribute('aria-expanded', 'false')
       setView(a.dataset.view)
       try {
         const h =
