@@ -18,6 +18,8 @@
   --link: #1c7ed6;
   --tooltip-bg: #212529;
   --tooltip-text: #f8f9fa;
+  --group-open-bg: #f8f9fa;
+  --group-hover-bg: #f8f9fa;
 }
 [data-theme="dark"] {
   --bg: #1a1b1e;
@@ -38,6 +40,8 @@
   --link: #4dabf7;
   --tooltip-bg: #f8f9fa;
   --tooltip-text: #1a1b1e;
+  --group-open-bg: #25262b;
+  --group-hover-bg: #25262b;
 }
 
 * { box-sizing: border-box; }
@@ -73,6 +77,19 @@ a:hover { text-decoration: underline; }
 .site-title { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
+/* ---- header nav (UptimeFlare: 14px/500, hover pill) ---- */
+.nav { display: flex; gap: 5px; align-items: center; }
+.nav a {
+  font-size: 14px; font-weight: 500; color: #495057;
+  padding: 8px 12px; border-radius: 4px; line-height: 1;
+  cursor: pointer; white-space: nowrap;
+}
+.nav a:hover { background: #f8f9fa; text-decoration: none; }
+.nav a.active { background: #e7f5ff; color: #1c7ed6; }
+[data-theme="dark"] .nav a { color: #c1c2c5; }
+[data-theme="dark"] .nav a:hover { background: #25262b; }
+[data-theme="dark"] .nav a.active { background: #1849a9; color: #fff; }
+
 .icon-btn {
   width: 2rem; height: 2rem; border-radius: 4px; border: none;
   background: transparent; color: var(--text); cursor: pointer;
@@ -105,9 +122,10 @@ a:hover { text-decoration: underline; }
 .hero-title { font-size: 34px; font-weight: 700; margin: 16px 0 0; letter-spacing: -0.01em; }
 .hero-sub { color: var(--muted); font-size: 16px; font-weight: 700; margin: 10px 0 0; }
 
-/* ---- the one centered card (865px, shadow-only, UptimeFlare) ---- */
+/* ---- the one centered card (1140px on desktop — wider than UptimeFlare's
+   865px by user request, less empty side space on PC) ---- */
 .monitors-card {
-  width: 865px;
+  width: 1140px;
   max-width: calc(100% - 32px);
   margin: 32px auto 0;
   background: var(--card-bg);
@@ -120,6 +138,31 @@ a:hover { text-decoration: underline; }
 .monitor + .monitor { border-top: 1px solid var(--divider); }
 .monitor:first-child { padding-top: 4px; }
 .monitor:last-child { padding-bottom: 4px; }
+
+/* ---- monitor groups: UptimeFlare-style contained accordion ---- */
+.mgroup {
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+.mgroup:last-child { margin-bottom: 0; }
+.mgroup.open { background: var(--group-open-bg); }
+.mgroup-head {
+  width: 100%;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+  background: none; border: none; cursor: pointer;
+  font: inherit; color: var(--text); text-align: left;
+}
+.mgroup-head:hover { background: var(--group-hover-bg); }
+.mgroup-name { font-size: 16px; }
+.mgroup-right { display: inline-flex; align-items: center; gap: 6px; }
+.mgroup-count { font-weight: 500; padding-right: 5px; font-size: 15px; }
+.mgroup-chev { transition: transform 0.18s ease; color: var(--muted); flex: none; }
+.mgroup.open .mgroup-chev { transform: rotate(180deg); }
+.mgroup-panel { display: none; padding: 5px 16px 16px; }
+.mgroup.open .mgroup-panel { display: block; }
+.mgroup-panel .monitor:first-child { padding-top: 8px; }
 
 .monitor-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -229,10 +272,47 @@ a:hover { text-decoration: underline; }
 
 .empty { text-align: center; color: var(--muted); padding: 2rem 0; }
 
+/* ---- incidents view (UptimeFlare incidents page, same visual language) ---- */
+.inc-controls { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+.inc-controls select {
+  font: inherit; font-size: 14px; color: var(--text);
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 4px; padding: 8px 12px; max-width: 300px; cursor: pointer;
+}
+.incident {
+  border: 1px solid var(--card-border); border-radius: 4px;
+  padding: 12px 16px; margin-bottom: 10px;
+}
+.incident-head { display: flex; align-items: center; gap: 8px; }
+.incident-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--red); flex: none;
+}
+.incident-head strong { font-size: 15px; }
+.incident-date { margin-left: auto; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.incident-body { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.no-incidents {
+  text-align: center; color: var(--muted); padding: 2.5rem 1rem;
+  border: 1px dashed var(--card-border); border-radius: 4px;
+}
+.inc-pager {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 14px;
+}
+.month-label { font-weight: 500; font-size: 18px; }
+.btn {
+  font: inherit; font-size: 14px; font-weight: 500;
+  color: var(--text); background: var(--input-bg);
+  border: 1px solid var(--input-border); border-radius: 4px;
+  padding: 8px 14px; cursor: pointer;
+}
+.btn:hover { background: var(--group-hover-bg); }
+
 @media (max-width: 640px) {
   .header-inner { padding: 0 12px; gap: 8px; }
   .site-title { font-size: 0.95rem; }
-  .filter-wrap input { width: 140px; }
+  .filter-wrap { display: none; } /* nav takes priority on small screens */
+  .nav a { padding: 8px 8px; }
   .hero { padding-top: 56px; }
   .hero-icon svg { width: 48px; height: 48px; }
   .hero-title { font-size: 1.5rem; }

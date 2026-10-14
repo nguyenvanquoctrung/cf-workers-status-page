@@ -33,6 +33,9 @@
         <span id="pageTitle" class="site-title">Status Page</span>
       </div>
       <div class="header-actions">
+        <nav class="nav" aria-label="Views">
+          <a data-view="status" class="active">Status</a><a data-view="incidents">Incidents</a>
+        </nav>
         <div class="filter-wrap">
           <input id="filterInput" type="text" placeholder="Tap '/' to search" autocomplete="off" />
           <span class="filter-icon" aria-hidden="true">
@@ -45,10 +48,18 @@
   </header>
 
   <main class="page">
-    <div id="statusHeader"></div>
+    <div id="statusView">
+      <div id="statusHeader"></div>
 
-    <div class="monitors-card">
-      <div id="monitors"></div>
+      <div class="monitors-card">
+        <div id="monitors"></div>
+      </div>
+    </div>
+
+    <div id="incidentsView" hidden>
+      <div class="monitors-card">
+        <div id="incidents"></div>
+      </div>
     </div>
 
     <footer class="footer">

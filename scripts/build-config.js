@@ -39,6 +39,11 @@ config.monitors.forEach((m, i) => {
   m.followRedirect = m.followRedirect ?? false
   // linkable defaults to true when unset
   if (m.linkable === undefined) m.linkable = true
+  // group is optional; must be a string when present (frontend renders
+  // one accordion section per group, in first-appearance order)
+  if (m.group !== undefined && typeof m.group !== 'string') {
+    fail(`monitor "${m.id}" has a non-string "group"`)
+  }
 })
 
 if (!Number.isInteger(config.settings.daysInHistogram) || config.settings.daysInHistogram < 1) {

@@ -2,7 +2,7 @@ settings:
   title: 'Status Page'
   url: 'https://nextdns.jeremienguyen.workers.dev' # used for Slack messages
   logo: logo-192x192.png # image in ./public/ folder
-  daysInHistogram: 30 # number of days you want to display in the chart
+  daysInHistogram: 90 # number of days of daily history retained (bar strip + chart)
   collectResponseTimes: true # collects avg response times from CRON locations
 
   allmonitorsOperational: 'All Systems Operational'
@@ -18,6 +18,7 @@ settings:
 # URL pattern: https://<id>-1.edge.nextdns.io/resolve?name=google.com
 monitors:
   - id: lightnode-sgn
+    group: Vietnam
     name: Hồ Chí Minh LightNode
     description: 'lightnode-sgn-1.edge.nextdns.io'
     url: 'https://lightnode-sgn-1.edge.nextdns.io/resolve?name=google.com'
@@ -27,6 +28,7 @@ monitors:
     linkable: false
 
   - id: viettel-sgn
+    group: Vietnam
     name: Hồ Chí Minh Viettel
     description: 'viettel-sgn-1.edge.nextdns.io'
     url: 'https://viettel-sgn-1.edge.nextdns.io/resolve?name=google.com'
@@ -36,6 +38,7 @@ monitors:
     linkable: false
 
   - id: vultr-sin
+    group: International
     name: Singapore Vultr
     description: 'vultr-sin-1.edge.nextdns.io'
     url: 'https://vultr-sin-1.edge.nextdns.io/resolve?name=google.com'
@@ -45,6 +48,7 @@ monitors:
     linkable: false
 
   - id: lightnode-han
+    group: Vietnam
     name: Hà Nội LightNode
     description: 'lightnode-han-1.edge.nextdns.io'
     url: 'https://lightnode-han-1.edge.nextdns.io/resolve?name=google.com'
@@ -54,6 +58,7 @@ monitors:
     linkable: false
 
   - id: viettel-han
+    group: Vietnam
     name: Hà Nội Viettel
     description: 'viettel-han-1.edge.nextdns.io'
     url: 'https://viettel-han-1.edge.nextdns.io/resolve?name=google.com'
@@ -63,6 +68,7 @@ monitors:
     linkable: false
 
   - id: zepto-hkg
+    group: International
     name: HongKong Zepto
     description: 'zepto-hkg-1.edge.nextdns.io'
     url: 'https://zepto-hkg-1.edge.nextdns.io/resolve?name=google.com'
@@ -72,6 +78,7 @@ monitors:
     linkable: false
 
   - id: anexia-sin
+    group: International
     name: Singapore Anexia
     description: 'anexia-sin-1.edge.nextdns.io'
     url: 'https://anexia-sin-1.edge.nextdns.io/resolve?name=google.com'
@@ -81,6 +88,7 @@ monitors:
     linkable: false
 
   - id: anexia-kul
+    group: International
     name: Kuala Lumpur Anexia
     description: 'anexia-kul-1.edge.nextdns.io'
     url: 'https://anexia-kul-1.edge.nextdns.io/resolve?name=google.com'
@@ -90,6 +98,7 @@ monitors:
     linkable: false
 
   - id: lightnode-kul
+    group: International
     name: Kuala Lumpur LightNode
     description: 'lightnode-kul-1.edge.nextdns.io'
     url: 'https://lightnode-kul-1.edge.nextdns.io/resolve?name=google.com'
@@ -99,6 +108,7 @@ monitors:
     linkable: false
 
   - id: vultr-tyo
+    group: International
     name: Tokyo Vultr
     description: 'vultr-tyo-1.edge.nextdns.io'
     url: 'https://vultr-tyo-1.edge.nextdns.io/resolve?name=google.com'
@@ -108,6 +118,7 @@ monitors:
     linkable: false
 
   - id: lightnode-bkk
+    group: International
     name: Bangkok LightNode
     description: 'lightnode-bkk-1.edge.nextdns.io'
     url: 'https://lightnode-bkk-1.edge.nextdns.io/resolve?name=google.com'
@@ -117,6 +128,7 @@ monitors:
     linkable: false
 
   - id: bangmod-bkk
+    group: International
     name: Bangkok Bangmod
     description: 'bangmod-bkk-1.edge.nextdns.io'
     url: 'https://bangmod-bkk-1.edge.nextdns.io/resolve?name=google.com'
@@ -126,6 +138,7 @@ monitors:
     linkable: false
 
   - id: hostinginside-tpe
+    group: International
     name: Taipei HostingInside
     description: 'hostinginside-tpe-1.edge.nextdns.io'
     url: 'https://hostinginside-tpe-1.edge.nextdns.io/resolve?name=google.com'

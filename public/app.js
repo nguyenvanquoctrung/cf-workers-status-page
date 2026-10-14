@@ -7,6 +7,27 @@ let CONFIG = null
 let LOCATIONS = {}
 let STATE = { monitors: {}, lastUpdate: {} }
 let FILTER = ''
+let VIEW = 'status' // 'status' | 'incidents'
+let INC_MONTH = null // 'YYYY-MM' for the incidents view; null = current month
+let INC_MONITOR = '' // monitor id filter for the incidents view
+const OPENED_AT = Date.now()
+
+const GROUP_LABEL = { Vietnam: '🇻🇳 Vietnam', International: '🌏 International' }
+const groupOf = (m) => m.group || 'Other'
+const groupLabel = (g) => GROUP_LABEL[g] || g
+
+function expandedGroups() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('expandedGroups') || 'null')
+    if (Array.isArray(saved)) return new Set(saved)
+  } catch (e) {}
+  return null // null = default: everything expanded
+}
+function saveExpandedGroups(set) {
+  try {
+    localStorage.setItem('expandedGroups', JSON.stringify([...set]))
+  } catch (e) {}
+}
 
 const esc = (s) =>
   String(s ?? '')
@@ -385,6 +406,112 @@ function closeIncidentModal() {
   $('#incidentModal').hidden = true
 }
 
+// ---- Incidents view (UptimeFlare-style: month pager + monitor filter + list) ----
+
+// All monitor-days with recorded failures, newest first.
+function incidentEntries() {
+  const out = []
+  for (const m of CONFIG.monitors) {
+    const data = STATE.monitors[m.id]
+    if (!data) continue
+    for (const dd of dayStats(data)) {
+      if (dd.hasData && dd.fails > 0) {
+        out.push({
+          day: dd.day,
+          monitor: m,
+          fails: dd.fails,
+          downSecs: dd.downSecs,
+          avg: dd.avg,
+        })
+      }
+    }
+  }
+  out.sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
+  return out
+}
+
+function curMonthStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthShift(ym, delta) {
+  const [y, m] = ym.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function fmtMonth(ym) {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+  })
+}
+
+function renderIncidents() {
+  const month = INC_MONTH || curMonthStr()
+  const entries = incidentEntries().filter(
+    (e) =>
+      e.day.startsWith(month) && (!INC_MONITOR || e.monitor.id === INC_MONITOR),
+  )
+  const options =
+    `<option value="">All monitors</option>` +
+    CONFIG.monitors
+      .map(
+        (m) =>
+          `<option value="${esc(m.id)}"${INC_MONITOR === m.id ? ' selected' : ''}>${esc(m.name)}</option>`,
+      )
+      .join('')
+  const list = entries.length
+    ? entries
+        .map(
+          (e) =>
+            `<div class="incident">` +
+            `<div class="incident-head"><span class="incident-dot"></span>` +
+            `<strong>${esc(e.monitor.name)}</strong>` +
+            `<span class="incident-date">${fmtDay(e.day)}</span></div>` +
+            `<div class="incident-body">Est. downtime ${fmtDur(e.downSecs)} &middot; ` +
+            `${e.fails} incident episode${e.fails === 1 ? '' : 's'}` +
+            (e.avg != null ? ` &middot; ${Math.round(e.avg)}ms avg` : '') +
+            `</div></div>`,
+        )
+        .join('')
+    : `<div class="no-incidents">No incidents recorded in ${esc(fmtMonth(month))}.</div>`
+  $('#incidents').innerHTML =
+    `<div class="inc-controls"><select id="incMonitorFilter" aria-label="Filter by monitor">${options}</select></div>` +
+    list +
+    `<div class="inc-pager">` +
+    `<button class="btn" id="incPrev">&larr; Backwards</button>` +
+    `<span class="month-label">${esc(fmtMonth(month))}</span>` +
+    `<button class="btn" id="incNext">Forward &rarr;</button>` +
+    `</div>`
+  $('#incMonitorFilter').addEventListener('change', (e) => {
+    INC_MONITOR = e.target.value
+    renderIncidents()
+  })
+  $('#incPrev').addEventListener('click', () => {
+    INC_MONTH = monthShift(month, -1)
+    renderIncidents()
+  })
+  $('#incNext').addEventListener('click', () => {
+    INC_MONTH = monthShift(month, 1)
+    renderIncidents()
+  })
+}
+
+function setView(v) {
+  VIEW = v
+  $('#statusView').hidden = v !== 'status'
+  $('#incidentsView').hidden = v !== 'incidents'
+  document.querySelectorAll('.nav a').forEach((a) => {
+    a.classList.toggle('active', a.dataset.view === v)
+  })
+  document.title =
+    (v === 'incidents' ? 'Incidents — ' : '') + CONFIG.settings.title
+  if (v === 'incidents') renderIncidents()
+}
+
 function monitorCard(monitor, data, ci) {
   const nameHtml =
     monitor.linkable === false
@@ -432,19 +559,119 @@ function renderStatusHeader() {
     `</div>`
 }
 
+// Live "N sec ago" ticker (UptimeFlare behavior): updates every second and
+// reloads the page when data is older than 300s (avoids a stale dashboard).
+function tickHero() {
+  const lu = STATE.lastUpdate || {}
+  const el = document.querySelector('.hero-sub')
+  if (!el || !lu.time) return
+  const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
+  const date = new Date(lu.time).toLocaleString()
+  const next = `Last updated on: ${date} (${secs} sec ago)`
+  if (el.textContent !== next) el.textContent = next
+  if (secs > 300 && Date.now() - OPENED_AT > 30000) location.reload()
+}
+
+// Number of monitors in a group currently NOT operational (last check failed).
+function groupDownCount(ids) {
+  let down = 0
+  for (const id of ids) {
+    const data = STATE.monitors[id]
+    if (data && data.lastCheck && data.lastCheck.operational === false) down++
+  }
+  return down
+}
+
+function groupCountColor(down, total) {
+  if (down === 0) return '#059669'
+  if (down === total) return '#DF484A'
+  return '#F29030'
+}
+
+const CHEVRON =
+  '<svg class="mgroup-chev" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>'
+
+function groupSection(name, monitors, expanded) {
+  const ids = monitors.map((m) => m.id)
+  const down = groupDownCount(ids)
+  const color = groupCountColor(down, ids.length)
+  const cards = monitors
+    .map((m) => monitorCard(m, STATE.monitors[m.id], nextCi()))
+    .join('')
+  return (
+    `<div class="mgroup${expanded ? ' open' : ''}" data-group="${esc(name)}">` +
+    `<button class="mgroup-head" aria-expanded="${expanded ? 'true' : 'false'}">` +
+    `<span class="mgroup-name">${esc(groupLabel(name))}</span>` +
+    `<span class="mgroup-right"><span class="mgroup-count" style="color:${color}">` +
+    `${ids.length - down}/${ids.length} Operational</span>${CHEVRON}</span>` +
+    `</button>` +
+    `<div class="mgroup-panel">${cards}</div>` +
+    `</div>`
+  )
+}
+
+let CI_COUNTER = 0
+function nextCi() {
+  return CI_COUNTER++
+}
+
+function bindGroups() {
+  document.querySelectorAll('.mgroup-head').forEach((head) => {
+    head.addEventListener('click', () => {
+      const group = head.closest('.mgroup')
+      const name = group.dataset.group
+      const open = group.classList.toggle('open')
+      head.setAttribute('aria-expanded', open ? 'true' : 'false')
+      const all = CONFIG.monitors.map((m) => groupOf(m))
+      const exp = expandedGroups() || new Set(all)
+      if (open) exp.add(name)
+      else exp.delete(name)
+      saveExpandedGroups(exp)
+      if (open) fitStrips() // strips inside a collapsed panel had no layout at render time
+    })
+  })
+}
+
 function renderMonitors() {
   const term = FILTER.trim().toLowerCase()
-  const list = CONFIG.monitors.filter((m) =>
-    !term || m.name.toLowerCase().includes(term),
+  const list = CONFIG.monitors.filter(
+    (m) =>
+      !term ||
+      m.name.toLowerCase().includes(term) ||
+      (m.description || '').toLowerCase().includes(term),
   )
   CHARTS = []
   STRIPS = {}
-  $('#monitors').innerHTML = list.length
-    ? list.map((m, i) => monitorCard(m, STATE.monitors[m.id], i)).join('')
-    : `<div class="empty">No monitors match "${esc(FILTER)}".</div>`
+  CI_COUNTER = 0
+  if (!list.length) {
+    $('#monitors').innerHTML = `<div class="empty">No monitors match "${esc(FILTER)}".</div>`
+    return
+  }
+  // groups in first-appearance order (config order)
+  const order = []
+  const seen = new Set()
+  for (const m of list) {
+    const g = groupOf(m)
+    if (!seen.has(g)) {
+      seen.add(g)
+      order.push(g)
+    }
+  }
+  const all = CONFIG.monitors.map((m) => groupOf(m))
+  const expanded = expandedGroups() || new Set(all)
+  $('#monitors').innerHTML = order
+    .map((g) =>
+      groupSection(
+        g,
+        list.filter((m) => groupOf(m) === g),
+        expanded.has(g),
+      ),
+    )
+    .join('')
   bindCharts()
   bindStrips()
   fitStrips()
+  bindGroups()
 }
 
 function render() {
@@ -472,6 +699,7 @@ async function refreshState() {
       }
       renderStatusHeader()
       renderMonitors()
+      if (VIEW === 'incidents') renderIncidents()
     }
   } catch (e) {
     /* keep last rendered state on network hiccup */
@@ -509,6 +737,20 @@ async function init() {
     }
   })
 
+  // View navigation (UptimeFlare-style header links)
+  document.querySelectorAll('.nav a').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault()
+      setView(a.dataset.view)
+      try {
+        history.replaceState(null, '', a.dataset.view === 'incidents' ? '#incidents' : '#')
+      } catch (err) {}
+    })
+  })
+  $('#logo').addEventListener('click', () => setView('status'))
+  $('.brand').style.cursor = 'pointer'
+  $('.brand').addEventListener('click', () => setView('status'))
+
   const [cfg, loc] = await Promise.all([
     fetch('config.json').then((r) => {
       if (!r.ok) throw new Error('config.json not found — run npm run build')
@@ -521,7 +763,9 @@ async function init() {
 
   await refreshState()
   render()
+  setView(location.hash === '#incidents' ? 'incidents' : 'status')
   setInterval(refreshState, 30000)
+  setInterval(tickHero, 1000)
 }
 
 init().catch((e) => {
