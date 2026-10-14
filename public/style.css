@@ -571,3 +571,33 @@ a:hover { text-decoration: underline; }
 .search-empty { padding: 14px; font-size: 14px; color: var(--muted); text-align: center; }
 @keyframes searchFlash { 0%, 100% { box-shadow: none; } 30%, 70% { box-shadow: 0 0 0 3px var(--primary, #1d4ed8); } }
 .search-flash { animation: searchFlash 1.8s ease; border-radius: 12px; }
+
+/* Responsive header: hamburger menu */
+.nav-toggle { display: none; }
+@media (max-width: 1024px) {
+  .nav-toggle { display: inline-flex; }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--bg, #fff);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    padding: 8px;
+    gap: 2px;
+    z-index: 90;
+  }
+  .nav.open { display: flex; }
+  .nav a { padding: 10px 14px; border-radius: 8px; }
+  .header-actions { position: relative; }
+  .filter-wrap { flex: 1; min-width: 120px; }
+  .filter-wrap input { width: 100%; }
+}
+@media (max-width: 640px) {
+  .filter-wrap { display: none; }
+  .nav-toggle { display: inline-flex; }
+}
