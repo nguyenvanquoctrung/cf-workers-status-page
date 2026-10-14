@@ -46,12 +46,16 @@ function applyStaticI18n() {
     if (v && I18N[LANG]['nav.' + v]) a.textContent = I18N[LANG]['nav.' + v]
   })
   const fi = $('#filterInput')
-  if (fi) fi.placeholder = t('search.placeholder')
+  const ph = I18N[LANG]['search.placeholder']
+  if (fi && ph) fi.placeholder = ph
   const lb = $('#langBtn')
+  const lt = I18N[LANG]['lang.toggle']
   if (lb) {
     lb.textContent = LANG === 'vi' ? 'EN' : 'VI'
-    lb.title = t('lang.toggle')
-    lb.setAttribute('aria-label', t('lang.toggle'))
+    if (lt) {
+      lb.title = lt
+      lb.setAttribute('aria-label', lt)
+    }
   }
 }
 
