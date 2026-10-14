@@ -1292,6 +1292,11 @@ function timeoutSignal(ms) {
 
 let BLAT_RUNNING = false
 
+// Quarantined 2026-10-14 per Jeremie: the test.nextdns.io verdict never
+// arrives on his network (works from test browsers, fails for him) — card
+// hidden until the cause is found. Code kept intact; flip to re-enable.
+const NX_STATUS_ENABLED = false
+
 function renderBrowserLatency() {
   // Never wipe an in-progress measurement or existing results on re-render.
   if (BLAT_RUNNING || document.getElementById('blatBtn')) return
@@ -1303,17 +1308,19 @@ function renderBrowserLatency() {
     `<div class="blat-progress" id="blatProgress" hidden></div>` +
     `<div class="blat-results" id="blatResults"></div>` +
     `</div>` +
-    `<div class="blat">` +
-    `<h3 class="blat-title">NextDNS status</h3>` +
-    `<p class="blat-sub">Powered by test.nextdns.io.</p>` +
-    `<div id="nxStatus"><span class="dns-note">Checking&hellip;</span></div>` +
-    `<div class="st-controls"><button class="btn" id="nxRecheck">Re-check</button></div>` +
-    `</div>`
+    (NX_STATUS_ENABLED
+      ? `<div class="blat">` +
+        `<h3 class="blat-title">NextDNS status</h3>` +
+        `<p class="blat-sub">Powered by test.nextdns.io.</p>` +
+        `<div id="nxStatus"><span class="dns-note">Checking&hellip;</span></div>` +
+        `<div class="st-controls"><button class="btn" id="nxRecheck">Re-check</button></div>` +
+        `</div>`
+      : '')
   $('#blatBtn').addEventListener('click', measureBrowserLatency)
-  $('#nxRecheck').addEventListener('click', checkNextdnsStatus)
+  if (NX_STATUS_ENABLED) $('#nxRecheck').addEventListener('click', checkNextdnsStatus)
   // Like ping.nextdns.io: start automatically on first open.
   measureBrowserLatency()
-  checkNextdnsStatus()
+  if (NX_STATUS_ENABLED) checkNextdnsStatus()
 }
 
 // NextDNS configuration check, same trick as test.nextdns.io (reformatted):

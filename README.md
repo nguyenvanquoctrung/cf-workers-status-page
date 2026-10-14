@@ -18,8 +18,8 @@ dependency-free static page in the visual language of
   the recent median exceeds the configured `latencyThresholdMs`
 - **Ping tab** (`#ping`): one click measures live RTT from the
   visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first;
-  auto-starts on first open, plus a NextDNS status check (test.nextdns.io-style:
-  using/not-using pill, resolver, your IP, server)
+  auto-starts on first open. (A test.nextdns.io-style NextDNS status check was
+  prototyped but is quarantined — unreliable on the owner's network.)
 - **Speedtest tab** (`#speedtest`): self-hosted ping/download/upload test
   (vietcdn.net-style) against the Cloudflare edge — 20&nbsp;MB random test
   file, 4 parallel streams, 10s window with 1s warmup grace; no third-party

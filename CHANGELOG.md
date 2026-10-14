@@ -5,6 +5,13 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Quarantine NextDNS status card
+
+- The test.nextdns.io-style "NextDNS status" card is temporarily hidden
+  (`NX_STATUS_ENABLED = false`): the verdict never arrives on the owner's
+  network (works from test browsers — QA PASS). Code kept intact for
+  re-enabling once the cause is found.
+
 ## 2026-10-14 — Ping tab: auto-run + NextDNS status (`43fc8ea`)
 
 - **Ping tab auto-runs on first open** (like ping.nextdns.io); "Measure now"
