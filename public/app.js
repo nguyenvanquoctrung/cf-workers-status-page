@@ -78,21 +78,6 @@ en: {
 'incident.locAvg': '{ms}ms avg',
 'incident.close': 'Close',
 // ---- ping ----
-'ping.title': 'Ping NextDNS PoPs',
-'ping.sub': 'Finds nearby NextDNS PoPs (via dns.nextdns.io/servers) and measures latency from your browser to each, fastest first.',
-'ping.measure': 'Measure now',
-'ping.measureAgain': 'Measure again',
-'ping.nx.using': 'Using NextDNS',
-'ping.nx.notUsing': 'Not using NextDNS',
-'ping.failed': 'failed',
-'ping.measuring': 'Measuring…',
-'ping.progress': 'Measuring {done}/{total}…',
-'ping.server': 'server: {ms} ms',
-'ping.nx.title': 'NextDNS status',
-'ping.nx.powered': 'Powered by test.nextdns.io.',
-'ping.nx.checking': 'Checking…',
-'ping.nx.recheck': 'Re-check',
-'ping.nx.unreachable': 'Could not reach test.nextdns.io.',
 // ---- speedtest ----
 'speedtest.title': 'Speedtest',
 'speedtest.sub': 'Official measurement via VietCDN infrastructure (Real-Debrid servers worldwide). Each server is tested with 1 then 6 parallel connections, fastest first.',
@@ -287,21 +272,6 @@ vi: {
 'incident.locAvg': '{ms}ms trung bình',
 'incident.close': 'Đóng',
 // ---- ping ----
-'ping.title': 'Ping PoP NextDNS',
-'ping.sub': 'Tìm các PoP NextDNS gần bạn (qua dns.nextdns.io/servers) rồi đo độ trễ từ trình duyệt tới từng PoP, xếp nhanh nhất trước.',
-'ping.measure': 'Đo ngay',
-'ping.measureAgain': 'Đo lại',
-'ping.nx.using': 'Đang dùng NextDNS',
-'ping.nx.notUsing': 'Không dùng NextDNS',
-'ping.failed': 'thất bại',
-'ping.measuring': 'Đang đo…',
-'ping.progress': 'Đang đo {done}/{total}…',
-'ping.server': 'máy chủ: {ms} ms',
-'ping.nx.title': 'Trạng thái NextDNS',
-'ping.nx.powered': 'Dữ liệu từ test.nextdns.io.',
-'ping.nx.checking': 'Đang kiểm tra…',
-'ping.nx.recheck': 'Kiểm tra lại',
-'ping.nx.unreachable': 'Không kết nối được test.nextdns.io.',
 // ---- speedtest ----
 'speedtest.title': 'Đo tốc độ mạng',
 'speedtest.sub': 'Đo chính thức qua hạ tầng VietCDN (máy chủ Real-Debrid toàn cầu). Mỗi máy chủ được đo với 1 rồi 6 kết nối song song, xếp nhanh nhất trước.',
@@ -1501,7 +1471,6 @@ function setView(v) {
             : '') + t('doc.title')
   if (v === 'incidents') renderIncidents()
   if (v === 'ping') {
-    renderBrowserLatency()
     renderWorldPing()
   }
   if (v === 'speedtest') renderSpeedtest()
@@ -1701,156 +1670,10 @@ function timeoutSignal(ms) {
   return c.signal
 }
 
-let BLAT_RUNNING = false
-
-// Quarantined 2026-10-14 per Jeremie: the test.nextdns.io verdict never
-// arrives on his network (works from test browsers, fails for him) — card
-// hidden until the cause is found. Code kept intact; flip to re-enable.
-const NX_STATUS_ENABLED = false
-
-function renderBrowserLatency() {
-  // Never wipe an in-progress measurement or existing results on re-render.
-  if (BLAT_RUNNING || document.getElementById('blatBtn')) return
-  $('#browserLatency').innerHTML =
-    `<div class="blat">` +
-    `<h3 class="blat-title" data-i18n-key="ping.title">${t('ping.title')}</h3>` +
-    `<p class="blat-sub" data-i18n-key="ping.sub">${t('ping.sub')}</p>` +
-    `<button class="btn" id="blatBtn" data-i18n-key="ping.measure">${t('ping.measure')}</button>` +
-    `<div class="blat-progress" id="blatProgress" hidden></div>` +
-    `<div class="blat-results" id="blatResults"></div>` +
-    `</div>` +
-    (NX_STATUS_ENABLED
-      ? `<div class="blat">` +
-        `<h3 class="blat-title">${t('ping.nx.title')}</h3>` +
-        `<p class="blat-sub">${t('ping.nx.powered')}</p>` +
-        `<div id="nxStatus"><span class="dns-note">${t('ping.nx.checking')}</span></div>` +
-        `<div class="st-controls"><button class="btn" id="nxRecheck">${t('ping.nx.recheck')}</button></div>` +
-        `</div>`
-      : '')
-  $('#blatBtn').addEventListener('click', measureNextdnsPops)
-  if (NX_STATUS_ENABLED) $('#nxRecheck').addEventListener('click', checkNextdnsStatus)
-  // Manual only per Jeremie (2026-10-14): no auto-start on tab open.
-}
-
-// NextDNS configuration check, same trick as test.nextdns.io (reformatted):
-// a random subdomain forces the browser to resolve through the visitor's DNS,
-// the backend correlates that DNS query with this HTTPS request and answers
-// with a JSON verdict (CORS-open).
-let NX_CHECKING = false
-async function checkNextdnsStatus(retried = false) {
-  if (NX_CHECKING) return
-  NX_CHECKING = true
-  const out = $('#nxStatus')
-  const btn = $('#nxRecheck')
-  let failed = false
-  try {
-    if (btn) btn.disabled = true
-    out.innerHTML = `<span class="dns-note">${t('ping.nx.checking')}</span>`
-    const id = Array.from({ length: 20 }, () =>
-      'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)],
-    ).join('')
-    // Timeout: without it a hung request leaves the button dead forever.
-    const ctl = new AbortController()
-    const timer = setTimeout(() => ctl.abort(), 12000)
-    let r
-    try {
-      r = await fetch(`https://${id}.test.nextdns.io/`, {
-        cache: 'no-store',
-        signal: ctl.signal,
-      })
-    } finally {
-      clearTimeout(timer)
-    }
-    if (!r.ok) throw new Error('bad status')
-    const j = await r.json()
-    const ok = j && j.status === 'ok'
-    const kv = (k, v) =>
-      `<tr><td>${esc(k)}</td><td>${v ? esc(String(v)) : '<span class="dns-note">&mdash;</span>'}</td></tr>`
-    out.innerHTML =
-      `<div class="leak-pills"><span class="leak-pill ${ok ? 'leak-green' : 'leak-yellow'}">` +
-      esc(ok ? t('ping.nx.using') : t('ping.nx.notUsing')) +
-      `</span></div>` +
-      `<table class="dns-table"><tbody>` +
-      kv('Resolver', j.resolver) +
-      kv('Your IP', j.srcIP) +
-      kv('Server', j.server) +
-      `</tbody></table>`
-  } catch (e) {
-    failed = true
-  } finally {
-    // Always release the lock, even if rendering above threw.
-    NX_CHECKING = false
-    if (btn) btn.disabled = false
-  }
-  if (failed && !retried) {
-    // One automatic retry with a fresh subdomain — the first attempt
-    // sometimes loses a race with DNS warmup (seen once in QA).
-    await new Promise((res) => setTimeout(res, 800))
-    return checkNextdnsStatus(true)
-  }
-  if (failed) out.innerHTML = `<span class="dns-note">${t('ping.nx.unreachable')}</span>`
-}
-
-// Ping.nextdns.io method: fetch nearby PoPs from dns.nextdns.io/servers,
-// then ping each PoP's /info endpoint sequentially, fastest-first.
-async function measureNextdnsPops() {
-  if (BLAT_RUNNING) return
-  BLAT_RUNNING = true
-  const btn = $('#blatBtn')
-  const prog = $('#blatProgress')
-  const out = $('#blatResults')
-  btn.disabled = true
-  setI18nText(btn, 'ping.measuring')
-  prog.hidden = false
-  out.innerHTML = ''
-  const tick = (done, total) => setI18nText(prog, 'ping.progress', { done, total })
-  let pops = []
-  try {
-    const r = await fetch('https://dns.nextdns.io/servers', { cache: 'no-store' })
-    const list = await r.json()
-    if (Array.isArray(list)) pops = list.filter((p) => p && p.hostname)
-  } catch (e) {}
-  const total = pops.length
-  tick(0, total)
-  const results = []
-  for (const p of pops) {
-    const probe = await wpingProbe(p.hostname)
-    results.push({
-      hostname: p.hostname,
-      ok: !!probe,
-      ms: probe ? probe.ms : null,
-      name: popShort(p.hostname),
-    })
-    tick(results.length, total)
-  }
-  const okRows = results.filter((r) => r.ok).sort((a, b) => a.ms - b.ms)
-  const failRows = results.filter((r) => !r.ok)
-  out.innerHTML =
-    okRows
-      .map(
-        (r, i) =>
-          `<div class="blat-row${i === 0 ? ' blat-fastest' : ''}">` +
-          `<span class="blat-name">${i === 0 ? '\u25a0 ' : ''}${esc(r.name)}</span>` +
-          `<span class="blat-ms">${r.ms} ms</span></div>`,
-      )
-      .join('') +
-    failRows
-      .map(
-        (r) =>
-          `<div class="blat-row blat-failed">` +
-          `<span class="blat-name">${esc(r.hostname)}</span>` +
-          `<span class="blat-ms">${t('ping.failed')}</span></div>`,
-      )
-      .join('')
-  prog.hidden = true
-  btn.disabled = false
-  setI18nText(btn, 'ping.measureAgain')
-  BLAT_RUNNING = false
-}
 
 // ---- Phase 13: World Ping (meter.net-style) ----
-// Browser measures RTT to regional (non-anycast) endpoints worldwide.
-// S3 regional endpoints are stable, regional, and timing-safe via no-cors.
+// Browser measures RTT to verified NextDNS PoPs worldwide via each PoP's
+// /info endpoint (same technique as ping.nextdns.io).
 const NEXTDNS_POPS = [
   { host: 'zepto-ams-1.edge.nextdns.io', city: 'Amsterdam', lat: 52.37, lon: 4.9, country: 'Netherlands' },
   { host: 'lightnode-bkk-1.edge.nextdns.io', city: 'Bangkok', lat: 13.76, lon: 100.5, country: 'Thailand' },
