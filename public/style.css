@@ -202,7 +202,13 @@ a:hover { text-decoration: underline; }
 }
 .chart-wrap { position: relative; margin: 0; }
 .chart { display: block; width: 100%; height: auto; cursor: crosshair; }
-.cline { fill: none; stroke: var(--chart-line); stroke-width: 2; }
+.cline { fill: none; stroke: #64748b; stroke-width: 2; }
+.ctick { font-size: 10px; fill: var(--muted); }
+.cgrid { stroke: var(--card-border); stroke-width: 1; }
+.tip-ts { font-weight: 700; }
+@media (max-width: 640px) {
+  .xticks text:nth-of-type(even) { display: none; }
+}
 .cdot.bad { fill: #df484a; }
 .hov { fill: transparent; }
 .caxis { stroke: var(--card-border); stroke-width: 1; }

@@ -171,94 +171,121 @@ function monitorStatusIcon(data) {
 let CHARTS = []
 let STRIPS = {}
 
-function latencyChart(monitor, data, ci) {
-  const s = CONFIG.settings
-  const n = s.daysInHistogram
-  const days = dayStats(data)
-  CHARTS[ci] = days
+const f1 = (v) => v.toFixed(1)
+// Catmull-Rom -> cubic Bezier smoothing, UptimeFlare-style smooth latency line
+const smoothPath = (pts) => {
+  if (pts.length < 3) {
+    return 'M' + pts.map((p) => `${f1(p.x)},${f1(p.y)}`).join('L')
+  }
+  let d = `M${f1(pts[0].x)},${f1(pts[0].y)}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[Math.min(pts.length - 1, i + 2)]
+    d +=
+      `C${f1(p1.x + (p2.x - p0.x) / 6)},${f1(p1.y + (p2.y - p0.y) / 6)}` +
+      ` ${f1(p2.x - (p3.x - p1.x) / 6)},${f1(p2.y - (p3.y - p1.y) / 6)}` +
+      ` ${f1(p2.x)},${f1(p2.y)}`
+  }
+  return d
+}
 
-  // Too little data for a meaningful line: show a subtle placeholder
-  // instead of a broken-looking stub (tiny segment / empty axes).
-  const chartable = days.filter((dd) => dd.avg != null).length
-  if (chartable < 2) {
-    return `<div class="chart-nodata">No data yet</div>`
+// Nice axis step from the 1/2/5/10 series
+function niceStep(v) {
+  if (!(v > 0)) return 1
+  const p = Math.pow(10, Math.floor(Math.log10(v)))
+  const n = v / p
+  return (n >= 5 ? 10 : n >= 2 ? 5 : 2) * p
+}
+
+// Hour tick label, 12h format without leading zero: "3AM", "12PM"
+function hourLabel(ts) {
+  const d = new Date(ts * 1000)
+  let h = d.getHours()
+  const ap = h >= 12 ? 'PM' : 'AM'
+  h = h % 12
+  if (h === 0) h = 12
+  return h + ap
+}
+
+// Bold tooltip timestamp like UptimeFlare: "Oct 14, 2026, 8:37:44 am"
+function fmtTs(ts) {
+  const d = new Date(ts * 1000)
+  const mon = d.toLocaleString('en-US', { month: 'short' })
+  let h = d.getHours()
+  const ap = h >= 12 ? 'pm' : 'am'
+  h = h % 12
+  if (h === 0) h = 12
+  const p2 = (x) => String(x).padStart(2, '0')
+  return `${mon} ${d.getDate()}, ${d.getFullYear()}, ${h}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${ap}`
+}
+
+// GĐ4: 12h intraday latency chart (UptimeFlare DetailChart style).
+// Per-check points from the Worker's 12h ring buffer; failed checks leave gaps.
+function latencyChart(monitor, data, ci) {
+  const now = Date.now() / 1000
+  const from = now - 12 * 3600
+  const pts = ((data && data.latency) || []).filter((p) => p && p.t >= from - 1)
+  CHARTS[ci] = { pts, from, now }
+
+  const title = `<div class="chart-title">Response times(ms)</div>`
+  if (pts.length < 2) {
+    return title + `<div class="chart-nodata">No data yet</div>`
   }
 
   const W = 600
   const H = 150
-  const padT = 14
-  const padB = 26
-  const padX = 8
-  const maxV = Math.max(1, ...days.map((x) => x.avg || 0))
-  const X = (i) => padX + (i * (W - padX * 2)) / (n - 1)
+  const padL = 46
+  const padR = 8
+  const padT = 8
+  const padB = 20
+  const rawMax = Math.max(1, ...pts.map((p) => p.ms))
+  const step = niceStep(rawMax / 4)
+  const maxV = Math.ceil(rawMax / step) * step
+  const X = (t) => padL + ((t - from) / (now - from)) * (W - padL - padR)
   const Y = (v) => padT + (1 - v / maxV) * (H - padT - padB)
-  const base = H - padB
 
-  let line = ''
-  let dots = ''
-  let hovers = ''
-  const step = (W - padX * 2) / (n - 1)
-  let seg = []
-  const f1 = (v) => v.toFixed(1)
-  // Catmull-Rom -> cubic Bezier smoothing, UptimeFlare-style smooth latency line
-  const smoothPath = (pts) => {
-    if (pts.length < 3) {
-      return 'M' + pts.map((p) => `${f1(p.x)},${f1(p.y)}`).join('L')
-    }
-    let d = `M${f1(pts[0].x)},${f1(pts[0].y)}`
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[Math.max(0, i - 1)]
-      const p1 = pts[i]
-      const p2 = pts[i + 1]
-      const p3 = pts[Math.min(pts.length - 1, i + 2)]
-      d +=
-        `C${f1(p1.x + (p2.x - p0.x) / 6)},${f1(p1.y + (p2.y - p0.y) / 6)}` +
-        ` ${f1(p2.x - (p3.x - p1.x) / 6)},${f1(p2.y - (p3.y - p1.y) / 6)}` +
-        ` ${f1(p2.x)},${f1(p2.y)}`
-    }
-    return d
+  let grid = ''
+  for (let v = 0; v <= maxV + 1e-9; v += step) {
+    const y = Y(v)
+    grid +=
+      `<line x1="${padL}" y1="${f1(y)}" x2="${W - padR}" y2="${f1(y)}" class="cgrid" vector-effect="non-scaling-stroke"/>` +
+      `<text x="${padL - 6}" y="${f1(y + 3.5)}" text-anchor="end" class="ctick">${v.toLocaleString()}</text>`
   }
-  const flush = () => {
-    // Red incident dots only — no plain dots (UptimeFlare-style)
-    if (seg.length === 1) {
-      const p = seg[0]
-      if (p.fails > 0) {
-        dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="4.5" class="cdot bad"/>`
-      }
-    } else if (seg.length > 1) {
-      const pts = seg.map((p) => ({ x: X(p.i), y: Y(p.avg) }))
-      const d = smoothPath(pts)
-      line += `<path d="${d}" class="cline" vector-effect="non-scaling-stroke"/>`
-      for (const p of seg) {
-        if (p.fails > 0) {
-          dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="4.5" class="cdot bad"/>`
-        }
-      }
+  let xticks = ''
+  for (let t = Math.ceil(from / 3600) * 3600; t <= now; t += 3600) {
+    xticks += `<text x="${f1(X(t))}" y="${H - 6}" text-anchor="middle" class="ctick xt">${hourLabel(t)}</text>`
+  }
+
+  // Break the line where a gap exceeds ~1.8x the median check interval
+  // (failed checks store nothing, so they render as gaps like UptimeFlare).
+  const dts = []
+  for (let i = 1; i < pts.length; i++) dts.push(pts[i].t - pts[i - 1].t)
+  const sorted = dts.slice().sort((a, b) => a - b)
+  const med = sorted[Math.floor(sorted.length / 2)] || 600
+  const gapAt = Math.max(med * 1.8, 120)
+  let line = ''
+  let seg = []
+  const flushSeg = () => {
+    if (seg.length > 1) {
+      line += `<path d="${smoothPath(seg.map((p) => ({ x: X(p.t), y: Y(p.ms) })))}" class="cline" vector-effect="non-scaling-stroke"/>`
     }
     seg = []
   }
-  days.forEach((dd, i) => {
-    hovers += `<rect x="${(X(i) - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" class="hov" data-i="${i}"/>`
-    if (dd.avg == null) {
-      flush()
-      if (dd.fails > 0) {
-        dots += `<circle cx="${X(i).toFixed(1)}" cy="${base.toFixed(1)}" r="4.5" class="cdot bad"/>`
-      }
-    } else {
-      seg.push({ i, avg: dd.avg, fails: dd.fails })
-    }
+  pts.forEach((p, i) => {
+    if (i > 0 && p.t - pts[i - 1].t > gapAt) flushSeg()
+    seg.push(p)
   })
-  flush()
+  flushSeg()
 
   return (
-    `<div class="chart-title">Response times(ms)</div>` +
+    title +
     `<div class="chart-wrap" data-ci="${ci}">` +
     `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">` +
-    `<text x="${W - padX}" y="${padT - 4}" text-anchor="end" class="cmax">max ${Math.round(maxV)}ms</text>` +
-    `<line x1="${padX}" y1="${base}" x2="${W - padX}" y2="${base}" class="caxis" vector-effect="non-scaling-stroke"/>` +
+    grid +
+    `<g class="xticks">${xticks}</g>` +
     line +
-    dots +
-    hovers +
     `</svg><div class="chart-tip" hidden></div></div>`
   )
 }
@@ -284,37 +311,36 @@ function uptimeStrip(monitor, data, ci) {
 
 function bindCharts() {
   document.querySelectorAll('.chart-wrap').forEach((wrap) => {
-    const days = CHARTS[parseInt(wrap.dataset.ci, 10)]
-    if (!days) return
+    const st = CHARTS[parseInt(wrap.dataset.ci, 10)]
+    if (!st || !st.pts || st.pts.length < 2) return
     const svg = wrap.querySelector('svg')
     const tip = wrap.querySelector('.chart-tip')
-    const s = CONFIG.settings
+    const { pts, from, now } = st
+    // UptimeFlare "index" mode: hovering anywhere snaps to the nearest check.
     svg.addEventListener('mousemove', (e) => {
       const r = svg.getBoundingClientRect()
-      const i = Math.max(
-        0,
-        Math.min(days.length - 1, Math.round(((e.clientX - r.left) / r.width) * (days.length - 1))),
-      )
-      const dd = days[i]
-      let label
-      if (dd.avg == null && dd.fails === 0) {
-        label = esc(s.dayInHistogramNoData)
-      } else if (dd.fails > 0) {
-        label = `${dd.fails} ${esc(s.dayInHistogramNotOperational)}`
-      } else {
-        label = esc(s.dayInHistogramOperational)
+      const fx = (e.clientX - r.left) / r.width
+      const t = from + fx * (now - from)
+      let bi = 0
+      let bd = Infinity
+      for (let i = 0; i < pts.length; i++) {
+        const d = Math.abs(pts[i].t - t)
+        if (d < bd) {
+          bd = d
+          bi = i
+        }
       }
-      const avgs = dd.locs
-        .map((l) => `<span class="tip-avg">${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms</span>`)
-        .join('')
+      const p = pts[bi]
+      const locName = esc(LOCATIONS[p.loc] || p.loc || '')
       tip.innerHTML =
-        `<span class="tip-date">${fmtDay(dd.day)}</span>` +
-        (dd.avg != null ? `<span class="tip-label">${Math.round(dd.avg)}ms avg</span>` : '') +
-        `<span class="tip-label2">${label}</span>${avgs}`
+        `<div class="tip-ts">${fmtTs(p.t)}</div>` +
+        (locName
+          ? `<div>${Math.round(p.ms)}ms (${locName})</div>`
+          : `<div>${Math.round(p.ms)}ms</div>`)
       tip.hidden = false
       const wr = wrap.getBoundingClientRect()
       let left = e.clientX - wr.left + 14
-      left = Math.max(4, Math.min(left, wr.width - 150))
+      left = Math.max(4, Math.min(left, wr.width - 170))
       tip.style.left = left + 'px'
       tip.style.top = Math.max(4, e.clientY - wr.top - 10) + 'px'
     })
@@ -524,7 +550,6 @@ function monitorCard(monitor, data, ci) {
     `${overallHtml}</div>` +
     `${uptimeStrip(monitor, data, ci)}` +
     `${latencyChart(monitor, data, ci)}` +
-    `<div class="hist-legend"><span>${CONFIG.settings.daysInHistogram} days ago</span><span>Today</span></div>` +
     `</section>`
   )
 }

@@ -141,6 +141,7 @@ export async function processChecks(env, ctx) {
         firstCheck: checkDay,
         lastCheck: {},
         checks: {},
+        latency: [],
       }
     }
 
@@ -218,6 +219,20 @@ export async function processChecks(env, ctx) {
       const dayChecks = monitorsState.monitors[monitor.id].checks[checkDay]
       if (monitorStatusChanged || dayChecks.fails === 0) {
         dayChecks.fails++
+      }
+    }
+
+    // GĐ4: 12h intraday latency ring buffer (UptimeFlare-style). Appended on
+    // successful checks only — failed checks leave a gap in the chart.
+    // Trimmed to the last 12h. Rides the existing single KV write per cycle.
+    if (monitorOperational) {
+      const mst = monitorsState.monitors[monitor.id]
+      if (!Array.isArray(mst.latency)) mst.latency = []
+      const nowSec = Math.floor(Date.now() / 1000)
+      mst.latency.push({ t: nowSec, ms: requestTime, loc: checkLocation })
+      const keepFrom = nowSec - 12 * 3600
+      while (mst.latency.length > 0 && mst.latency[0].t < keepFrom) {
+        mst.latency.shift()
       }
     }
   }
