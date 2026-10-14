@@ -2054,7 +2054,6 @@ function dnssecMatrixHtml() {
   ).join('')
   return (
     `<div class="dns-table-wrap"><table class="dns-table dsec-table">` +
-    `<caption>DNSSEC Validation Tests</caption>` +
     `<thead>${head}</thead><tbody>${body}</tbody></table></div>` +
     `<div class="dns-note dsec-footnote" id="dsecFootnote" hidden>* ML-DSA-44 is a new signature algorithm not yet widely validated.</div>`
   )
@@ -2261,9 +2260,7 @@ async function runLeakTest() {
     `<div id="leakDnssec">${dnssecMatrixHtml()}<div class="dns-note" id="leakDnssecNote"></div></div>` +
     `<div id="leakResolvers"></div>` +
     `<div class="leak-statusbar"><span class="leak-sb-pills" id="leakSbPills"></span>` +
-    `<span class="leak-sb-dns dns-mono" id="leakSbDns">dns: 0</span></div>` +
-    `<div class="dns-note leak-credit">Like this tool? Star us on ` +
-    `<a href="https://github.com/brianshea2/addr.tools" target="_blank" rel="noopener">GitHub</a>.</div>`
+    `<span class="leak-sb-dns dns-mono" id="leakSbDns">dns: 0</span></div>`
 
   const id = randHex8()
   LS = {
