@@ -12,6 +12,49 @@ let INC_MONTH = null // 'YYYY-MM' for the incidents view; null = current month
 let INC_MONITOR = '' // monitor id filter for the incidents view
 const OPENED_AT = Date.now()
 
+// ---- i18n (Phase 11): Vietnamese + English ----
+// LANG persists in localStorage; default is Vietnamese.
+let LANG = 'vi'
+try {
+  const saved = localStorage.getItem('lang')
+  if (saved === 'en' || saved === 'vi') LANG = saved
+} catch (e) {}
+const I18N = { en: {}, vi: {} }
+// t('key') or t('key', {name: value}) for "{name}" placeholders.
+const t = (key, vars) => {
+  let s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.en[key] ?? key
+  if (vars) for (const k in vars) s = s.split(`{${k}}`).join(String(vars[k]))
+  return s
+}
+function setLang(l) {
+  LANG = l === 'en' ? 'en' : 'vi'
+  try {
+    localStorage.setItem('lang', LANG)
+  } catch (e) {}
+  document.documentElement.lang = LANG === 'vi' ? 'vi' : 'en'
+  applyStaticI18n()
+  // Re-render everything in the new language.
+  render()
+  setView(VIEW)
+  const lb = $('#langBtn')
+  if (lb) lb.textContent = LANG === 'vi' ? 'EN' : 'VI'
+}
+// Static (non-view) chrome: nav labels, search placeholder, lang button.
+function applyStaticI18n() {
+  document.querySelectorAll('.nav a').forEach((a) => {
+    const v = a.dataset.view
+    if (v && I18N[LANG]['nav.' + v]) a.textContent = I18N[LANG]['nav.' + v]
+  })
+  const fi = $('#filterInput')
+  if (fi) fi.placeholder = t('search.placeholder')
+  const lb = $('#langBtn')
+  if (lb) {
+    lb.textContent = LANG === 'vi' ? 'EN' : 'VI'
+    lb.title = t('lang.toggle')
+    lb.setAttribute('aria-label', t('lang.toggle'))
+  }
+}
+
 const GROUP_LABEL = { Vietnam: '🇻🇳 Vietnam', International: '🌏 International' }
 const groupOf = (m) => m.group || 'Other'
 const groupLabel = (g) => GROUP_LABEL[g] || g
@@ -438,18 +481,25 @@ function latencyChart(monitor, data, ci) {
       `<text x="${W - padR - 4}" y="${f1(ly)}" text-anchor="end" class="cthresh-label">${thr.toLocaleString()}ms</text>`
   }
 
-  // Break the line where a gap exceeds ~1.8x the median check interval
+  // Break the line where a gap exceeds ~1.8x the p90 check interval
   // (failed checks store nothing, so they render as gaps like UptimeFlare).
+  // p90, not median: check cadence can be heterogeneous (e.g. across edge
+  // locations or after a cron schedule change) — median would then slice
+  // normal points into isolated single-point segments that never render.
   const dts = []
   for (let i = 1; i < pts.length; i++) dts.push(pts[i].t - pts[i - 1].t)
   const sorted = dts.slice().sort((a, b) => a - b)
-  const med = sorted[Math.floor(sorted.length / 2)] || 600
-  const gapAt = Math.max(med * 1.8, 120)
+  const p90 = sorted[Math.floor(sorted.length * 0.9)] || 600
+  const gapAt = Math.max(p90 * 1.8, 1500)
   let line = ''
   let seg = []
   const flushSeg = () => {
     if (seg.length > 1) {
       line += `<path d="${smoothPath(seg.map((p) => ({ x: X(p.t), y: Y(p.ms) })))}" class="cline" vector-effect="non-scaling-stroke"/>`
+    } else if (seg.length === 1) {
+      // Never drop a valid point: isolated points render as dots.
+      const p = seg[0]
+      line += `<circle cx="${f1(X(p.t))}" cy="${f1(Y(p.ms))}" r="2.5" class="cdot" vector-effect="non-scaling-stroke"/>`
     }
     seg = []
   }
@@ -2725,6 +2775,9 @@ async function init() {
     })
 
   $('#themeBtn').addEventListener('click', cycleTheme)
+  $('#langBtn').addEventListener('click', () => setLang(LANG === 'vi' ? 'en' : 'vi'))
+  document.documentElement.lang = LANG === 'vi' ? 'vi' : 'en'
+  applyStaticI18n()
 
   $('#incidentModalClose').addEventListener('click', closeIncidentModal)
   $('#incidentModal').addEventListener('click', (e) => {

@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 19:35 — Sửa lỗi: biểu đồ latency bỏ sót điểm mới
+
+- **Biểu đồ latency 12 giờ chỉ vẽ cụm điểm cũ nhất** (chart trông như "chết"
+  sau ~4PM): heuristic ngắt đoạn dùng 1,8× *trung vị* khoảng cách giữa các lần
+  đo, nhưng khoảng cách này không đồng đều từ khi cron đổi 2-phút → 10-phút —
+  mọi điểm 10-phút thành đoạn lẻ 1 điểm, mà đoạn 1 điểm thì không bao giờ được
+  vẽ. Giờ dùng 1,8× *p90* (tối thiểu 25 phút), và điểm lẻ hợp lệ được vẽ thành
+  chấm tròn thay vì bị bỏ. Gap thật (check fail) vẫn đứt nét.
+
 ## 2026-10-14 18:45–19:01 — Phase 10: Ping tab (`960be8f`, `43fc8ea`, `3138663`, `dd84210`)
 
 - Thẻ **"Latency from your browser" trở thành tab Ping riêng** (`#ping`,

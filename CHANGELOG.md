@@ -5,6 +5,16 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 19:35 — Fix: latency chart dropping recent points
+
+- **12h latency chart rendered only the oldest cluster of points** (chart
+  looked "dead" after ~4PM): the gap heuristic used 1.8× the *median* check
+  interval, but intervals are heterogeneous since the cron went 2-min →
+  10-min — every 10-min point became an isolated single-point segment, and
+  single-point segments were silently never drawn. Now uses 1.8× the *p90*
+  interval (min 25 min), and isolated valid points render as dots instead of
+  being dropped. Real gaps (failed checks) still break the line.
+
 ## 2026-10-14 18:45–19:01 — Phase 10: Ping tab (`960be8f`, `43fc8ea`, `3138663`, `dd84210`)
 
 - **"Latency from your browser" card became a dedicated Ping tab** (`#ping`,
