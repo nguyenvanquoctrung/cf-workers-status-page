@@ -989,6 +989,7 @@ function setView(v) {
   $('#statusView').hidden = v !== 'status'
   $('#incidentsView').hidden = v !== 'incidents'
   $('#speedtestView').hidden = v !== 'speedtest'
+  $('#dnsView').hidden = v !== 'dns'
   document.querySelectorAll('.nav a').forEach((a) => {
     a.classList.toggle('active', a.dataset.view === v)
   })
@@ -997,9 +998,12 @@ function setView(v) {
       ? 'Incidents — '
       : v === 'speedtest'
         ? 'Speedtest — '
-        : '') + CONFIG.settings.title
+        : v === 'dns'
+          ? 'DNS Tools — '
+          : '') + CONFIG.settings.title
   if (v === 'incidents') renderIncidents()
   if (v === 'speedtest') renderSpeedtest()
+  if (v === 'dns') renderDnsTools()
 }
 
 function monitorCard(monitor, data, ci) {
@@ -1295,6 +1299,432 @@ async function refreshState() {
   }
 }
 
+// ---- DNS Tools (Phase 9) ----
+// Provider abstraction: PRIMARY = dnscheck.tools/addr.tools infrastructure;
+// FALLBACK = Cloudflare public DoH. DNS_PROVIDER_ORDER controls priority —
+// swapping providers (or trimming to one) is a one-line change here.
+
+const DNS_TYPE_NAMES = {
+  1: 'A', 28: 'AAAA', 5: 'CNAME', 15: 'MX', 16: 'TXT',
+  2: 'NS', 6: 'SOA', 33: 'SRV', 12: 'PTR', 257: 'CAA',
+}
+const dnsTypeName = (n) => DNS_TYPE_NAMES[n] || `TYPE${n}`
+
+// Both providers answer {Status, Answer:[{name,type:<num>,TTL?,data}]} —
+// normalize to a common shape.
+function normalizeDnsAnswer(j) {
+  const answers = Array.isArray(j.Answer) ? j.Answer : []
+  return {
+    status: typeof j.Status === 'number' ? j.Status : -1,
+    answers: answers.map((a) => ({
+      name: String(a.name ?? ''),
+      type: dnsTypeName(Number(a.type)),
+      ttl:
+        a.TTL != null && Number.isFinite(Number(a.TTL))
+          ? Number(a.TTL)
+          : null,
+      data: String(a.data ?? ''),
+    })),
+  }
+}
+
+const DNS_PROVIDERS = {
+  addrtools: {
+    label: 'addr.tools',
+    lookup: async (name, typeName) => {
+      const r = await fetch(
+        `https://addr.tools/dns/${encodeURIComponent(name)}/${encodeURIComponent(typeName.toLowerCase())}`,
+      )
+      if (!r.ok) throw new Error(`addr.tools HTTP ${r.status}`)
+      return normalizeDnsAnswer(await r.json()) // throws on non-JSON → fallback
+    },
+  },
+  cfdoh: {
+    label: 'Cloudflare DoH',
+    lookup: async (name, typeName) => {
+      const r = await fetch(
+        `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${encodeURIComponent(typeName)}`,
+        { headers: { accept: 'application/dns-json' } },
+      )
+      if (!r.ok) throw new Error(`Cloudflare DoH HTTP ${r.status}`)
+      return normalizeDnsAnswer(await r.json())
+    },
+  },
+}
+// One-line provider swap: reorder or trim this list.
+const DNS_PROVIDER_ORDER = ['addrtools', 'cfdoh']
+
+// Query providers in order; first success wins. Throws only if all fail.
+async function dnsQuery(name, typeName) {
+  const t0 = performance.now()
+  let lastErr = null
+  for (const key of DNS_PROVIDER_ORDER) {
+    try {
+      const res = await DNS_PROVIDERS[key].lookup(name, typeName)
+      return {
+        ...res,
+        via: DNS_PROVIDERS[key].label,
+        fallback: key !== DNS_PROVIDER_ORDER[0],
+        ms: Math.max(1, Math.round(performance.now() - t0)),
+      }
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr || new Error('all DNS providers failed')
+}
+
+function ipv4ToArpa(ip) {
+  const parts = ip.trim().split('.')
+  if (
+    parts.length !== 4 ||
+    parts.some((p) => !/^\d{1,3}$/.test(p) || Number(p) > 255)
+  )
+    return null
+  return parts.reverse().join('.') + '.in-addr.arpa'
+}
+
+function ipv6ToArpa(ip) {
+  const t = ip.trim().toLowerCase()
+  if (!/^[0-9a-f:.]+$/.test(t) || !t.includes(':')) return null
+  const halves = t.split('::')
+  if (halves.length > 2) return null
+  const left = halves[0] ? halves[0].split(':') : []
+  const right = halves.length === 2 && halves[1] ? halves[1].split(':') : []
+  if (left.concat(right).some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null
+  const missing = 8 - left.length - right.length
+  if (missing < 0) return null
+  const groups = left.concat(new Array(missing).fill('0'), right)
+  if (groups.length !== 8) return null
+  return (
+    groups
+      .map((g) => g.padStart(4, '0'))
+      .join('')
+      .split('')
+      .reverse()
+      .join('.') + '.ip6.arpa'
+  )
+}
+
+function validDnsName(s) {
+  const t = s.trim().replace(/\.$/, '')
+  if (!t || t.length > 253) return false
+  return t
+    .split('.')
+    .every((label) => /^[a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?$/i.test(label))
+}
+
+const DNS_LOOKUP_TYPES = [
+  'A', 'AAAA', 'CNAME', 'MX', 'TXT',
+  'NS', 'SOA', 'SRV', 'PTR', 'CAA',
+]
+
+function renderDnsTools() {
+  $('#dnsTools').innerHTML =
+    `<div class="dns-card"><div class="st-head"><h2>DNS Lookup</h2>` +
+    `<p class="st-sub">Query DNS records for any domain. Primary source: dnscheck.tools ` +
+    `(addr.tools) infrastructure — automatic fallback to Cloudflare DNS-over-HTTPS.</p></div>` +
+    `<div class="dns-form">` +
+    `<input id="dnsName" type="text" placeholder="example.com" autocomplete="off" spellcheck="false" aria-label="Domain name">` +
+    `<select id="dnsType" aria-label="Record type">` +
+    DNS_LOOKUP_TYPES.map((t) => `<option value="${t}">${t}</option>`).join('') +
+    `</select>` +
+    `<button class="btn" id="dnsGo">Lookup</button>` +
+    `</div>` +
+    `<div class="dns-status" id="dnsStatus"></div>` +
+    `<div id="dnsResults"></div></div>` +
+    `<div class="dns-card"><div class="st-head"><h2>DNS Leak Test</h2>` +
+    `<p class="st-sub">Powered by dnscheck.tools infrastructure. Discovers which DNS resolvers ` +
+    `your network actually uses, by watching special test queries arrive at their nameservers.</p></div>` +
+    `<div class="st-controls"><button class="btn" id="leakGo">Run leak test</button>` +
+    `<span class="st-status" id="leakStatus"></span></div>` +
+    `<div id="leakResults"></div></div>`
+  $('#dnsGo').addEventListener('click', runDnsLookup)
+  $('#dnsName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runDnsLookup()
+  })
+  $('#leakGo').addEventListener('click', runLeakTest)
+}
+
+let DNS_LOOKUP_RUNNING = false
+async function runDnsLookup() {
+  if (DNS_LOOKUP_RUNNING) return
+  const nameEl = $('#dnsName')
+  const typeEl = $('#dnsType')
+  const statusEl = $('#dnsStatus')
+  const out = $('#dnsResults')
+  if (!nameEl || !typeEl || !statusEl || !out) return
+  let qname = nameEl.value.trim()
+  const qtype = typeEl.value
+  out.innerHTML = ''
+  if (!qname) {
+    statusEl.innerHTML = `<span class="dns-err">Enter a domain name or IP address.</span>`
+    return
+  }
+  if (qtype === 'PTR') {
+    const arpa = ipv4ToArpa(qname) || ipv6ToArpa(qname)
+    if (arpa) qname = arpa
+    else if (!validDnsName(qname)) {
+      statusEl.innerHTML = `<span class="dns-err">For PTR, enter an IP address or a valid reverse-DNS name.</span>`
+      return
+    }
+  } else if (!validDnsName(qname)) {
+    statusEl.innerHTML = `<span class="dns-err">&ldquo;${esc(qname)}&rdquo; doesn&rsquo;t look like a valid domain name.</span>`
+    return
+  }
+  DNS_LOOKUP_RUNNING = true
+  $('#dnsGo').disabled = true
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> Querying ${esc(qname)} ${esc(qtype)}&hellip;`
+  try {
+    const res = await dnsQuery(qname, qtype)
+    renderDnsResults(res, qname, qtype)
+  } catch (e) {
+    statusEl.innerHTML = ''
+    out.innerHTML =
+      `<div class="dns-err">Lookup failed: ${esc(e && e.message ? e.message : 'network error')}. ` +
+      `Both providers unreachable &mdash; check your connection and try again.</div>`
+  } finally {
+    DNS_LOOKUP_RUNNING = false
+    const b = $('#dnsGo')
+    if (b) b.disabled = false
+  }
+}
+
+function renderDnsResults(res, qname, qtype) {
+  const statusEl = $('#dnsStatus')
+  const out = $('#dnsResults')
+  if (!statusEl || !out) return
+  const meta =
+    `<div class="dns-meta">${esc(qname)} ${esc(qtype)} &middot; ${res.ms} ms &middot; via ${esc(res.via)}` +
+    (res.fallback ? ` <span class="dns-note">(fallback)</span>` : '') +
+    `</div>`
+  statusEl.innerHTML = ''
+  if (res.status === 3) {
+    out.innerHTML =
+      meta +
+      `<div class="dns-empty">No records found (NXDOMAIN) &mdash; &ldquo;${esc(qname)}&rdquo; does not exist.</div>`
+    return
+  }
+  if (res.status !== 0 || !res.answers.length) {
+    const why =
+      res.status === 2 ? 'server failure (SERVFAIL)' : `DNS status ${res.status}`
+    out.innerHTML =
+      meta +
+      `<div class="dns-empty">No ${esc(qtype)} records for &ldquo;${esc(qname)}&rdquo; (${why}).</div>`
+    return
+  }
+  out.innerHTML =
+    meta +
+    `<div class="dns-table-wrap"><table class="dns-table"><thead><tr>` +
+    `<th>Name</th><th>Type</th><th>TTL</th><th>Data</th>` +
+    `</tr></thead><tbody>` +
+    res.answers
+      .map(
+        (a) =>
+          `<tr><td class="dns-mono">${esc(a.name)}</td><td>${esc(a.type)}</td>` +
+          `<td class="dns-num">${a.ttl == null ? '&mdash;' : esc(String(a.ttl))}</td>` +
+          `<td class="dns-mono dns-data">${esc(a.data)}</td></tr>`,
+      )
+      .join('') +
+    `</tbody></table></div>`
+}
+
+// ---- DNS leak test (Phase 9, Card 2) ----
+// Replicates the dnscheck.tools main flow: the browser opens a WebSocket to
+// THEIR infrastructure, then fires special test subdomains at it. Their
+// authoritative nameserver observes the DNS queries and pushes details back
+// over the socket. Trigger fetches use mode:'no-cors' (their CORS only allows
+// their own origin) — the DNS still resolves server-side; results arrive via WS.
+const LEAK = { running: false }
+
+function randHex8() {
+  const b = new Uint8Array(4)
+  crypto.getRandomValues(b)
+  return [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
+}
+
+async function runLeakTest() {
+  if (LEAK.running) return
+  const btn = $('#leakGo')
+  const statusEl = $('#leakStatus')
+  const out = $('#leakResults')
+  if (!btn || !statusEl || !out) return
+  LEAK.running = true
+  btn.disabled = true
+  out.innerHTML = ''
+  const id = randHex8()
+  const seen = new Map() // remoteIp -> {protos:Set, ecs:Set, count}
+  let total = 0
+  let finished = false
+  let ws = null
+  const finish = (timedOut) => {
+    if (finished) return
+    finished = true
+    clearTimeout(timer)
+    try {
+      if (ws) ws.close()
+    } catch (e) {}
+    LEAK.running = false
+    const b2 = $('#leakGo')
+    if (b2) b2.disabled = false
+    renderLeakResults(seen, total, timedOut)
+  }
+  const timer = setTimeout(() => finish(true), 20000)
+  const failUnreachable = () => {
+    clearTimeout(timer)
+    finished = true
+    LEAK.running = false
+    const b2 = $('#leakGo')
+    if (b2) b2.disabled = false
+    const s2 = $('#leakStatus')
+    if (s2) s2.innerHTML = ''
+    const o2 = $('#leakResults')
+    if (o2)
+      o2.innerHTML = `<div class="dns-err">Leak test unreachable (dnscheck.tools WebSocket blocked) &mdash; DNS Lookup above still works.</div>`
+  }
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> Opening channel&hellip;`
+  try {
+    ws = await new Promise((resolve, reject) => {
+      let w
+      try {
+        w = new WebSocket(`wss://ws.dnscheck.tools/watch/${id}`)
+      } catch (e) {
+        reject(e)
+        return
+      }
+      let settled = false
+      const to = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          try {
+            w.close()
+          } catch (e) {}
+          reject(new Error('timeout'))
+        }
+      }, 8000)
+      w.onopen = () => {
+        if (!settled) {
+          settled = true
+          clearTimeout(to)
+          resolve(w)
+        }
+      }
+      w.onerror = () => {
+        if (!settled) {
+          settled = true
+          clearTimeout(to)
+          reject(new Error('error'))
+        }
+      }
+      w.onclose = () => {
+        if (!settled) {
+          settled = true
+          clearTimeout(to)
+          reject(new Error('closed'))
+        }
+      }
+    })
+  } catch (e) {
+    failUnreachable()
+    return
+  }
+  ws.onmessage = (ev) => {
+    try {
+      const m = JSON.parse(ev.data)
+      if (!m || !m.remoteIp) return
+      let e = seen.get(m.remoteIp)
+      if (!e) {
+        e = { protos: new Set(), ecs: new Set(), count: 0 }
+        seen.set(m.remoteIp, e)
+      }
+      if (m.proto) e.protos.add(String(m.proto))
+      if (m.clientSubnet) e.ecs.add(String(m.clientSubnet))
+      e.count++
+      total++
+      const s3 = $('#leakStatus')
+      if (s3)
+        s3.innerHTML =
+          `<span class="spinner" aria-hidden="true"></span> Listening&hellip; ${total} ` +
+          `quer${total === 1 ? 'y' : 'ies'} seen`
+      if (total >= 8) finish(false)
+    } catch (e) {
+      /* ignore malformed messages */
+    }
+  }
+  ws.onclose = () => finish(false)
+  ws.onerror = () => {} // surfaced via onclose/timeout; never crash
+  const s4 = $('#leakStatus')
+  if (s4)
+    s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> Sending test queries&hellip;`
+  for (const s of ['a', 'b', 'c', 'd']) {
+    try {
+      fetch(`https://${s}.${id}-nullip.test.dnscheck.tools/`, {
+        mode: 'no-cors',
+      }).catch(() => {})
+    } catch (e) {}
+  }
+}
+
+function renderLeakResults(seen, total, timedOut) {
+  const statusEl = $('#leakStatus')
+  const out = $('#leakResults')
+  if (!statusEl || !out) return
+  statusEl.innerHTML = ''
+  const n = seen.size
+  let html =
+    `<div class="dns-meta">Your queries were seen from <b>${n} resolver${n === 1 ? '' : 's'}</b>` +
+    (timedOut ? ' (stopped after 20s)' : '') +
+    `</div>`
+  if (!n) {
+    out.innerHTML =
+      html +
+      `<div class="dns-empty">No resolvers observed${timedOut ? ' (timed out)' : ''} &mdash; ` +
+      `your network may block the test queries, or the channel closed early.</div>`
+    return
+  }
+  const entries = [...seen.entries()]
+  html +=
+    `<div class="dns-table-wrap"><table class="dns-table"><thead><tr>` +
+    `<th>Resolver IP</th><th>Reverse DNS</th><th>Protocol</th><th>ECS subnet</th><th>Queries</th>` +
+    `</tr></thead><tbody>` +
+    entries
+      .map(
+        ([ip, e], i) =>
+          `<tr><td class="dns-mono">${esc(ip)}</td>` +
+          `<td class="dns-mono" id="leakPtr${i}"><span class="dns-note">&hellip;</span></td>` +
+          `<td>${esc([...e.protos].join(', ') || '\u2014')}</td>` +
+          `<td class="dns-mono">${esc([...e.ecs].join(', ') || '\u2014')}</td>` +
+          `<td class="dns-num">${e.count}</td></tr>`,
+      )
+      .join('') +
+    `</tbody></table></div>`
+  out.innerHTML = html
+  // Best-effort reverse DNS via the lookup providers (RDAP skipped — too heavy).
+  entries.forEach(([ip], i) => {
+    const cell = () => document.getElementById(`leakPtr${i}`)
+    const arpa = ipv4ToArpa(ip) || ipv6ToArpa(ip)
+    if (!arpa) {
+      const c = cell()
+      if (c) c.innerHTML = '<span class="dns-note">&mdash;</span>'
+      return
+    }
+    dnsQuery(arpa, 'PTR')
+      .then((res) => {
+        const c = cell()
+        if (!c) return
+        const ptr =
+          res.status === 0 && res.answers.length
+            ? res.answers[0].data.replace(/\.$/, '')
+            : null
+        c.textContent = ptr || '\u2014'
+      })
+      .catch(() => {
+        const c = cell()
+        if (c) c.innerHTML = '<span class="dns-note">&mdash;</span>'
+      })
+  })
+}
+
 async function init() {
   applyTheme()
   window
@@ -1340,7 +1770,9 @@ async function init() {
             ? '#incidents'
             : a.dataset.view === 'speedtest'
               ? '#speedtest'
-              : '#'
+              : a.dataset.view === 'dns'
+                ? '#dns'
+                : '#'
         history.replaceState(null, '', h)
       } catch (err) {}
     })
@@ -1367,7 +1799,9 @@ async function init() {
       ? 'incidents'
       : location.hash === '#speedtest'
         ? 'speedtest'
-        : 'status'
+        : location.hash === '#dns'
+          ? 'dns'
+          : 'status'
   setView(viewFromHash())
   window.addEventListener('hashchange', () => setView(viewFromHash()))
   setInterval(refreshState, 30000)

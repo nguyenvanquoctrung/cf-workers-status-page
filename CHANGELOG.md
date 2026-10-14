@@ -5,6 +5,22 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Phase 9: DNS Tools tab
+
+- New **DNS Tools** tab (`#dns`, next to Speedtest), frontend-only.
+- **DNS Lookup**: domain input + record-type select (A/AAAA/CNAME/MX/TXT/NS/
+  SOA/SRV/PTR/CAA), client-side validation, IP→reverse-DNS auto-conversion
+  for PTR. Provider abstraction: primary dnscheck.tools (addr.tools) with
+  automatic fallback to Cloudflare DNS-over-HTTPS on any failure
+  (`DNS_PROVIDER_ORDER` = one-line swap); NXDOMAIN/SERVFAIL handled as
+  informative states; query time shown; results table with type names, TTL,
+  data; loading spinner; Enter-key submit.
+- **DNS Leak Test**: replicates the dnscheck.tools main flow — random client
+  ID, WebSocket to their infrastructure, `no-cors` trigger queries, resolver
+  grouping (IP/protocol/ECS/query count) with best-effort reverse DNS;
+  graceful "unreachable" message if their WebSocket is blocked. Display-only;
+  never crashes the page.
+
 ## 2026-10-14 — Phase 8b: vietcdn-style detailed speedtest
 
 - New "Detailed test" section inside the Speedtest tab (below the summary

@@ -23,6 +23,11 @@ dependency-free static page in the visual language of
   file, 4 parallel streams, 10s window with 1s warmup grace; no third-party
   bandwidth. Plus a **detailed test** section with sequential single-connection
   then 6-connection download rounds, rows appearing progressively like vietcdn
+- **DNS Tools tab** (`#dns`): **DNS Lookup** — query any record type for any
+  domain via dnscheck.tools (addr.tools) infrastructure with automatic
+  fallback to Cloudflare DNS-over-HTTPS (swappable provider order); **DNS
+  Leak Test** — discovers your network's actual DNS resolvers via
+  dnscheck.tools' WebSocket + nameserver observation
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
 - **Incidents view** (`#incidents`) with month pager (bounded to the KV data

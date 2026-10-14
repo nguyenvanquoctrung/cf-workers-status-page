@@ -441,3 +441,41 @@ a:hover { text-decoration: underline; }
 @media (max-width: 540px) {
   .ustrip-wrap { display: none; }
 }
+
+/* DNS Tools (Phase 9) */
+.dns-card { margin-bottom: 28px; }
+.dns-card:last-child { margin-bottom: 0; }
+.dns-form { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.dns-form input {
+  flex: 1 1 220px; font: inherit; font-size: 14px; color: var(--text);
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 4px; padding: 8px 12px;
+}
+.dns-form input:focus { outline: none; border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
+.dns-form select {
+  font: inherit; font-size: 14px; color: var(--text);
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 4px; padding: 8px 10px;
+}
+.dns-status { min-height: 26px; margin: 6px 0; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.dns-err { color: var(--red); }
+.dns-note { color: var(--muted); font-size: 0.85em; }
+.dns-meta { color: var(--muted); font-size: 13px; margin: 8px 0; }
+.dns-meta b { color: var(--text); }
+.dns-empty { color: var(--muted); padding: 14px 4px; }
+.dns-table-wrap { overflow-x: auto; }
+.dns-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.dns-table th, .dns-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.dns-table th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.dns-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; word-break: break-all; }
+.dns-num { text-align: right; font-variant-numeric: tabular-nums; }
+.dns-data { word-break: break-all; }
+.spinner {
+  display: inline-block; width: 14px; height: 14px; flex: none;
+  border: 2px solid var(--input-border); border-top-color: var(--link);
+  border-radius: 50%; animation: dns-spin 0.7s linear infinite; vertical-align: -2px;
+}
+@keyframes dns-spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) {
+  .dns-form .btn { flex: 1 1 100%; }
+}
