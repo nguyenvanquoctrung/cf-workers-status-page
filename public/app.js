@@ -25,7 +25,7 @@ function expandedGroups() {
     const saved = JSON.parse(localStorage.getItem('expandedGroups') || 'null')
     if (Array.isArray(saved)) return new Set(saved)
   } catch (e) {}
-  return null // null = default: everything expanded
+  return null // null = default: everything collapsed (click a group to expand)
 }
 function saveExpandedGroups(set) {
   try {
@@ -838,8 +838,7 @@ function bindGroups() {
       const name = group.dataset.group
       const open = group.classList.toggle('open')
       head.setAttribute('aria-expanded', open ? 'true' : 'false')
-      const all = CONFIG.monitors.map((m) => groupOf(m))
-      const exp = expandedGroups() || new Set(all)
+      const exp = expandedGroups() || new Set()
       if (open) exp.add(name)
       else exp.delete(name)
       saveExpandedGroups(exp)
@@ -873,8 +872,7 @@ function renderMonitors() {
       order.push(g)
     }
   }
-  const all = CONFIG.monitors.map((m) => groupOf(m))
-  const expanded = expandedGroups() || new Set(all)
+  const expanded = expandedGroups() || new Set()
   $('#monitors').innerHTML = order
     .map((g) =>
       groupSection(
