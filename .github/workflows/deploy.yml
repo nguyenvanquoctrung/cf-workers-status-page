@@ -78,3 +78,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: Clear cron triggers (checks run via GitHub Actions from SIN)
+        # Belt & suspenders: wrangler only deletes cron triggers when
+        # `crons = []` is explicit in wrangler.toml; this API call guarantees
+        # no stray trigger survives a deploy.
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/nextdns/schedules"
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          echo "Schedules before: $(curl -s -H "$AUTH" "$API")"
+          curl -s -X PUT -H "$AUTH" -H "Content-Type: application/json" --data '[]' "$API" | head -c 400
+          echo ""
+          echo "Schedules after: $(curl -s -H "$AUTH" "$API")"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
