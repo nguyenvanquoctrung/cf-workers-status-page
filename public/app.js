@@ -1263,7 +1263,9 @@ const COLO_MAP = {
 }
 
 // VietCDN-style IP info header: masked IP + location pill + ASN pill.
-// Data proxied through /api/vietcdn-ipinfo (their endpoint lacks CORS).
+// Data from /api/conn — the edge's direct observation of the USER
+// (a server-side proxy to vietcdn.net would only see Cloudflare's IP).
+const COUNTRY_NAMES = { VN: 'Vietnam', US: 'United States', SG: 'Singapore', HK: 'Hong Kong', TW: 'Taiwan', JP: 'Japan', KR: 'South Korea', TH: 'Thailand', MY: 'Malaysia', ID: 'Indonesia', PH: 'Philippines', CN: 'China', IN: 'India', AE: 'UAE', AU: 'Australia', NZ: 'New Zealand', GB: 'United Kingdom', DE: 'Germany', FR: 'France', NL: 'Netherlands', ES: 'Spain', IT: 'Italy', CH: 'Switzerland', SE: 'Sweden', PL: 'Poland', CA: 'Canada', BR: 'Brazil', CL: 'Chile', CO: 'Colombia', ZA: 'South Africa' }
 function maskIp(ip) {
   if (!ip) return '--'
   if (ip.includes(':')) {
@@ -1279,16 +1281,18 @@ async function renderIpInfo() {
   el.dataset.done = '1'
   el.innerHTML = `<div class="ipinfo-ip">${t('ipinfo.loading')}</div>`
   try {
-    const r = await fetch('/api/vietcdn-ipinfo', { cache: 'no-store' })
+    const r = await fetch('/api/conn', { cache: 'no-store' })
     const j = await r.json()
-    if (j.status !== 'success' || !j.query) throw new Error('bad')
-    const cc = (j.countryCode || '').toLowerCase()
+    if (!j.ip) throw new Error('bad')
+    const cc = (j.country || '').toLowerCase()
     const flag = cc ? `<img src="https://flagcdn.com/24x18/${cc}.png" alt="" width="24" height="18"> ` : ''
+    const countryName = COUNTRY_NAMES[j.country] || j.country
+    const asStr = [j.asn != null ? 'AS' + j.asn : null, j.asOrganization].filter(Boolean).join(' ')
     el.innerHTML =
-      `<div class="ipinfo-ip">${esc(maskIp(j.query))}</div>` +
+      `<div class="ipinfo-ip">${esc(maskIp(j.ip))}</div>` +
       `<div class="ipinfo-pills">` +
-      `<span class="ipinfo-pill">${flag}${esc([j.city, j.country].filter(Boolean).join(', '))}</span>` +
-      `<span class="ipinfo-pill">${esc(j.as || j.isp || '')}</span>` +
+      `<span class="ipinfo-pill">${flag}${esc([j.city, countryName].filter(Boolean).join(', '))}</span>` +
+      `<span class="ipinfo-pill">${esc(asStr)}</span>` +
       `</div>`
   } catch (e) {
     el.innerHTML = `<div class="ipinfo-ip" style="font-size:15px">${t('ipinfo.failed')}</div>`
