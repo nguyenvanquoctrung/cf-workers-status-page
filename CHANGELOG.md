@@ -5,7 +5,7 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
-## 2026-10-14 — Ping tab: auto-run + NextDNS status
+## 2026-10-14 — Ping tab: auto-run + NextDNS status (`43fc8ea`)
 
 - **Ping tab auto-runs on first open** (like ping.nextdns.io); "Measure now"
   re-runs manually. Results survive tab switches.
@@ -16,8 +16,7 @@ Asia/Saigon (GMT+7).
   Using/Not-using-NextDNS pill plus resolver, your IP and server; credit
   "Powered by test.nextdns.io", Re-check button included.
 
-## 2026-10-14 — Ping tab + Vietnam-expanded groups
-
+## 2026-10-14 — Ping tab + Vietnam-expanded groups (`960be8f`)
 - **"Latency from your browser" card became a dedicated Ping tab**
   (`#ping`, nav: Status | Incidents | Ping | Speedtest | DNS Tools):
   same one-click browser-to-POP latency measurement, now with its own view
@@ -25,7 +24,52 @@ Asia/Saigon (GMT+7).
 - **Monitor groups default: Vietnam expanded, International collapsed**
   (was: all collapsed). localStorage still remembers manual toggles.
 
-## 2026-10-14 — Phase 9c: leak test full info parity (+ DNSSEC probe fix)
+## 2026-10-14 — Credit-only subtitles, drop tool descriptions (`59da851`)
+
+- Per owner rule (we use others' infrastructure): subtitles keep the credit
+  line only, no tool descriptions. Detailed test keeps "Test files hosted by
+  Real-Debrid (vietcdn.net infrastructure)…"; DNS Leak Test keeps "Powered by
+  dnscheck.tools infrastructure."; DNS Lookup keeps "Powered by dnscheck.tools
+  (addr.tools) infrastructure."
+
+## 2026-10-14 — Leak test: microphone-permission flow on "(show more)" (`d3b67be`)
+
+- Clicking "(show more)" now shows the original's confirm dialog (RFC 8828
+  explanation); on grant, `getUserMedia({audio:true})` + re-gather ICE
+  candidates with the audio track (may reveal additional IPs), tracks stopped
+  after 1s — no audio recorded. Cancelling just reveals already-gathered
+  addresses. Like the original, an already-granted mic permission is used
+  silently (no extra prompt).
+
+## 2026-10-14 — Leak test: "Reserved" label for private IPs (`87e8035`)
+
+- Private/reserved addresses (e.g. 192.168.x.x from WebRTC) now show the
+  "Reserved" registrant label like dnscheck.tools' expanded view, instead of
+  a blank dash.
+
+## 2026-10-14 — Fix: leak test "(show more)" dead after test finishes (`a023236`)
+
+- Root cause: the show-more state lived in the run state (`LS`), which is
+  nulled when the test ends — clicks after finish did nothing. Split UI
+  state out (`leakUiIps`, `leakUiShowMore`, `leakUiRender`) so the toggle
+  works before, during and after a run; a new run resets the snapshot.
+  Also removed leftover `.leak-credit` CSS.
+
+## 2026-10-14 — Polish leak test UI (`f830a04`)
+
+- Removed the duplicated "DNSSEC Validation Tests" caption (kept the section
+  title) and the "Like this tool? Star us on GitHub." promo line; kept the
+  honest "Powered by dnscheck.tools infrastructure" attribution.
+
+## 2026-10-14 — Fix DNSSEC calibration: probe alg domain, not nullip (`fb97190`)
+
+- Root cause of the all-`...` matrix: calibration probed
+  `a.{id}-nullip.test.dnscheck.tools`, which intentionally resolves to
+  `0.0.0.0` (it only exists to generate observable DNS queries, never as an
+  HTTP endpoint). Calibration now probes `{id}.test-alg15.dnscheck.tools`
+  (a real IP), like the original measures `connected` on its test-alg domains.
+
+## 2026-10-14 — Phase 9c: leak test full info parity (`f478290`)
 
 - **DNSSEC probe fixed (was broken, now works):** the 9b `<link
   rel=stylesheet>` onload/onerror technique never fired — browsers MIME-check
@@ -49,7 +93,15 @@ Asia/Saigon (GMT+7).
 - Attribution line kept honest: "Like this tool? Star us on GitHub" →
   `brianshea2/addr.tools`.
 
-## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools
+## 2026-10-14 — Fix: page auto-reload killing measurements (`0f94d5f`)
+
+- Root cause: `tickHero()` reloaded the page when monitor data was older than
+  300s — a leftover from the 2-minute cron era. With the 10-minute cron, data
+  is routinely 5–10 minutes old, causing reload loops mid-measurement. Now
+  reloads only when data is older than 1800s (30 min), and never while a
+  speedtest, detailed test or leak test is running.
+
+## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools (`64bbe41` pt.2)
 
 - **DNS Leak Test** card reworked per Jeremie's "as close to the original as
   possible": logic ported from `brianshea2/addr.tools`
@@ -72,7 +124,7 @@ Asia/Saigon (GMT+7).
 - ECS subnets now also shown as their own line ("Your DNS resolvers advertise
   your IP subnet (ECS)"); resolvers table kept with PTR enrichment.
 
-## 2026-10-14 — Phase 8c: detailed test uses vietcdn's real servers
+## 2026-10-14 — Phase 8c: detailed test uses vietcdn's real servers (`64bbe41` pt.1)
 
 - "Detailed test" reworked per Jeremie's decision (their-infrastructure-first):
   now measures against **vietcdn.net's 8 real servers** (Netherlands, RBX,
@@ -102,7 +154,7 @@ Asia/Saigon (GMT+7).
   keeps the last good DOM and retries on the next cycle instead of blanking
   the page.
 
-## 2026-10-14 — Phase 9: DNS Tools tab
+## 2026-10-14 — Phase 9: DNS Tools tab (`923b59a`)
 
 - New **DNS Tools** tab (`#dns`, next to Speedtest), frontend-only.
 - **DNS Lookup**: domain input + record-type select (A/AAAA/CNAME/MX/TXT/NS/
@@ -118,7 +170,7 @@ Asia/Saigon (GMT+7).
   graceful "unreachable" message if their WebSocket is blocked. Display-only;
   never crashes the page.
 
-## 2026-10-14 — Phase 8b: vietcdn-style detailed speedtest
+## 2026-10-14 — Phase 8b: vietcdn-style detailed speedtest (`fce7a4a`)
 
 - New "Detailed test" section inside the Speedtest tab (below the summary
   cards): sequential single-connection then 6-connection download rounds
@@ -127,7 +179,7 @@ Asia/Saigon (GMT+7).
   button, no auto-run; the two test modes are mutually exclusive so they
   can't skew each other's numbers.
 
-## 2026-10-14 — Phase 8: self-hosted speedtest tab
+## 2026-10-14 — Phase 8: self-hosted speedtest tab (`bc88561`)
 
 - New **Speedtest** tab next to Incidents (`#speedtest` deep-link): measures
   **ping** (median of 3 timed `/api/state` fetches), **download** and **upload**
@@ -246,7 +298,7 @@ Asia/Saigon (GMT+7).
   Node 22 and KV namespace creation (`312ee2c`, `adc021e`); 13 NextDNS edge
   monitors configured (`9a7d020`).
 
-## 2026-10-14 — Hash deep-link mid-session (`44733a9`)
+## 2026-10-14 — Hash deep-link mid-session (`5f2fb62`)
 
 - Changing the URL hash mid-session (`#incidents` / `#speedtest`) now switches
   views via a `hashchange` listener (previously only worked on page load).
