@@ -178,7 +178,7 @@ a:hover { text-decoration: underline; }
 
 /* ---- 90-day uptime bar strip (UptimeFlare DetailBar) ---- */
 .ustrip-wrap { position: relative; margin: 10px 0 5px; }
-.ustrip { display: flex; flex-wrap: nowrap; align-items: flex-end; }
+.ustrip { display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: flex-start; width: max-content; max-width: 100%; }
 .ubar {
   width: 7px; height: 20px; border-radius: 2px;
   margin: 0 1px; flex: none;
