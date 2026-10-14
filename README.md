@@ -22,8 +22,9 @@ dependency-free static page in the visual language of
   hover tooltip, gaps on failed checks); per-monitor **latency threshold
   alerts** — an orange "High latency" pill plus a dashed threshold line when
   the recent median exceeds the configured `latencyThresholdMs`
-- **Ping tab** (`#ping`): one click measures live RTT from the
-  visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first;
+- **Ping tab** (`#ping`): one click discovers nearby NextDNS PoPs via
+  `dns.nextdns.io/servers` and measures live RTT from the visitor's browser
+  to each (ping.nextdns.io method), sorted fastest-first;
   manual start only. **World Ping Test** (meter.net-style): browser pings 33 verified
   NextDNS PoPs worldwide via each PoP's /info endpoint (3 probes each,
   sequential, nearest-first), plotted on a world map with

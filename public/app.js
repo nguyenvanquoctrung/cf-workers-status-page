@@ -78,8 +78,8 @@ en: {
 'incident.locAvg': '{ms}ms avg',
 'incident.close': 'Close',
 // ---- ping ----
-'ping.title': 'Ping',
-'ping.sub': 'Measures latency from your browser to each monitored endpoint.',
+'ping.title': 'Ping NextDNS PoPs',
+'ping.sub': 'Finds nearby NextDNS PoPs (via dns.nextdns.io/servers) and measures latency from your browser to each, fastest first.',
 'ping.measure': 'Measure now',
 'ping.measureAgain': 'Measure again',
 'ping.nx.using': 'Using NextDNS',
@@ -286,8 +286,8 @@ vi: {
 'incident.locAvg': '{ms}ms trung bình',
 'incident.close': 'Đóng',
 // ---- ping ----
-'ping.title': 'Ping',
-'ping.sub': 'Đo độ trễ từ trình duyệt của bạn tới từng endpoint được giám sát.',
+'ping.title': 'Ping PoP NextDNS',
+'ping.sub': 'Tìm các PoP NextDNS gần bạn (qua dns.nextdns.io/servers) rồi đo độ trễ từ trình duyệt tới từng PoP, xếp nhanh nhất trước.',
 'ping.measure': 'Đo ngay',
 'ping.measureAgain': 'Đo lại',
 'ping.nx.using': 'Đang dùng NextDNS',
@@ -1820,7 +1820,7 @@ function renderBrowserLatency() {
         `<div class="st-controls"><button class="btn" id="nxRecheck">${t('ping.nx.recheck')}</button></div>` +
         `</div>`
       : '')
-  $('#blatBtn').addEventListener('click', measureBrowserLatency)
+  $('#blatBtn').addEventListener('click', measureNextdnsPops)
   if (NX_STATUS_ENABLED) $('#nxRecheck').addEventListener('click', checkNextdnsStatus)
   // Manual only per Jeremie (2026-10-14): no auto-start on tab open.
 }
@@ -1884,29 +1884,9 @@ async function checkNextdnsStatus(retried = false) {
   if (failed) out.innerHTML = `<span class="dns-note">${t('ping.nx.unreachable')}</span>`
 }
 
-async function measureOne(monitor) {
-  const url = infoUrlFor(monitor)
-  if (!url) return { monitor, ok: false }
-  const t0 = performance.now()
-  try {
-    const res = await fetch(url, { cache: 'no-store', signal: timeoutSignal(5000) })
-    const ms = Math.round(performance.now() - t0)
-    let serverMs = null
-    try {
-      const j = await res.json()
-      const rtt = Number(j && j.rtt)
-      if (Number.isFinite(rtt)) serverMs = Math.round(rtt / 1000)
-    } catch {
-      /* server-reported number is optional */
-    }
-    if (!res.ok) return { monitor, ok: false }
-    return { monitor, ok: true, ms, serverMs }
-  } catch {
-    return { monitor, ok: false }
-  }
-}
-
-async function measureBrowserLatency() {
+// Ping.nextdns.io method: fetch nearby PoPs from dns.nextdns.io/servers,
+// then ping each PoP's /info endpoint sequentially, fastest-first.
+async function measureNextdnsPops() {
   if (BLAT_RUNNING) return
   BLAT_RUNNING = true
   const btn = $('#blatBtn')
@@ -1916,19 +1896,26 @@ async function measureBrowserLatency() {
   setI18nText(btn, 'ping.measuring')
   prog.hidden = false
   out.innerHTML = ''
-  const monitors = CONFIG.monitors.filter((m) => infoUrlFor(m))
-  const total = monitors.length
-  let done = 0
-  setI18nText(prog, 'ping.progress', { done: 0, total })
-  const results = await Promise.all(
-    monitors.map((m) =>
-      measureOne(m).then((r) => {
-        done++
-        setI18nText(prog, 'ping.progress', { done, total })
-        return r
-      }),
-    ),
-  )
+  const tick = (done, total) => setI18nText(prog, 'ping.progress', { done, total })
+  let pops = []
+  try {
+    const r = await fetch('https://dns.nextdns.io/servers', { cache: 'no-store' })
+    const list = await r.json()
+    if (Array.isArray(list)) pops = list.filter((p) => p && p.hostname)
+  } catch (e) {}
+  const total = pops.length
+  tick(0, total)
+  const results = []
+  for (const p of pops) {
+    const probe = await wpingProbe(p.hostname)
+    results.push({
+      hostname: p.hostname,
+      ok: !!probe,
+      ms: probe ? probe.ms : null,
+      name: (probe && probe.locationName) || p.hostname,
+    })
+    tick(results.length, total)
+  }
   const okRows = results.filter((r) => r.ok).sort((a, b) => a.ms - b.ms)
   const failRows = results.filter((r) => !r.ok)
   out.innerHTML =
@@ -1936,17 +1923,15 @@ async function measureBrowserLatency() {
       .map(
         (r, i) =>
           `<div class="blat-row${i === 0 ? ' blat-fastest' : ''}">` +
-          `<span class="blat-name">${i === 0 ? '■ ' : ''}${esc(r.monitor.name)}</span>` +
-          `<span class="blat-ms">${r.ms} ms` +
-          (r.serverMs != null ? ` <span class="blat-server">${t('ping.server', { ms: r.serverMs })}</span>` : '') +
-          `</span></div>`,
+          `<span class="blat-name">${i === 0 ? '\u25a0 ' : ''}${esc(r.name)}</span>` +
+          `<span class="blat-ms">${r.ms} ms</span></div>`,
       )
       .join('') +
     failRows
       .map(
         (r) =>
           `<div class="blat-row blat-failed">` +
-          `<span class="blat-name">${esc(r.monitor.name)}</span>` +
+          `<span class="blat-name">${esc(r.hostname)}</span>` +
           `<span class="blat-ms">${t('ping.failed')}</span></div>`,
       )
       .join('')
@@ -2116,32 +2101,6 @@ async function wpingProbe(host) {
   }
 }
 
-// Nearby PoPs straight from NextDNS (dynamic, always fresh). Merged with the
-// curated worldwide list; coordinates resolved from NEXTDNS_POPS when known.
-async function wpingNearbyPops() {
-  try {
-    const r = await fetch('https://dns.nextdns.io/servers', { cache: 'no-store' })
-    const list = await r.json()
-    if (!Array.isArray(list)) return []
-    const known = new Map(NEXTDNS_POPS.map((p) => [p.host, p]))
-    return list
-      .filter((s) => s && s.hostname && !known.has(s.hostname))
-      .map((s) => {
-        const code = s.hostname.split('.')[0].split('-').slice(1, -1).join('-')
-        const ref = [...known.values()].find((p) => p.host.includes('-' + code + '-'))
-        return {
-          host: s.hostname,
-          city: ref ? ref.city : code.toUpperCase(),
-          lat: ref ? ref.lat : null,
-          lon: ref ? ref.lon : null,
-          dynamic: true,
-        }
-      })
-  } catch (e) {
-    return []
-  }
-}
-
 let WORLD_PING_RUNNING = false
 async function runWorldPing() {
   if (WORLD_PING_RUNNING) return
@@ -2157,10 +2116,6 @@ async function runWorldPing() {
   // sort servers by haversine distance, then ping strictly sequentially
   // (parallel probes skew each other's timings).
   let results = NEXTDNS_POPS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
-  for (const d of await wpingNearbyPops()) {
-    if (!results.some((r) => r.host === d.host))
-      results.push({ ...d, values: [], min: null, avg: null, max: null, distKm: null })
-  }
   try {
     const r = await fetch('/api/conn', { cache: 'no-store' })
     const j = await r.json()
