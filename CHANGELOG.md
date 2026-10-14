@@ -5,6 +5,15 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Phase 8b: vietcdn-style detailed speedtest
+
+- New "Detailed test" section inside the Speedtest tab (below the summary
+  cards): sequential single-connection then 6-connection download rounds
+  against the Cloudflare edge, rows appearing progressively with live Mbps
+  like vietcdn.net. Same 20&nbsp;MB test file and Mbps formula; own start
+  button, no auto-run; the two test modes are mutually exclusive so they
+  can't skew each other's numbers.
+
 ## 2026-10-14 — Phase 8: self-hosted speedtest tab
 
 - New **Speedtest** tab next to Incidents (`#speedtest` deep-link): measures

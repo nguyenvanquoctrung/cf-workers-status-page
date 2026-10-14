@@ -738,6 +738,7 @@ const ST_GRACE_MS = 1000
 const ST_UP_CHUNK = 2 * 1024 * 1024
 
 const ST = { running: false }
+const ST2 = { running: false } // detailed (vietcdn-style) test state
 
 function stMbps(bytes, secs) {
   return ((8 * bytes) / secs / 1048576) * 1.1
@@ -766,16 +767,71 @@ function renderSpeedtest() {
     `<div class="st-metric"><div class="st-label">Upload</div><div class="st-value" id="st-up">—</div></div>` +
     `</div>` +
     `<div class="st-controls"><button class="btn" id="stStart">Start test</button>` +
-    `<span class="st-status" id="stStatus"></span></div>`
+    `<span class="st-status" id="stStatus"></span></div>` +
+    `<div class="st-detail"><h3>Detailed test</h3>` +
+    `<p class="st-sub">vietcdn-style rounds against the Cloudflare edge serving this page: ` +
+    `one single-connection round, then one 6-connection round. Each row appears when its round finishes.</p>` +
+    `<div id="stDetailRows"></div>` +
+    `<div class="st-controls"><button class="btn" id="stDetailStart">Start detailed test</button>` +
+    `<span class="st-status" id="stDetailStatus"></span></div></div>`
   $('#stStart').addEventListener('click', runSpeedtest)
+  $('#stDetailStart').addEventListener('click', runDetailedTest)
+}
+
+// vietcdn-style: sequential single-connection then 6-connection download rounds
+// against the Cloudflare edge. Rows appear progressively as each round finishes.
+async function runDetailedTest() {
+  if (ST2.running || ST.running) return
+  ST2.running = true
+  const btn = $('#stDetailStart')
+  const status = $('#stDetailStatus')
+  const rows = $('#stDetailRows')
+  btn.disabled = true
+  $('#stStart').disabled = true // concurrent tests would skew each other's numbers
+  btn.textContent = 'Testing…'
+  rows.innerHTML = ''
+  try {
+    const rounds = [
+      { label: 'Single connection', streams: 1 },
+      { label: '6 parallel connections', streams: 6 },
+    ]
+    for (const [i, rd] of rounds.entries()) {
+      const rowId = `stDetailRow${i}`
+      rows.insertAdjacentHTML(
+        'beforeend',
+        `<div class="st-drow"><div class="st-drow-head"><strong>${esc(rd.label)}</strong>` +
+          `<span class="st-drow-server">Cloudflare edge (this site)</span></div>` +
+          `<div class="st-drow-value" id="${rowId}"><span class="st-status">measuring…</span></div></div>`,
+      )
+      status.textContent = `Measuring ${rd.label.toLowerCase()}…`
+      try {
+        const mbps = await stDownload((v) => {
+          const el = document.getElementById(rowId)
+          if (el) el.innerHTML = `${v.toFixed(2)} <span class="st-unit">Mbps</span>`
+        }, rd.streams)
+        const el = document.getElementById(rowId)
+        if (el) el.innerHTML = stRateHtml(mbps)
+      } catch (e) {
+        const el = document.getElementById(rowId)
+        if (el) el.textContent = 'failed'
+      }
+    }
+    status.textContent = 'Done.'
+  } finally {
+    ST2.running = false
+    btn.disabled = false
+    $('#stStart').disabled = false
+    btn.textContent = 'Run again'
+  }
 }
 
 async function runSpeedtest() {
-  if (ST.running) return
+  if (ST.running || ST2.running) return
   ST.running = true
   const btn = $('#stStart')
   const status = $('#stStatus')
   btn.disabled = true
+  $('#stDetailStart').disabled = true // concurrent tests would skew each other's numbers
   btn.textContent = 'Testing…'
   try {
     status.textContent = 'Measuring ping…'
@@ -798,6 +854,7 @@ async function runSpeedtest() {
   } finally {
     ST.running = false
     btn.disabled = false
+    $('#stDetailStart').disabled = false
     btn.textContent = 'Test again'
   }
 }
@@ -814,7 +871,7 @@ async function stPing() {
   return stMedian3(samples[0], samples[1], samples[2])
 }
 
-async function stDownload(onTick) {
+async function stDownload(onTick, streams = ST_STREAMS) {
   const t0 = performance.now()
   const graceEnd = t0 + ST_GRACE_MS
   const deadline = t0 + ST_WINDOW_MS
@@ -859,7 +916,7 @@ async function stDownload(onTick) {
     if (el > 0 && bytes > 0) onTick(stMbps(bytes, el))
   }, 250)
   try {
-    await Promise.all(Array.from({ length: ST_STREAMS }, stream))
+    await Promise.all(Array.from({ length: streams }, stream))
   } finally {
     clearInterval(tick)
   }

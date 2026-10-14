@@ -21,7 +21,8 @@ dependency-free static page in the visual language of
 - **Speedtest tab** (`#speedtest`): self-hosted ping/download/upload test
   (vietcdn.net-style) against the Cloudflare edge — 20&nbsp;MB random test
   file, 4 parallel streams, 10s window with 1s warmup grace; no third-party
-  bandwidth
+  bandwidth. Plus a **detailed test** section with sequential single-connection
+  then 6-connection download rounds, rows appearing progressively like vietcdn
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
 - **Incidents view** (`#incidents`) with month pager (bounded to the KV data
