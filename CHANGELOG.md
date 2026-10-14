@@ -5,6 +5,17 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 21:15 — Phase 13: World Ping Test + manual Ping
+
+- **World Ping Test** (meter.net-style) in the Ping tab: the browser pings
+  15 regional S3 endpoints worldwide (3 probes each, parallel), results
+  plotted on an embedded SVG world map (green <100 ms, amber 100–250 ms,
+  red >250 ms) plus a detailed table sorted by fastest: Location | min |
+  avg | max | values. Live marker updates as probes complete.
+- **Ping tab is now manual-only** — the NextDNS POP latency test no longer
+  auto-starts on tab open; it runs on button click.
+- Full VI/EN i18n (13 keys × 2).
+
 ## 2026-10-14 21:00 — Phase 12: QUIC / TLS / WebRTC network tools
 
 - **QUIC / HTTP3 Test**: checks whether the browser reaches the site over

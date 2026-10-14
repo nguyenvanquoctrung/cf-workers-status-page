@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 21:15 — Phase 13: Kiểm tra ping toàn cầu + Ping thủ công
+
+- **Kiểm tra ping toàn cầu** (kiểu meter.net) trong tab Ping: trình duyệt
+  ping 15 endpoint S3 theo vùng trên khắp thế giới (mỗi nơi 3 lần, song
+  song), kết quả vẽ lên bản đồ thế giới SVG nhúng sẵn (xanh <100 ms, vàng
+  100–250 ms, đỏ >250 ms) kèm bảng chi tiết xếp theo nhanh nhất: Vị trí |
+  nhỏ nhất | trung bình | lớn nhất | các giá trị. Marker cập nhật trực
+  tiếp khi từng probe xong.
+- **Tab Ping giờ chỉ chạy thủ công** — bài đo latency POP NextDNS không còn
+  tự chạy khi mở tab; chỉ chạy khi bấm nút.
+- i18n VI/EN đầy đủ (13 key × 2).
+
 ## 2026-10-14 21:00 — Phase 12: Công cụ mạng QUIC / TLS / WebRTC
 
 - **Kiểm tra QUIC / HTTP3**: kiểm tra trình duyệt có tới được trang qua QUIC

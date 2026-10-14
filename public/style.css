@@ -537,3 +537,11 @@ a:hover { text-decoration: underline; }
 @media (max-width: 640px) {
   .dns-form .btn { flex: 1 1 100%; }
 }
+
+/* ---- Phase 13: World Ping ---- */
+.wping-map { width: 100%; height: auto; display: block; margin: 8px 0 4px; color: var(--text); }
+.wping-sec { margin: 20px 0 8px; font-size: 15px; }
+.wping-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.wping-table th, .wping-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.wping-table th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.wping-table td:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
