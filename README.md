@@ -28,10 +28,13 @@ dependency-free static page in the visual language of
 - **DNS Tools tab** (`#dns`): **DNS Lookup** — query any record type for any
   domain via dnscheck.tools (addr.tools) infrastructure with automatic
   fallback to Cloudflare DNS-over-HTTPS (swappable provider order); **DNS
-  Leak Test** — mirrors dnscheck.tools: your IP addresses, live status pills
+  Leak Test** — mirrors dnscheck.tools: your IP addresses with RDAP registrant
+  and geolocation ("(show more)" for extended IPs), live status pills
   (RTT, IPv6, ADoX, EDNS, DNSSEC), a full DNSSEC validation matrix
-  (Invalid/Expired/Missing × 4 signature algorithms), and the resolver table
-  with ECS subnets, all powered by their WebSocket + nameserver observation
+  (Invalid/Expired/Missing × 4 signature algorithms), resolvers grouped by
+  registrant with ECS subnets, a bottom status bar with live `dns:` query
+  counter (ECH shown as n/a — unreadable cross-origin), all powered by their
+  WebSocket + nameserver observation
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
 - **Incidents view** (`#incidents`) with month pager (bounded to the KV data

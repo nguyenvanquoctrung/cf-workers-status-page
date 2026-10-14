@@ -1704,33 +1704,252 @@ function drawPills() {
   bar.innerHTML = order
     .map((k) => (LS.pills[k] ? leakPill(LS.pills[k].label, LS.pills[k].cls, LS.pills[k].title) : ''))
     .join('')
+  drawStatusBar()
 }
 
-// Cross-origin "connected" probe. Their test domains answer 200 "Connected"
-// but send no CORS headers for our origin, so fetch() is useless here. A
-// <link rel=stylesheet> fires load iff the browser completed DNS+TLS+HTTP
-// (the same signal the original reads as r.ok) and error otherwise. The body
-// is not valid CSS, so it never affects the page.
+// Bottom status bar mirroring the original's fixed bar: "{rtt}ms  IPv6  EDNS
+// DNSSEC  ECH" indicators plus the "dns: N" query counter. ECH is rendered
+// "n/a": the X-ECH-Status header is only exposed to dnscheck.tools itself,
+// so a cross-origin page can never read it — shown honestly, never faked.
+function drawStatusBar() {
+  if (!LS) return
+  const sb = document.getElementById('leakSbPills')
+  if (sb) {
+    const p = LS.pills
+    const items = []
+    if (p.rtt) items.push(leakPill(p.rtt.label, p.rtt.cls, p.rtt.title))
+    if (p.ipv6) items.push(leakPill('IPv6', p.ipv6.cls, p.ipv6.title))
+    if (p.edns) items.push(leakPill('EDNS', p.edns.cls, p.edns.title))
+    if (p.dnssec) items.push(leakPill('DNSSEC', p.dnssec.cls, p.dnssec.title))
+    items.push(
+      leakPill(
+        'ECH',
+        'na',
+        'Encrypted Client Hello\n\nNot detectable from this page: the ' +
+          'X-ECH-Status header is only exposed to dnscheck.tools itself, ' +
+          'never cross-origin.',
+      ),
+    )
+    sb.innerHTML = items.join(' ')
+  }
+  const dns = document.getElementById('leakSbDns')
+  if (dns) dns.textContent = `dns: ${LS.total}`
+}
+
+// Cross-origin "connected" probe (Phase 9c fix). The 9b <link rel=stylesheet>
+// technique was broken by design: browsers MIME-check stylesheets and their
+// server answers Content-Type: text/plain, so onload NEVER fired. The correct
+// port of the original's first-party fetch().ok signal is a no-cors fetch:
+//   - DNS resolves + TLS ok + HTTP 200 "Connected" -> promise RESOLVES
+//     (opaque response) -> connected = true
+//   - DNS failure / validating resolver SERVFAILs the badsig query /
+//     connection refused -> promise REJECTS -> connected = false
+// (no-cors never rejects on CORS — that only applies to default cors mode.)
 function probeConnected(fqdn, timeoutMs) {
   return new Promise((resolve) => {
     let settled = false
-    const link = document.createElement('link')
     const timer = setTimeout(() => done(false), timeoutMs)
     function done(v) {
       if (settled) return
       settled = true
       clearTimeout(timer)
-      try {
-        link.remove()
-      } catch (e) {}
       resolve(v)
     }
-    link.rel = 'stylesheet'
-    link.onload = () => done(true)
-    link.onerror = () => done(false)
-    link.href = `https://${fqdn}/`
-    document.head.appendChild(link)
+    try {
+      fetch(`https://${fqdn}/`, { mode: 'no-cors', cache: 'no-store' })
+        .then(() => done(true))
+        .catch(() => done(false))
+    } catch (e) {
+      done(false)
+    }
   })
+}
+
+// ---- IP enrichment (Phase 9c): RDAP registrant + geolocation, mirroring
+// dnscheck.tools' "Your IP addresses" / "Your DNS resolvers" display.
+// Everything is best-effort: failures resolve to null and the core leak
+// results render regardless. Results are cached per IP.
+
+// Skip enrichment for non-routable addresses (RDAP/geo would fail anyway).
+function isPrivateIp(ip) {
+  if (typeof ip !== 'string') return true
+  if (ip.includes(':')) {
+    const h = ip.toLowerCase()
+    if (h === '::1') return true
+    if (/^(fc|fd)/.test(h)) return true // fc00::/7 unique local
+    const first = h.split(':')[0] || ''
+    const n = parseInt(first, 16)
+    if (!isNaN(n) && n >= 0xfe80 && n <= 0xfebf) return true // fe80::/10 link-local
+    return false
+  }
+  const p = ip.split('.')
+  if (p.length !== 4) return true
+  const n = p.map(Number)
+  if (n.some((x) => !(x >= 0 && x <= 255))) return true
+  return (
+    n[0] === 10 ||
+    n[0] === 127 ||
+    (n[0] === 172 && n[1] >= 16 && n[1] <= 31) ||
+    (n[0] === 192 && n[1] === 168) ||
+    (n[0] === 169 && n[1] === 254)
+  )
+}
+
+function ipv4ToInt(ip) {
+  const p = ip.split('.').map(Number)
+  return ((p[0] * 256 + p[1]) * 256 + p[2]) * 256 + p[3]
+}
+
+function cidr4Contains(cidr, ip) {
+  const parts = String(cidr).split('/')
+  if (parts.length !== 2) return false
+  const b = parseInt(parts[1], 10)
+  if (!(b >= 0 && b <= 32)) return false
+  if (!/^\d+\.\d+\.\d+\.\d+$/.test(parts[0]) || !/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return false
+  const mask = b === 0 ? 0 : ((0xffffffff - (2 ** (32 - b) - 1)) >>> 0)
+  return (ipv4ToInt(parts[0]) & mask) === (ipv4ToInt(ip) & mask)
+}
+
+function expandIPv6(ip) {
+  const [head, tail] = String(ip).split('::')
+  const h = head ? head.split(':') : []
+  const t = tail !== undefined && tail !== '' ? tail.split(':') : tail === '' ? [] : null
+  const tt = t === null ? [] : t
+  if (String(ip).includes('::') === false && h.length !== 8) throw new Error('bad v6')
+  const missing = 8 - h.length - tt.length
+  if (missing < 0) throw new Error('bad v6')
+  const parts = [...h, ...Array(missing).fill('0'), ...tt]
+  if (parts.length !== 8) throw new Error('bad v6')
+  return parts
+    .map((p) => {
+      if (!/^[0-9a-fA-F]{1,4}$/.test(p)) throw new Error('bad v6')
+      return p.padStart(4, '0')
+    })
+    .join('')
+}
+
+function cidr6Contains(cidr, ip) {
+  try {
+    const parts = String(cidr).split('/')
+    if (parts.length !== 2) return false
+    const b = parseInt(parts[1], 10)
+    if (!(b >= 0 && b <= 128)) return false
+    const n = expandIPv6(parts[0])
+    const a = expandIPv6(ip)
+    const full = Math.floor(b / 4)
+    if (n.slice(0, full) !== a.slice(0, full)) return false
+    const rem = b % 4
+    if (rem === 0) return true
+    const mask = 16 - (16 >> rem)
+    return (parseInt(n[full], 16) & mask) === (parseInt(a[full], 16) & mask)
+  } catch (e) {
+    return false
+  }
+}
+
+// IANA RDAP bootstrap (CORS-open), fetched once per page load.
+let rdapBootstrapP = null
+function rdapBootstrap() {
+  if (!rdapBootstrapP) {
+    rdapBootstrapP = Promise.all([
+      fetch('https://data.iana.org/rdap/ipv4.json').then((r) => {
+        if (!r.ok) throw new Error('bootstrap v4')
+        return r.json()
+      }),
+      fetch('https://data.iana.org/rdap/ipv6.json').then((r) => {
+        if (!r.ok) throw new Error('bootstrap v6')
+        return r.json()
+      }),
+    ])
+      .then(([v4, v6]) => ({ v4: v4.services || [], v6: v6.services || [] }))
+      .catch(() => null)
+  }
+  return rdapBootstrapP
+}
+
+async function rdapServiceFor(ip) {
+  const bs = await rdapBootstrap()
+  if (!bs) return null
+  const v6 = ip.includes(':')
+  const services = v6 ? bs.v6 : bs.v4
+  const contains = v6 ? cidr6Contains : cidr4Contains
+  for (const [cidrs, urls] of services) {
+    const url = (urls || []).find((u) => typeof u === 'string' && u.startsWith('https://'))
+    if (!url) continue
+    for (const cidr of cidrs || []) {
+      try {
+        if (contains(cidr, ip)) return url
+      } catch (e) {}
+    }
+  }
+  return null
+}
+
+// Registrant name from an RDAP response, ported from the original's
+// getReg(): registrant-role vCard fn (org preferred), LLC/Ltd/Inc suffix
+// stripped, falling back to the network name / handle.
+function rdapRegistrantName(data) {
+  if (!data || typeof data !== 'object') return null
+  const entities = Array.isArray(data.entities) ? data.entities : []
+  const vcards = []
+  for (const e of entities) {
+    if (!e || !Array.isArray(e.roles) || !e.roles.includes('registrant')) continue
+    const rows = (e.vcardArray && e.vcardArray[1]) || []
+    const o = {}
+    for (const row of rows) {
+      if (Array.isArray(row)) o[row[0]] = row[3]
+    }
+    if (o.fn) vcards.push(o)
+  }
+  const org = vcards.find((v) => v.kind === 'org')
+  let name = (org || vcards[0] || {}).fn || null
+  if (name) name = String(name).replace(/,?\s+(?:l\.?l\.?c\.?|ltd\.?|inc\.?)$/i, '').trim()
+  return name || data.name || data.handle || null
+}
+
+async function rdapRegistrant(ip) {
+  if (isPrivateIp(ip)) return null
+  const svc = await rdapServiceFor(ip)
+  if (!svc) return null
+  const base = svc.endsWith('/') ? svc : svc + '/'
+  const r = await fetch(`${base}ip/${encodeURIComponent(ip)}`, {
+    headers: { accept: 'application/rdap+json' },
+  })
+  if (!r.ok) return null
+  return rdapRegistrantName(await r.json())
+}
+
+// "City, Region, CC" via ip.addr.tools (CORS-open), like the original's getGeo.
+async function geoFor(ip) {
+  if (isPrivateIp(ip)) return null
+  const r = await fetch(`https://ip.addr.tools/${encodeURIComponent(ip)}`)
+  if (!r.ok) return null
+  const o = await r.json()
+  const s = [o.city, o.region, o.country].filter(Boolean).join(', ')
+  return s || null
+}
+
+const ipEnrichCache = {} // ip -> Promise<{reg, geo}>
+function enrichIp(ip) {
+  if (!ipEnrichCache[ip]) {
+    ipEnrichCache[ip] = (async () => {
+      const [reg, geo] = await Promise.all([
+        rdapRegistrant(ip).catch(() => null),
+        geoFor(ip).catch(() => null),
+      ])
+      return { reg: reg || null, geo: geo || null }
+    })()
+  }
+  return ipEnrichCache[ip]
+}
+
+// Reverse DNS for an IP via the DNS lookup providers (extracted from
+// renderLeakResults so the grouped re-render can reuse it).
+async function ptrFor(ip) {
+  const arpa = ipv4ToArpa(ip) || ipv6ToArpa(ip)
+  if (!arpa) return null
+  const res = await dnsQuery(arpa, 'PTR')
+  return res.status === 0 && res.answers.length ? res.answers[0].data.replace(/\.$/, '') : null
 }
 
 // Pure derivation of the DNSSEC matrix status, ported from the original's
@@ -1858,7 +2077,7 @@ async function runDnssecMatrix(id) {
     if (note)
       note.innerHTML =
         `<span class="dns-note">DNSSEC validation tests could not run in this browser ` +
-        `(cross-origin check blocked) &mdash; resolver results above are unaffected.</span>`
+        `(network blocked or DNS unavailable) &mdash; resolver results above are unaffected.</span>`
     return
   }
   const valids = await Promise.all(
@@ -1916,12 +2135,13 @@ async function runRtt() {
 
 // "Your IP addresses", ported from the original's testIPs minus the
 // microphone-permission flow: myipv4/myipv6 endpoints (CORS-open, text/plain)
-// plus best-effort WebRTC ICE candidates via STUN.
+// plus best-effort WebRTC ICE candidates via STUN. Source is tracked so the
+// extended (WebRTC) list hides behind "(show more)" like the original.
 function detectIps() {
-  const addIp = (str) => {
+  const addIp = (str, src) => {
     str = String(str || '').trim()
     if (!str || !/^[0-9a-fA-F.:]+$/.test(str) || !LS || LS.ips[str]) return
-    LS.ips[str] = true
+    LS.ips[str] = src || 'net'
     drawIps()
   }
   fetch('https://myipv4.addr.tools/plain')
@@ -1929,14 +2149,14 @@ function detectIps() {
       if (!r.ok) throw new Error('bad status')
       return r.text()
     })
-    .then(addIp)
+    .then((s) => addIp(s, 'net'))
     .catch(() => {})
   fetch('https://myipv6.addr.tools/plain')
     .then((r) => {
       if (!r.ok) throw new Error('bad status')
       return r.text()
     })
-    .then(addIp)
+    .then((s) => addIp(s, 'net'))
     .catch(() => {})
   try {
     if (typeof RTCPeerConnection === 'undefined') return
@@ -1946,7 +2166,7 @@ function detectIps() {
     pc.addEventListener('icecandidate', ({ candidate }) => {
       if (!candidate || !candidate.candidate) return
       const ip = candidate.candidate.split(' ')[4]
-      if (ip && /^[0-9a-fA-F.:]+$/.test(ip) && !ip.endsWith('.local')) addIp(ip)
+      if (ip && /^[0-9a-fA-F.:]+$/.test(ip) && !ip.endsWith('.local')) addIp(ip, 'webrtc')
     })
     try {
       pc.createDataChannel('dummy')
@@ -1962,13 +2182,61 @@ function detectIps() {
   } catch (e) {}
 }
 
+// Mirrors the original's IP list: registrant name above the IP, "City, Region,
+// CC" beside it. Registrant/geo fill in async (best-effort); the extended
+// WebRTC list hides behind "(show more)".
 function drawIps() {
   const el = document.getElementById('leakIps')
   if (!el || !LS) return
-  const ips = Object.keys(LS.ips)
-  el.innerHTML = ips.length
-    ? `<ul class="leak-ips">` + ips.map((ip) => `<li class="dns-mono">${esc(ip)}</li>`).join('') + `</ul>`
-    : `<span class="dns-note">Detecting&hellip;</span>`
+  const entries = Object.entries(LS.ips)
+  const wrap = document.getElementById('leakShowMoreWrap')
+  if (!entries.length) {
+    el.innerHTML = `<span class="dns-note">Detecting&hellip;</span>`
+    if (wrap) wrap.innerHTML = ''
+    return
+  }
+  const primary = entries.filter(([, s]) => s !== 'webrtc')
+  const extra = entries.filter(([, s]) => s === 'webrtc')
+  const showAll = LS.showMoreIps || !extra.length
+  const list = showAll ? entries : primary
+  const tok = (LS.ipRender = (LS.ipRender || 0) + 1)
+  el.innerHTML =
+    `<ul class="leak-ips">` +
+    list
+      .map(
+        ([ip], i) =>
+          `<li><div class="leak-reg" id="leakIpReg${i}"><span class="dns-note">&hellip;</span></div>` +
+          `<div><span class="dns-mono">${esc(ip)}</span>` +
+          `<span class="leak-geo" id="leakIpGeo${i}"></span></div></li>`,
+      )
+      .join('') +
+    `</ul>`
+  if (wrap) {
+    if (extra.length && !LS.showMoreIps) {
+      wrap.innerHTML = `(<span class="link" id="leakShowMore">show more</span>)`
+      const t = document.getElementById('leakShowMore')
+      if (t)
+        t.addEventListener('click', () => {
+          if (LS) {
+            LS.showMoreIps = true
+            drawIps()
+          }
+        })
+    } else {
+      wrap.innerHTML = ''
+    }
+  }
+  list.forEach(([ip], i) => {
+    enrichIp(ip)
+      .then(({ reg, geo }) => {
+        if (!LS || LS.ipRender !== tok) return
+        const r = document.getElementById(`leakIpReg${i}`)
+        const g = document.getElementById(`leakIpGeo${i}`)
+        if (r) r.innerHTML = reg ? esc(reg) : '<span class="dns-note">&mdash;</span>'
+        if (g) g.textContent = geo || ''
+      })
+      .catch(() => {})
+  })
 }
 
 async function runLeakTest() {
@@ -1983,17 +2251,24 @@ async function runLeakTest() {
   statusEl.innerHTML = ''
   if (bar) bar.innerHTML = ''
   out.innerHTML =
-    `<div class="leak-sec-title">Your IP addresses</div><div id="leakIps"></div>` +
+    `<div class="leak-sec-title">Your IP addresses <span id="leakShowMoreWrap"></span></div><div id="leakIps"></div>` +
     `<div class="leak-sec-title">DNSSEC Validation Tests</div>` +
     `<div id="leakDnssec">${dnssecMatrixHtml()}<div class="dns-note" id="leakDnssecNote"></div></div>` +
-    `<div id="leakResolvers"></div>`
+    `<div id="leakResolvers"></div>` +
+    `<div class="leak-statusbar"><span class="leak-sb-pills" id="leakSbPills"></span>` +
+    `<span class="leak-sb-dns dns-mono" id="leakSbDns">dns: 0</span></div>` +
+    `<div class="dns-note leak-credit">Like this tool? Star us on ` +
+    `<a href="https://github.com/brianshea2/addr.tools" target="_blank" rel="noopener">GitHub</a>.</div>`
 
   const id = randHex8()
   LS = {
     finished: false,
+    runId: id,
     t0: Date.now(),
     seen: new Map(), // remoteIp -> {protos:Set, ecs:Set, count}
     ips: {},
+    showMoreIps: false,
+    ipRender: 0,
     udpSizes: [],
     pills: {},
     dnssec: new Array(16), // undefined = pending
@@ -2164,6 +2439,8 @@ async function runLeakTest() {
         s3.innerHTML =
           `<span class="spinner" aria-hidden="true"></span> Listening&hellip; ${st.total} ` +
           `quer${st.total === 1 ? 'y' : 'ies'} seen`
+      const sbd = document.getElementById('leakSbDns')
+      if (sbd) sbd.textContent = `dns: ${st.total}`
     } catch (e) {
       /* ignore malformed messages */
     }
@@ -2197,63 +2474,86 @@ function renderLeakResults(st, timedOut) {
   const out = $('#leakResolvers')
   if (!statusEl || !out) return
   statusEl.innerHTML = ''
+  out.dataset.runId = st.runId
   const seen = st.seen
   const n = seen.size
-  let html =
+  const meta =
     `<div class="leak-sec-title">Your DNS resolvers</div>` +
     `<div class="dns-meta">Your queries were seen from <b>${n} resolver${n === 1 ? '' : 's'}</b>` +
     (timedOut ? ' (stopped after 45s)' : '') +
     `</div>`
   if (!n) {
     out.innerHTML =
-      html +
+      meta +
       `<div class="dns-empty">No resolvers observed${timedOut ? ' (timed out)' : ''} &mdash; ` +
       `your network may block the test queries, or the channel closed early.</div>`
     return
   }
   const entries = [...seen.entries()]
   const ecsAll = [...new Set(entries.flatMap(([, e]) => [...e.ecs]))]
-  html +=
-    `<div class="dns-table-wrap"><table class="dns-table"><thead><tr>` +
-    `<th>Resolver IP</th><th>Reverse DNS</th><th>Protocol</th><th>ECS subnet</th><th>Queries</th>` +
-    `</tr></thead><tbody>` +
+  const ecsLine = ecsAll.length
+    ? `<div class="dns-meta">Your DNS resolvers advertise your IP subnet (ECS): ` +
+      `<span class="dns-mono">${esc(ecsAll.join(', '))}</span></div>`
+    : ''
+  const headRow =
+    `<tr><th>Resolver IP</th><th>Reverse DNS</th><th>Location</th><th>Protocol</th><th>Queries</th></tr>`
+  // Immediate render with placeholders; enrich async, then regroup by registrant.
+  out.innerHTML =
+    meta +
+    `<div class="dns-table-wrap"><table class="dns-table"><thead>${headRow}</thead><tbody>` +
     entries
       .map(
         ([ip, e], i) =>
           `<tr><td class="dns-mono">${esc(ip)}</td>` +
           `<td class="dns-mono" id="leakPtr${i}"><span class="dns-note">&hellip;</span></td>` +
+          `<td id="leakGeo${i}"><span class="dns-note">&hellip;</span></td>` +
           `<td>${esc([...e.protos].join(', ') || '—')}</td>` +
-          `<td class="dns-mono">${esc([...e.ecs].join(', ') || '—')}</td>` +
           `<td class="dns-num">${e.count}</td></tr>`,
       )
       .join('') +
-    `</tbody></table></div>`
-  if (ecsAll.length)
-    html +=
-      `<div class="dns-meta">Your DNS resolvers advertise your IP subnet (ECS): ` +
-      `<span class="dns-mono">${esc(ecsAll.join(', '))}</span></div>`
-  out.innerHTML = html
-  // Best-effort reverse DNS via the lookup providers (RDAP skipped — too heavy).
-  entries.forEach(([ip], i) => {
-    const cell = () => document.getElementById(`leakPtr${i}`)
-    const arpa = ipv4ToArpa(ip) || ipv6ToArpa(ip)
-    if (!arpa) {
-      const c = cell()
-      if (c) c.innerHTML = '<span class="dns-note">&mdash;</span>'
-      return
+    `</tbody></table></div>` +
+    ecsLine
+
+  const alive = () => out.dataset.runId === st.runId
+  const jobs = entries.map(async ([ip, e], i) => {
+    const [enr, ptr] = await Promise.all([
+      enrichIp(ip).catch(() => ({ reg: null, geo: null })),
+      ptrFor(ip).catch(() => null),
+    ])
+    const row = { ip, e, reg: enr.reg, geo: enr.geo, ptr }
+    if (alive()) {
+      const pc = document.getElementById(`leakPtr${i}`)
+      const gc = document.getElementById(`leakGeo${i}`)
+      if (pc) pc.innerHTML = ptr ? esc(ptr) : '<span class="dns-note">&mdash;</span>'
+      if (gc) gc.innerHTML = enr.geo ? esc(enr.geo) : '<span class="dns-note">&mdash;</span>'
     }
-    dnsQuery(arpa, 'PTR')
-      .then((res) => {
-        const c = cell()
-        if (!c) return
-        const ptr = res.status === 0 && res.answers.length ? res.answers[0].data.replace(/\.$/, '') : null
-        c.textContent = ptr || '—'
-      })
-      .catch(() => {
-        const c = cell()
-        if (c) c.innerHTML = '<span class="dns-note">&mdash;</span>'
-      })
+    return row
   })
+  // Once all enrichment settles, re-render grouped by registrant like the original.
+  Promise.all(jobs)
+    .then((rows) => {
+      if (!alive()) return
+      const groups = new Map()
+      for (const r of rows) {
+        const key = r.reg || 'Unknown'
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key).push(r)
+      }
+      let html = meta + `<div class="dns-table-wrap"><table class="dns-table"><thead>${headRow}</thead><tbody>`
+      for (const [key, rs] of groups) {
+        html += `<tr class="leak-regrow"><td colspan="5">${esc(key)}</td></tr>`
+        for (const r of rs) {
+          html +=
+            `<tr><td class="dns-mono">${esc(r.ip)}</td>` +
+            `<td class="dns-mono">${r.ptr ? esc(r.ptr) : '<span class="dns-note">&mdash;</span>'}</td>` +
+            `<td>${r.geo ? esc(r.geo) : '<span class="dns-note">&mdash;</span>'}</td>` +
+            `<td>${esc([...r.e.protos].join(', ') || '—')}</td>` +
+            `<td class="dns-num">${r.e.count}</td></tr>`
+        }
+      }
+      out.innerHTML = html + `</tbody></table></div>` + ecsLine
+    })
+    .catch(() => {})
 }
 
 async function init() {

@@ -508,6 +508,21 @@ a:hover { text-decoration: underline; }
 .leak-red { background: rgba(223,72,74,.12); border-color: var(--red); color: var(--red); }
 .leak-yellow { background: rgba(242,144,48,.16); border-color: var(--orange); color: var(--orange); }
 .leak-blue { background: rgba(28,126,214,.12); border-color: var(--link); color: var(--link); }
+.leak-na { opacity: .55; border-style: dashed; }
+/* Phase 9c: full info parity — registrant/geo, status bar, grouped resolvers */
+.leak-reg { font-size: 12px; color: var(--muted); margin: 6px 0 1px; }
+.leak-geo { color: var(--link); font-size: 13px; margin-left: 10px; }
+.link { color: var(--link); cursor: pointer; text-decoration: underline; font-weight: 400; font-size: 13px; }
+.leak-regrow td { font-weight: 700; color: var(--muted); font-size: 12px; background: none; border-bottom: 1px solid var(--divider); }
+.leak-statusbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  margin: 16px 0 4px; padding: 8px 12px; border: 1px solid var(--divider);
+  border-radius: 8px; font-size: 12px; flex-wrap: wrap;
+}
+.leak-sb-pills { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.leak-sb-pills .leak-pill { border: none; padding: 0; background: none; }
+.leak-sb-dns { color: var(--muted); }
+.leak-credit { margin-top: 10px; }
 .leak-sec-title { font-weight: 700; margin: 18px 0 6px; font-size: 14px; }
 .leak-ips { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .dsec-table { min-width: 460px; }

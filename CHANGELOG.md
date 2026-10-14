@@ -5,6 +5,30 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Phase 9c: leak test full info parity (+ DNSSEC probe fix)
+
+- **DNSSEC probe fixed (was broken, now works):** the 9b `<link
+  rel=stylesheet>` onload/onerror technique never fired — browsers MIME-check
+  stylesheets and the test domains answer `Content-Type: text/plain`. Replaced
+  with `fetch(url, {mode: 'no-cors', cache: 'no-store'})`: resolve (opaque) =
+  connected, reject = blocked — the exact 1:1 port of the original's
+  first-party `fetch().ok` signal. Applies to the calibration probe and all
+  matrix probes; honest "untestable" fallback kept for genuinely blocked
+  networks.
+- **Full info parity with dnscheck.tools:** "Your IP addresses" now shows the
+  **RDAP registrant** above each IP and **"City, Region, CC"** geolocation
+  beside it (registrant via IANA RDAP bootstrap + per-RIR RDAP, CORS-open;
+  geo via `ip.addr.tools`); extended WebRTC IPs hide behind **"(show more)"**.
+- **"Your DNS resolvers"** grouped by registrant (like the original), each row
+  with reverse DNS, geolocation, protocol and query count; ECS subnets keep
+  their own summary line.
+- New bottom **status bar** mirroring the original: `{rtt}ms IPv6 EDNS DNSSEC
+  ECH` indicators + live **`dns: N`** query counter. **ECH** renders `n/a`
+  with a tooltip — `X-ECH-Status` is only exposed to dnscheck.tools itself,
+  never cross-origin (shown honestly, never faked).
+- Attribution line kept honest: "Like this tool? Star us on GitHub" →
+  `brianshea2/addr.tools`.
+
 ## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools
 
 - **DNS Leak Test** card reworked per Jeremie's "as close to the original as
