@@ -94,6 +94,8 @@ en: {
 'conn.ip': 'Your IP address',
 'conn.you': 'You',
 'ipinfo.loading': 'Getting IP info\u2026',
+'ipinfo.title': 'Your connection',
+'ipinfo.location': 'Location',
 'ipinfo.failed': 'Could not get IP info',
 'speedtest.detail.start': 'Start detailed test',
 'speedtest.detail.stop': 'Stop',
@@ -296,6 +298,8 @@ vi: {
 'conn.ip': 'Địa chỉ IP của bạn',
 'conn.you': 'Bạn',
 'ipinfo.loading': 'Đang lấy thông tin IP\u2026',
+'ipinfo.title': 'Kết nối của bạn',
+'ipinfo.location': 'Vị trí',
 'ipinfo.failed': 'Không lấy được thông tin IP',
 'speedtest.detail.start': 'Bắt đầu đo chi tiết',
 'speedtest.detail.stop': 'Dừng',
@@ -1279,23 +1283,26 @@ async function renderIpInfo() {
   const el = $('#ipInfo')
   if (!el || el.dataset.done) return
   el.dataset.done = '1'
-  el.innerHTML = `<div class="ipinfo-ip">${t('ipinfo.loading')}</div>`
+  el.innerHTML = `<span class="dns-note">${t('ipinfo.loading')}</span>`
+  const row = (label, val) =>
+    `<div class="conn-row"><span class="conn-label">${label}</span><span class="conn-val">${val}</span></div>`
   try {
     const r = await fetch('/api/conn', { cache: 'no-store' })
     const j = await r.json()
     if (!j.ip) throw new Error('bad')
     const cc = (j.country || '').toLowerCase()
-    const flag = cc ? `<img src="https://flagcdn.com/24x18/${cc}.png" alt="" width="24" height="18"> ` : ''
+    const flag = cc ? `<img src="https://flagcdn.com/24x18/${cc}.png" alt="" width="24" height="18" style="vertical-align:-3px;border-radius:2px"> ` : ''
     const countryName = COUNTRY_NAMES[j.country] || j.country
     const asStr = [j.asn != null ? 'AS' + j.asn : null, j.asOrganization].filter(Boolean).join(' ')
     el.innerHTML =
-      `<div class="ipinfo-ip">${esc(maskIp(j.ip))}</div>` +
-      `<div class="ipinfo-pills">` +
-      `<span class="ipinfo-pill">${flag}${esc([j.city, countryName].filter(Boolean).join(', '))}</span>` +
-      `<span class="ipinfo-pill">${esc(asStr)}</span>` +
+      `<h3 class="blat-title" data-i18n-key="ipinfo.title">${t('ipinfo.title')}</h3>` +
+      `<div class="conn-rows">` +
+      row(t('conn.ip'), esc(maskIp(j.ip))) +
+      row(t('ipinfo.location'), flag + esc([j.city, countryName].filter(Boolean).join(', '))) +
+      row(t('conn.network'), esc(asStr)) +
       `</div>`
   } catch (e) {
-    el.innerHTML = `<div class="ipinfo-ip" style="font-size:15px">${t('ipinfo.failed')}</div>`
+    el.innerHTML = `<span class="dns-note">${t('ipinfo.failed')}</span>`
   }
 }
 
@@ -1425,7 +1432,7 @@ function renderSpeedtest() {
   $('#speedtest').innerHTML =
     `<div class="st-head"><h2 data-i18n-key="speedtest.title">${t('speedtest.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
-    `<div id="ipInfo" class="ipinfo"></div>` +
+    `<div id="ipInfo" class="conn-card"></div>` +
     `<div class="st-detail">` +
     `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
