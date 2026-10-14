@@ -3,9 +3,7 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
-## [Unreleased]
-
-## 2026-10-14 — Phase 10: Ping tab (`960be8f`, `43fc8ea`, `3138663`, `dd84210`)
+## 2026-10-14 18:45–19:01 — Phase 10: Ping tab (`960be8f`, `43fc8ea`, `3138663`, `dd84210`)
 
 - **"Latency from your browser" card became a dedicated Ping tab** (`#ping`,
   nav: Status | Incidents | Ping | Speedtest | DNS Tools) — same one-click
@@ -20,7 +18,7 @@ Asia/Saigon (GMT+7).
   test.nextdns.io") then **quarantined** (`NX_STATUS_ENABLED = false`): the
   verdict never arrives on the owner's network (QA from test browsers passed).
 
-## 2026-10-14 — Phase 9c: leak test full info parity (`f478290`)
+## 2026-10-14 18:19–18:40 — Phase 9c: leak test full info parity (`f478290`)
 
 - **DNSSEC probe fixed (was broken, now works):** the 9b `<link
   rel=stylesheet>` onload/onerror technique never fired — browsers MIME-check
@@ -51,16 +49,13 @@ Asia/Saigon (GMT+7).
   private IPs labeled "Reserved"; removed the duplicated DNSSEC caption and
   the GitHub promo line; credit-only subtitles everywhere.
 
-## 2026-10-14 — Fix: page auto-reload killing measurements (`0f94d5f`)
+## 2026-10-14 17:33–18:13 — Small changes
 
-- Root cause: `tickHero()` reloaded the page when monitor data was older than
-  300s — a leftover from the 2-minute cron era. With the 10-minute cron, data
-  is routinely 5–10 minutes old, causing reload loops mid-measurement. Now
-  reloads only when data is older than 1800s (30 min), and never while a
-  speedtest, detailed test or leak test is running.
+- **18:13** — Fix: page auto-reload killing measurements (`0f94d5f`): `tickHero()` reloaded when data was older than 300s (leftover from the 2-minute cron era); with the 10-minute cron this caused reload loops mid-measurement. Now reloads only past 1800s, never mid-test.
+- **17:45** — Hash deep-link mid-session (`5f2fb62`): changing the URL hash (`#incidents` / `#speedtest`) switches views via a `hashchange` listener (previously load-only).
+- **17:33** — Groups collapsed by default (`2389253`): monitor groups started collapsed (click to expand), choice remembered in localStorage. *Superseded by Phase 10 (Vietnam expanded / International collapsed).*
 
-
-## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools (`64bbe41` pt.2)
+## 2026-10-14 18:09 — Phase 9b: leak test mirrors dnscheck.tools (`64bbe41` pt.2)
 
 - **DNS Leak Test** card reworked per Jeremie's "as close to the original as
   possible": logic ported from `brianshea2/addr.tools`
@@ -83,7 +78,7 @@ Asia/Saigon (GMT+7).
 - ECS subnets now also shown as their own line ("Your DNS resolvers advertise
   your IP subnet (ECS)"); resolvers table kept with PTR enrichment.
 
-## 2026-10-14 — Phase 8c: detailed test uses vietcdn's real servers (`64bbe41` pt.1)
+## 2026-10-14 18:09 — Phase 8c: detailed test uses vietcdn's real servers (`64bbe41` pt.1)
 
 - "Detailed test" reworked per Jeremie's decision (their-infrastructure-first):
   now measures against **vietcdn.net's 8 real servers** (Netherlands, RBX,
@@ -113,7 +108,7 @@ Asia/Saigon (GMT+7).
   keeps the last good DOM and retries on the next cycle instead of blanking
   the page.
 
-## 2026-10-14 — Phase 9: DNS Tools tab (`923b59a`)
+## 2026-10-14 17:58 — Phase 9: DNS Tools tab (`923b59a`)
 
 - New **DNS Tools** tab (`#dns`, next to Speedtest), frontend-only.
 - **DNS Lookup**: domain input + record-type select (A/AAAA/CNAME/MX/TXT/NS/
@@ -129,7 +124,7 @@ Asia/Saigon (GMT+7).
   graceful "unreachable" message if their WebSocket is blocked. Display-only;
   never crashes the page.
 
-## 2026-10-14 — Phase 8b: vietcdn-style detailed speedtest (`fce7a4a`)
+## 2026-10-14 17:53 — Phase 8b: vietcdn-style detailed speedtest (`fce7a4a`)
 
 - New "Detailed test" section inside the Speedtest tab (below the summary
   cards): sequential single-connection then 6-connection download rounds
@@ -138,7 +133,7 @@ Asia/Saigon (GMT+7).
   button, no auto-run; the two test modes are mutually exclusive so they
   can't skew each other's numbers.
 
-## 2026-10-14 — Phase 8: self-hosted speedtest tab (`bc88561`)
+## 2026-10-14 17:39 — Phase 8: self-hosted speedtest tab (`bc88561`)
 
 - New **Speedtest** tab next to Incidents (`#speedtest` deep-link): measures
   **ping** (median of 3 timed `/api/state` fetches), **download** and **upload**
@@ -151,13 +146,7 @@ Asia/Saigon (GMT+7).
   writes). No third-party bandwidth.
 - Button-triggered only, live-updating numbers, per-metric failure isolation.
 
-## 2026-10-14 — Groups collapsed by default (`2389253`)
-
-- Monitor groups now start collapsed (click a group header to expand),
-  giving a compact overview on load. An explicit expand/collapse choice is
-  still remembered in localStorage.
-
-## 2026-10-14 — Phase 7: measure latency from your browser (`345e7d7`)
+## 2026-10-14 16:32 — Phase 7: measure latency from your browser (`345e7d7`)
 
 - New "Latency from your browser" card: measures live RTT from the visitor's
   browser to all 13 POPs via `GET https://<host>/info` timed with
@@ -167,7 +156,7 @@ Asia/Saigon (GMT+7).
   history, uptime % and incidents. No auto-run; button-triggered only.
 - Frontend-only: no Worker, KV or config changes.
 
-## 2026-10-14 — Phase 6: latency threshold alerts (`a065509`)
+## 2026-10-14 16:22 — Phase 6: latency threshold alerts (`a065509`)
 
 - Per-monitor `latencyThresholdMs` in `config.yaml` (thresholds derived from
   live p50/p95 baselines).
@@ -177,14 +166,12 @@ Asia/Saigon (GMT+7).
 - Visual only: does not affect uptime % math, operational status, Overall
   values, group counts or incidents. No Worker/KV changes.
 
-## 2026-10-14 — Fix Phase 5 QA (`0c33ba0`)
+## 2026-10-14 15:00–15:16 — Fixes
 
-- Fixed `renderIncidents` crash (wrong variable name) that blanked the
-  Incidents view.
-- Monitor names are links again (removed stale `linkable: false`): underlined,
-  native URL tooltip, opens in a new tab.
+- **15:16** — Fix Phase 5 QA (`0c33ba0`): fixed `renderIncidents` crash (wrong variable name) blanking the Incidents view; monitor names are links again (underlined, native tooltip, new tab).
+- **15:00** — Incidents pager bounded to KV data window (`de3cdec`): the month pager can't go past the earliest month with KV data nor into future months.
 
-## 2026-10-14 — Phase 5: UptimeFlare parity refinements (`a61b55f`)
+## 2026-10-14 15:08 — Phase 5: UptimeFlare parity refinements (`a61b55f`)
 
 - Incident modal title is now `🚨 {Monitor} incidents at {D/M/YYYY}`.
 - No tooltip on gray no-data bars; hovered bars brighten to `#9DEAB8`;
@@ -200,13 +187,7 @@ Asia/Saigon (GMT+7).
   (auto → light → dark) persisted in localStorage.
 - All clock times render in Asia/Saigon with a `GMT+7` label.
 
-## 2026-10-14 — Incidents pager bounded to KV data window (`de3cdec`)
-
-- The Incidents month pager can no longer go past the earliest month that
-  still has KV data, nor into future months. Empty months beyond retention
-  previously rendered a misleading "No incidents".
-
-## 2026-10-14 — Phase 4: 12h intraday latency chart (`cd7e990`)
+## 2026-10-14 14:56 — Phase 4: 12h intraday latency chart (`cd7e990`)
 
 - Replaced the 90-day daily latency chart with a 12h intraday chart like
   UptimeFlare: per-check ring buffer in KV (trimmed to 12h, rides the existing
@@ -214,40 +195,25 @@ Asia/Saigon (GMT+7).
   axis, black hover tooltip with timestamp + latency/location, gaps on failed
   checks, "No data yet" placeholder while filling up.
 
-## 2026-10-14 — Card width 897px (`140972e`)
+## 2026-10-14 13:34–14:44 — Tweaks & docs
 
-- Card returned to the UptimeFlare-with-groups width (897px) so 90 bars fit
-  without stretching.
+- **14:44** — Card width 897px (`140972e`): back to the UptimeFlare-with-groups width so 90 bars fit without stretching.
+- **14:41** — Compact 90-bar strip (`fd61f27`): 7px bars at ~9px pitch hugging the content instead of spreading full width.
+- **14:38 / 14:31** — Standalone project docs (`511d1d0`, `b7d8236`): LICENSE holder, Code of Conduct contact and README rewritten; upstream credits kept in README Credits only.
+- **14:30** — UptimeFlare-style uptime math (`ff676b9`): Overall % is time-weighted (like UptimeFlare) instead of check-counted.
+- **13:34** — Cron every 10 minutes (`6a35550`): ~144 KV writes/day, safely under the 1,000/day free-tier quota (was tripping the 50% alert).
 
-## 2026-10-14 — Compact 90-bar strip (`fd61f27`)
-
-- 7px bars at ~9px pitch hugging the content instead of spreading full width.
-
-## 2026-10-14 — UptimeFlare-style uptime math (`ff676b9`)
-
-- Overall % is time-weighted (like UptimeFlare) instead of check-counted.
-
-## 2026-10-14 — Cron every 10 minutes (`6a35550`)
-
-- Reduced from every 2 minutes to every 10 minutes: ~144 KV writes/day,
-  safely under the 1,000/day free-tier quota (was tripping the 50% alert).
-
-## 2026-10-14 — Standalone project docs (`511d1d0`, `b7d8236`)
-
-- LICENSE holder, Code of Conduct contact and README rewritten for a
-  standalone project; upstream credits kept in README Credits only.
-
-## 2026-10-14 — Phase 3: groups, incidents, ticker (`bec3b29`)
+## 2026-10-14 14:27 — Phase 3: groups, incidents, ticker (`bec3b29`)
 
 - 90-day retention; monitors grouped (🇻🇳 Vietnam 4 / 🌏 International 9);
   accordion state remembered; Incidents view with month pager, monitor filter
   and `#incidents` deep-link; live per-second hero ticker.
 
-## 2026-10-14 — Phase 2: UptimeFlare UI spec (`88bae91`, `5eb6e55`)
+## 2026-10-14 14:15–14:20 — Phase 2: UptimeFlare UI spec (`88bae91`, `5eb6e55`)
 
 - 90-day uptime bar strip, 4-tier day colors, tooltip/day modal, locale dates.
 
-## 2026-10-14 — Phase 1: UptimeFlare restyle (`a97c583`)
+## 2026-10-14 14:01 — Phase 1: UptimeFlare restyle (`a97c583`)
 
 - Frontend restyled in the UptimeFlare design language.
 
@@ -256,8 +222,3 @@ Asia/Saigon (GMT+7).
 - Modernized to wrangler v4 / modules Worker (`d67af39`); deploy fixes for
   Node 22 and KV namespace creation (`312ee2c`, `adc021e`); 13 NextDNS edge
   monitors configured (`9a7d020`).
-
-## 2026-10-14 — Hash deep-link mid-session (`5f2fb62`)
-
-- Changing the URL hash mid-session (`#incidents` / `#speedtest`) now switches
-  views via a `hashchange` listener (previously only worked on page load).
