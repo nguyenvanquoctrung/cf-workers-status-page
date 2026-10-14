@@ -146,3 +146,20 @@ monitors:
     expectStatus: 200
     followRedirect: false
     linkable: false
+
+# Scheduled maintenances, shown on the Incidents view (UptimeFlare-style).
+# Each entry:
+#   title    - shown on the card (default: "Scheduled Maintenance")
+#   body     - description text (optional)
+#   monitors - list of monitor ids (optional; omit = all monitors)
+#   start    - ISO 8601 start time (required)
+#   end      - ISO 8601 end time (optional; omit = ongoing)
+#   color    - accent color (optional, default #FAB005)
+# During an active window, affected monitors show a yellow triangle icon.
+#maintenances:
+#  - title: 'HomeLab maintenance'
+#    body: 'My HomeLab is temporarily offline for hardware upgrade.'
+#    monitors: ['lightnode-sgn']
+#    start: '2026-12-24T22:00:00+07:00'
+#    end: '2026-12-25T06:00:00+07:00'
+#    color: '#FAB005'

@@ -10,18 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script>
-    // Apply theme before first paint (avoids flash)
+    // Apply theme before first paint (avoids flash). 'auto' (default) follows the OS.
     (function () {
-      function setTheme(t) {
-        document.documentElement.dataset.theme = t;
-        try { localStorage.theme = t; } catch (e) {}
-      }
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mq.addEventListener('change', function () { setTheme(mq.matches ? 'dark' : 'light'); });
-      var saved = null;
-      try { saved = localStorage.theme; } catch (e) {}
-      if (saved === 'dark' || saved === 'light') setTheme(saved);
-      else setTheme(mq.matches ? 'dark' : 'light');
+      var mode = null;
+      try { mode = localStorage.getItem('theme'); } catch (e) {}
+      var eff = (mode === 'light' || mode === 'dark') ? mode :
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = eff;
     })();
   </script>
 </head>
@@ -42,7 +37,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z"/><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd"/></svg>
           </span>
         </div>
-        <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme"></button>
+        <button id="themeBtn" class="icon-btn" title="Theme: Auto — click to change" aria-label="Theme: Auto — click to change"></button>
       </div>
     </div>
   </header>
@@ -63,8 +58,7 @@
     </div>
 
     <footer class="footer">
-      <div>Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a></div>
-      <div><a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a></div>
+      <div>Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, made with ❤ by <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a></div>
     </footer>
   </main>
   <div id="incidentModal" class="modal-overlay" hidden>

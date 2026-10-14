@@ -16,6 +16,10 @@ const GROUP_LABEL = { Vietnam: '🇻🇳 Vietnam', International: '🌏 Internat
 const groupOf = (m) => m.group || 'Other'
 const groupLabel = (g) => GROUP_LABEL[g] || g
 
+// All displayed clock times use Vietnam time.
+const TIME_ZONE = 'Asia/Saigon'
+const TZ_LABEL = 'GMT+7'
+
 function expandedGroups() {
   try {
     const saved = JSON.parse(localStorage.getItem('expandedGroups') || 'null')
@@ -45,28 +49,78 @@ const fmtDay = (iso) => {
   return new Date(y, m - 1, d).toLocaleDateString()
 }
 
+// "14:56:16 14/10/2026" in Asia/Saigon.
+const fmtDateTime = (ms) => {
+  const d = new Date(ms)
+  const date = d.toLocaleDateString('en-GB', { timeZone: TIME_ZONE })
+  const time = d.toLocaleTimeString('en-GB', { timeZone: TIME_ZONE, hour12: false })
+  return `${time} ${date}`
+}
+
+// Hero subtitle, shared by the initial render and the 1s ticker.
+function heroMeta(lu) {
+  const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
+  return `Last updated on: ${fmtDateTime(lu.time)} (${TZ_LABEL}) (${secs} sec ago)`
+}
+
 const MOON =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>'
 const SUN =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>'
-const INFO =
-  '<svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>'
 
 // Tabler outline icons (IconCircleCheck / IconAlertCircle / plain circle)
 const CHECK_PATHS =
   '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M8 12.5l2.5 2.5l5 -5"/>'
 const ALERT_PATHS =
   '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 8v4"/><path d="M12 16h.01"/>'
+// Tabler alert-triangle (maintenance), UptimeFlare #FAB005
+const TRIANGLE_PATHS =
+  '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0z"/>'
 const CIRCLE_PATHS = '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/>'
 const tabler = (paths, size, color, cls) =>
   `<svg${cls ? ` class="${cls}"` : ''} xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`
 
-function setTheme(theme) {
-  document.documentElement.dataset.theme = theme
+// 3-state theme: 'auto' (follow OS) -> 'light' -> 'dark' -> 'auto'.
+// Persisted in localStorage; in auto mode OS changes apply live.
+function themeMode() {
   try {
-    localStorage.theme = theme
+    const v = localStorage.getItem('theme')
+    return v === 'light' || v === 'dark' || v === 'auto' ? v : 'auto'
+  } catch (e) {
+    return 'auto'
+  }
+}
+function systemDark() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+function effectiveTheme() {
+  const mode = themeMode()
+  return mode === 'auto' ? (systemDark() ? 'dark' : 'light') : mode
+}
+function applyTheme() {
+  const mode = themeMode()
+  const eff = effectiveTheme()
+  document.documentElement.dataset.theme = eff
+  const btn = $('#themeBtn')
+  if (btn) {
+    btn.innerHTML = eff === 'dark' ? SUN : MOON
+    const label =
+      mode === 'auto'
+        ? `Auto (${eff === 'dark' ? 'dark' : 'light'})`
+        : mode === 'dark'
+          ? 'Dark'
+          : 'Light'
+    btn.title = `Theme: ${label} — click to change`
+    btn.setAttribute('aria-label', btn.title)
+  }
+}
+function cycleTheme() {
+  const order = ['auto', 'light', 'dark']
+  const next = order[(order.indexOf(themeMode()) + 1) % order.length]
+  try {
+    localStorage.setItem('theme', next)
   } catch (e) {}
-  $('#themeBtn').innerHTML = theme === 'dark' ? SUN : MOON
+  applyTheme()
 }
 
 // Per-day stats over the daysInHistogram window. Each entry:
@@ -159,13 +213,77 @@ function fmtDur(s) {
   return m ? `${h}h ${m}m` : `${h}h`
 }
 
-function monitorStatusIcon(data) {
+function monitorStatusIcon(monitor, data) {
+  if (isInMaintenance(monitor.id, Date.now())) {
+    return tabler(TRIANGLE_PATHS, '1.25em', '#FAB005', 'micon')
+  }
   if (!data || typeof data.lastCheck === 'undefined') {
     return tabler(CIRCLE_PATHS, '1.25em', 'var(--muted)', 'micon')
   }
   return data.lastCheck.operational
     ? tabler(CHECK_PATHS, '1.25em', '#059669', 'micon')
     : tabler(ALERT_PATHS, '1.25em', 'var(--red-dark)', 'micon')
+}
+
+// ---- Scheduled maintenances (UptimeFlare-style). Display only: config-driven
+// windows shown on the Incidents view; affected monitors get a yellow triangle.
+
+function parseTs(v) {
+  const t = Date.parse(v)
+  return Number.isNaN(t) ? null : t
+}
+
+function allMaintenances() {
+  return (CONFIG.maintenances || []).filter((m) => m && parseTs(m.start) != null)
+}
+
+function maintActive(mt, now) {
+  const s = parseTs(mt.start)
+  const e = mt.end ? parseTs(mt.end) : null
+  return s != null && s <= now && (e == null || now <= e)
+}
+
+function maintCovers(mt, monitorId) {
+  return !mt.monitors || mt.monitors.length === 0 || mt.monitors.includes(monitorId)
+}
+
+function isInMaintenance(monitorId, now) {
+  return allMaintenances().some((mt) => maintActive(mt, now) && maintCovers(mt, monitorId))
+}
+
+// Does the window overlap the calendar month 'YYYY-MM'?
+function maintOverlapsMonth(mt, ym) {
+  const [y, m] = ym.split('-').map(Number)
+  const ms = new Date(y, m - 1, 1).getTime()
+  const me = new Date(y, m, 1).getTime()
+  const s = parseTs(mt.start)
+  const e = mt.end ? parseTs(mt.end) : Infinity
+  return s != null && s < me && e > ms
+}
+
+// "22:33:00 15/2/2026 (GMT+7)" in Asia/Saigon.
+function fmtMaintTs(v) {
+  return `${fmtDateTime(parseTs(v))} (${TZ_LABEL})`
+}
+
+function maintenanceCard(mt) {
+  const color = mt.color || '#FAB005'
+  const names = (mt.monitors || []).map((id) => {
+    const m = CONFIG.monitors.find((x) => x.id === id)
+    return m ? m.name : id
+  })
+  return (
+    `<div class="maint">` +
+    `<div class="maint-head">${tabler(TRIANGLE_PATHS, 22, color)}` +
+    `<strong>${esc(mt.title || 'Scheduled Maintenance')}</strong>` +
+    `<span class="maint-dates"><span><b>From:</b> ${esc(fmtMaintTs(mt.start))}</span>` +
+    `<span><b>To:</b> ${esc(mt.end ? fmtMaintTs(mt.end) : 'Until further notice')}</span></span></div>` +
+    (mt.body ? `<div class="maint-body">${esc(mt.body)}</div>` : '') +
+    (names.length
+      ? `<div class="maint-aff"><b>Affected components:</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`
+      : '') +
+    `</div>`
+  )
 }
 
 let CHARTS = []
@@ -199,26 +317,37 @@ function niceStep(v) {
   return (n >= 5 ? 10 : n >= 2 ? 5 : 2) * p
 }
 
-// Hour tick label, 12h format without leading zero: "3AM", "12PM"
+// Hour tick label in Asia/Saigon, 12h format without leading zero: "3AM", "12PM"
 function hourLabel(ts) {
-  const d = new Date(ts * 1000)
-  let h = d.getHours()
-  const ap = h >= 12 ? 'PM' : 'AM'
-  h = h % 12
-  if (h === 0) h = 12
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    hour: 'numeric',
+    hour12: true,
+  }).formatToParts(new Date(ts * 1000))
+  const h = parts.find((p) => p.type === 'hour').value
+  const ap = parts.find((p) => p.type === 'dayPeriod').value
   return h + ap
 }
 
-// Bold tooltip timestamp like UptimeFlare: "Oct 14, 2026, 8:37:44 am"
+// Bold tooltip timestamp like UptimeFlare, in Asia/Saigon:
+// "Oct 14, 2026, 8:37:44 am (GMT+7)"
 function fmtTs(ts) {
   const d = new Date(ts * 1000)
-  const mon = d.toLocaleString('en-US', { month: 'short' })
-  let h = d.getHours()
-  const ap = h >= 12 ? 'pm' : 'am'
-  h = h % 12
-  if (h === 0) h = 12
-  const p2 = (x) => String(x).padStart(2, '0')
-  return `${mon} ${d.getDate()}, ${d.getFullYear()}, ${h}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${ap}`
+  const date = d.toLocaleDateString('en-US', {
+    timeZone: TIME_ZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  let time = d.toLocaleTimeString('en-US', {
+    timeZone: TIME_ZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  })
+  time = time.replace(/ ([AP])M$/, (_, p) => ` ${p.toLowerCase()}m`)
+  return `${date}, ${time} (${TZ_LABEL})`
 }
 
 // GĐ4: 12h intraday latency chart (UptimeFlare DetailChart style).
@@ -254,7 +383,13 @@ function latencyChart(monitor, data, ci) {
       `<text x="${padL - 6}" y="${f1(y + 3.5)}" text-anchor="end" class="ctick">${v.toLocaleString()}</text>`
   }
   let xticks = ''
-  for (let t = Math.ceil(from / 3600) * 3600; t <= now; t += 3600) {
+  // Hour boundaries in Asia/Saigon (UTC+7, no DST) so labels sit on the hour.
+  const TZ_OFF = 7 * 3600
+  for (
+    let t = Math.ceil((from + TZ_OFF) / 3600) * 3600 - TZ_OFF;
+    t <= now;
+    t += 3600
+  ) {
     xticks += `<text x="${f1(X(t))}" y="${H - 6}" text-anchor="middle" class="ctick xt">${hourLabel(t)}</text>`
   }
 
@@ -361,14 +496,14 @@ function bindStrips() {
     const showTip = (bar) => {
       const dd = lookup[bar.dataset.day]
       if (!dd) return
-      let html
+      // UptimeFlare shows no tooltip at all for no-data days.
       if (!dd.hasData || dd.pct == null) {
-        html = `<span class="tip-date">${fmtDay(dd.day)}</span><span class="tip-label2">No Data</span>`
-      } else {
-        html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${fmtDay(dd.day)}</span>`
-        if (dd.downSecs > 0) {
-          html += `<span class="tip-avg">Down for ${fmtDur(dd.downSecs)} (click for detail)</span>`
-        }
+        tip.hidden = true
+        return
+      }
+      let html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${fmtDay(dd.day)}</span>`
+      if (dd.downSecs > 0) {
+        html += `<span class="tip-avg">Down for ${fmtDur(dd.downSecs)} (click for detail)</span>`
       }
       tip.innerHTML = html
       tip.hidden = false
@@ -409,7 +544,7 @@ function openIncidentModal(monitorName, dd) {
   const avgs = dd.locs
     .map((l) => `<div>${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms avg</div>`)
     .join('')
-  $('#incidentModalTitle').textContent = `incidents at ${fmtDay(dd.day)}`
+  $('#incidentModalTitle').textContent = `🚨 ${monitorName} incidents at ${fmtDay(dd.day)}`
   $('#incidentModalBody').innerHTML =
     `<div><strong>Monitor:</strong> ${esc(monitorName)}</div>` +
     `<div><strong>Uptime:</strong> ${dd.pct.toPrecision(4)}%</div>` +
@@ -512,8 +647,16 @@ function renderIncidents() {
         )
         .join('')
     : `<div class="no-incidents">No incidents recorded in ${esc(fmtMonth(month))}.</div>`
+  const maints = allMaintenances()
+    .filter(
+      (mt) => maintOverlapsMonth(mt, month) && (!INC_MONITOR || maintCovers(mt, INC_MONITOR)),
+    )
+    .sort((a, b) => parseTs(b.start) - parseTs(a.start))
+    .map(maintenanceCard)
+    .join('')
   $('#incidents').innerHTML =
     `<div class="inc-controls"><select id="incMonitorFilter" aria-label="Filter by monitor">${options}</select></div>` +
+    maintHtml +
     list +
     `<div class="inc-pager">` +
     `<button class="btn" id="incPrev"${month <= minMonth ? ' disabled' : ''}>&larr; Backwards</button>` +
@@ -551,10 +694,7 @@ function monitorCard(monitor, data, ci) {
   const nameHtml =
     monitor.linkable === false
       ? `<span class="name-text">${esc(monitor.name)}</span>`
-      : `<a class="name-text" href="${esc(monitor.url)}" target="_blank" rel="noopener">${esc(monitor.name)}</a>`
-  const descHtml = monitor.description
-    ? `<span class="tooltip" tabindex="0">${INFO}<span class="tip">${esc(monitor.description)}</span></span>`
-    : ''
+      : `<a class="name-text" href="${esc(monitor.url)}" target="_blank" rel="noopener" title="${esc(monitor.url)}">${esc(monitor.name)}</a>`
 
   const up = overallInfo(data)
   const overallHtml = up
@@ -563,7 +703,7 @@ function monitorCard(monitor, data, ci) {
 
   return (
     `<section class="monitor" data-monitor="${esc(monitor.id)}">` +
-    `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(data)}${descHtml}${nameHtml}</div>` +
+    `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(monitor, data)}${nameHtml}</div>` +
     `${overallHtml}</div>` +
     `${uptimeStrip(monitor, data, ci)}` +
     `${latencyChart(monitor, data, ci)}` +
@@ -582,14 +722,12 @@ function renderStatusHeader() {
 
   let meta = ''
   if (lu.time) {
-    const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-    const date = new Date(lu.time).toLocaleString()
-    meta = `Last updated on: ${esc(date)} (${secs} sec ago)`
+    meta = heroMeta(lu)
   }
   $('#statusHeader').innerHTML =
     `<div class="hero"><div class="hero-icon">${icon}</div>` +
     `<h1 class="hero-title">${esc(text)}</h1>` +
-    (meta ? `<p class="hero-sub">${meta}</p>` : '') +
+    (meta ? `<p class="hero-sub">${esc(meta)}</p>` : '') +
     `</div>`
 }
 
@@ -599,10 +737,9 @@ function tickHero() {
   const lu = STATE.lastUpdate || {}
   const el = document.querySelector('.hero-sub')
   if (!el || !lu.time) return
-  const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-  const date = new Date(lu.time).toLocaleString()
-  const next = `Last updated on: ${date} (${secs} sec ago)`
+  const next = heroMeta(lu)
   if (el.textContent !== next) el.textContent = next
+  const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
   if (secs > 300 && Date.now() - OPENED_AT > 30000) location.reload()
 }
 
@@ -741,11 +878,14 @@ async function refreshState() {
 }
 
 async function init() {
-  setTheme(document.documentElement.dataset.theme || 'light')
+  applyTheme()
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+      if (themeMode() === 'auto') applyTheme()
+    })
 
-  $('#themeBtn').addEventListener('click', () => {
-    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')
-  })
+  $('#themeBtn').addEventListener('click', cycleTheme)
 
   $('#incidentModalClose').addEventListener('click', closeIncidentModal)
   $('#incidentModal').addEventListener('click', (e) => {

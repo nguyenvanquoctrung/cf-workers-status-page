@@ -182,7 +182,8 @@ a:hover { text-decoration: underline; }
   width: 7px; height: 20px; border-radius: 2px;
   margin: 0 1px; flex: none;
 }
-.ubar.clickable { cursor: pointer; }
+/* UptimeFlare: hovered bar brightens; cursor stays default even when clickable */
+.ubar:hover { background: #9DEAB8 !important; }
 .strip-tip {
   position: absolute; z-index: 25; pointer-events: none;
   background: #212529; color: #f8f9fa;
@@ -237,7 +238,6 @@ a:hover { text-decoration: underline; }
 .tip .tip-label { font-weight: 700; display: block; margin: 0.15rem 0; }
 .tip .tip-label2 { font-weight: 700; display: block; margin: 0.15rem 0; }
 .tip .tip-avg { display: block; font-size: 0.7rem; opacity: 0.85; }
-.info-icon { width: 1.1rem; height: 1.1rem; color: var(--link); flex: none; }
 
 /* ---- incident modal ---- */
 .modal-overlay {
@@ -315,6 +315,33 @@ a:hover { text-decoration: underline; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn:disabled:hover { background: var(--input-bg); }
 .inc-note { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
+
+/* ---- maintenance alerts (UptimeFlare MaintenanceAlert style) ---- */
+:root {
+  --maint-bg: #fff9db;
+  --maint-border: #e8c547;
+}
+[data-theme="dark"] {
+  --maint-bg: #3a2f08;
+  --maint-border: #8a6d1a;
+}
+.maint {
+  background: var(--maint-bg);
+  border: 1px solid var(--maint-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.maint-head { display: flex; align-items: center; gap: 10px; }
+.maint-head svg { flex: none; }
+.maint-head strong { font-size: 1rem; }
+.maint-dates {
+  margin-left: auto; text-align: right; font-size: 0.85rem;
+  display: grid; gap: 2px; white-space: nowrap;
+}
+.maint-body { margin-top: 8px; white-space: pre-line; }
+.maint-aff { margin-top: 8px; }
+.maint-aff ul { margin: 4px 0 0; padding-left: 1.25rem; }
 
 @media (max-width: 640px) {
   .header-inner { padding: 0 12px; gap: 8px; }

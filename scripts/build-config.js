@@ -50,6 +50,32 @@ if (!Number.isInteger(config.settings.daysInHistogram) || config.settings.daysIn
   fail('config.settings.daysInHistogram must be a positive integer')
 }
 
+// maintenances: optional list of scheduled maintenance windows, shown on the
+// Incidents view (UptimeFlare-style). Display only — the Worker ignores them.
+if (config.maintenances !== undefined) {
+  if (!Array.isArray(config.maintenances)) fail('config.maintenances must be a list')
+  config.maintenances.forEach((mt, i) => {
+    if (!mt || typeof mt !== 'object') fail(`maintenances[${i}] must be an object`)
+    if (!mt.start || Number.isNaN(Date.parse(mt.start))) {
+      fail(`maintenances[${i}] needs a valid "start" (ISO 8601)`)
+    }
+    if (mt.end !== undefined && Number.isNaN(Date.parse(mt.end))) {
+      fail(`maintenances[${i}] has an invalid "end" (ISO 8601)`)
+    }
+    if (
+      mt.monitors !== undefined &&
+      (!Array.isArray(mt.monitors) || mt.monitors.some((id) => typeof id !== 'string'))
+    ) {
+      fail(`maintenances[${i}].monitors must be a list of monitor ids`)
+    }
+    for (const k of ['title', 'body', 'color']) {
+      if (mt[k] !== undefined && typeof mt[k] !== 'string') {
+        fail(`maintenances[${i}].${k} must be a string`)
+      }
+    }
+  })
+}
+
 mkdirSync(join(root, 'src'), { recursive: true })
 mkdirSync(join(root, 'public'), { recursive: true })
 
