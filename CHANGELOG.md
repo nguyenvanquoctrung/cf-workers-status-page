@@ -20,20 +20,36 @@ Asia/Saigon (GMT+7).
   test.nextdns.io") then **quarantined** (`NX_STATUS_ENABLED = false`): the
   verdict never arrives on the owner's network (QA from test browsers passed).
 
-## 2026-10-14 — Phase 9d: leak test refinements (`fb97190`, `f830a04`, `a023236`, `87e8035`, `d3b67be`, `59da851`)
+## 2026-10-14 — Phase 9c: leak test full info parity (`f478290`)
 
-- **DNSSEC calibration fixed:** the matrix probed `a.{id}-nullip` (resolves to
-  `0.0.0.0` by design — DNS-query observable only, never an HTTP endpoint);
-  now probes `{id}.test-alg15.dnscheck.tools` (real IP), like the original.
-- **"(show more)" fixed:** its state lived in the run state nulled at finish —
-  now split into UI state, so the toggle works before, during and after a run.
-- **Microphone-permission flow** on "(show more)" (RFC 8828), like the
-  original: grant → re-gather ICE candidates (may reveal more IPs), tracks
-  stopped after 1s; cancel → reveal already-gathered addresses.
-- Private/reserved IPs labeled **"Reserved"** like the original's expanded view.
-- Polish: removed the duplicated DNSSEC caption and the GitHub promo line
-  (kept "Powered by dnscheck.tools infrastructure"); **credit-only subtitles**
-  everywhere — no tool descriptions, just attributions.
+- **DNSSEC probe fixed (was broken, now works):** the 9b `<link
+  rel=stylesheet>` onload/onerror technique never fired — browsers MIME-check
+  stylesheets and the test domains answer `Content-Type: text/plain`. Replaced
+  with `fetch(url, {mode: 'no-cors', cache: 'no-store'})`: resolve (opaque) =
+  connected, reject = blocked — the exact 1:1 port of the original's
+  first-party `fetch().ok` signal. Applies to the calibration probe and all
+  matrix probes; honest "untestable" fallback kept for genuinely blocked
+  networks.
+- **Full info parity with dnscheck.tools:** "Your IP addresses" now shows the
+  **RDAP registrant** above each IP and **"City, Region, CC"** geolocation
+  beside it (registrant via IANA RDAP bootstrap + per-RIR RDAP, CORS-open;
+  geo via `ip.addr.tools`); extended WebRTC IPs hide behind **"(show more)"**.
+- **"Your DNS resolvers"** grouped by registrant (like the original), each row
+  with reverse DNS, geolocation, protocol and query count; ECS subnets keep
+  their own summary line.
+- New bottom **status bar** mirroring the original: `{rtt}ms IPv6 EDNS DNSSEC
+  ECH` indicators + live **`dns: N`** query counter. **ECH** renders `n/a`
+  with a tooltip — `X-ECH-Status` is only exposed to dnscheck.tools itself,
+  never cross-origin (shown honestly, never faked).
+- Attribution line kept honest: "Like this tool? Star us on GitHub" →
+  `brianshea2/addr.tools`.
+- **Post-release refinements** (`fb97190`, `f830a04`, `a023236`, `87e8035`,
+  `d3b67be`, `59da851`): DNSSEC calibration now probes `{id}.test-alg15`
+  (real IP) instead of `a.{id}-nullip` (`0.0.0.0` by design); "(show more)"
+  toggle works before/during/after a run (state split from run state);
+  microphone-permission flow on "(show more)" (RFC 8828) like the original;
+  private IPs labeled "Reserved"; removed the duplicated DNSSEC caption and
+  the GitHub promo line; credit-only subtitles everywhere.
 
 ## 2026-10-14 — Fix: page auto-reload killing measurements (`0f94d5f`)
 
@@ -42,6 +58,7 @@ Asia/Saigon (GMT+7).
   is routinely 5–10 minutes old, causing reload loops mid-measurement. Now
   reloads only when data is older than 1800s (30 min), and never while a
   speedtest, detailed test or leak test is running.
+
 
 ## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools (`64bbe41` pt.2)
 
