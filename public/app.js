@@ -33,7 +33,6 @@ en: {
 'theme.auto': 'Auto',
 'theme.light': 'Light',
 'theme.dark': 'Dark',
-'theme.workbench': 'Workbench',
 'doc.title': 'Status Page',
 'footer.powered': 'Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, made with ❤ by <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a>',
 // ---- hero / status ----
@@ -266,7 +265,6 @@ vi: {
 'theme.auto': 'Tự động',
 'theme.light': 'Sáng',
 'theme.dark': 'Tối',
-'theme.workbench': 'Workbench',
 'doc.title': 'Trang trạng thái',
 'footer.powered': 'Vận hành bởi <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, tạo với ❤ bởi <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Tạo trang Status của bạn</a>',
 // ---- hero / status ----
@@ -640,7 +638,7 @@ const tabler = (paths, size, color, cls) =>
 function themeMode() {
   try {
     const v = localStorage.getItem('theme')
-    return v === 'light' || v === 'dark' || v === 'workbench' || v === 'auto' ? v : 'auto'
+    return v === 'light' || v === 'dark' || v === 'auto' ? v : 'auto'
   } catch (e) {
     return 'auto'
   }
@@ -664,15 +662,13 @@ function applyTheme() {
         ? `${t('theme.auto')} (${eff === 'dark' ? t('theme.dark') : t('theme.light')})`
         : mode === 'dark'
           ? t('theme.dark')
-          : mode === 'workbench'
-            ? t('theme.workbench')
-            : t('theme.light')
+          : t('theme.light')
     btn.title = t('theme.toggle', { mode: modeName })
     btn.setAttribute('aria-label', btn.title)
   }
 }
 function cycleTheme() {
-  const order = ['auto', 'light', 'dark', 'workbench']
+  const order = ['auto', 'light', 'dark']
   const next = order[(order.indexOf(themeMode()) + 1) % order.length]
   try {
     localStorage.setItem('theme', next)
@@ -1853,12 +1849,12 @@ function renderMonitors() {
 function render() {
   document.title = t('doc.title')
   $('#pageTitle').textContent = CONFIG.settings.title
-  const logo = $('#logo')
-  if (CONFIG.settings.logo) {
-    logo.src = CONFIG.settings.logo
-    logo.style.display = ''
-  } else {
-    logo.style.display = 'none'
+  const logoWrap = $('#logoWrap')
+  if (logoWrap) {
+    const customLogo = CONFIG.settings.logo && !String(CONFIG.settings.logo).endsWith('logo-192x192.png')
+    logoWrap.innerHTML = customLogo
+      ? `<img class="logo" alt="logo" src="${CONFIG.settings.logo}" />`
+      : `<svg class="logo logo-shield" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l8.2 3.1v6.1c0 5.2-3.6 8.9-8.2 10.4C7.4 19.9 3.8 16.2 3.8 11V4.9L12 1.8z"/></svg>`
   }
   renderStatusHeader()
   renderMonitors()
@@ -3852,7 +3848,8 @@ function goSearchHit(view, elId) {
       } catch (err) {}
     })
   })
-  $('#logo').addEventListener('click', () => setView('status'))
+  const logoWrapEl = $('#logoWrap')
+  if (logoWrapEl) logoWrapEl.addEventListener('click', () => setView('status'))
   $('.brand').style.cursor = 'pointer'
   $('.brand').addEventListener('click', () => setView('status'))
 
