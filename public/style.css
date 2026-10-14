@@ -559,3 +559,5 @@ a:hover { text-decoration: underline; }
 .setup-steps li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
 .setup-step-n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--bg-soft, #f4f4f5); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
 .setup-steps code { background: var(--bg-soft, #f4f4f5); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.setup-presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.btn-sm { padding: 4px 12px; font-size: 13px; }

@@ -198,6 +198,10 @@ en: {
 'webrtc.mdnsNote': 'Modern browsers mask local IPs as .local names \u2014 that is expected.',
 'webrtc.none': 'No ICE candidates gathered.',
 'webrtc.noRtc': 'WebRTC is not available in this browser.',
+'search.placeholder': "Tap '/' to search tools",
+'search.noResult': 'No matching tools',
+'search.tools': 'Tools',
+'search.go': 'Go',
 'setup.title': 'Set up DNS',
 'setup.sub': 'Generate a configuration profile for Apple devices or follow the guides below.',
 'setup.endpoint': 'DNS-over-HTTPS endpoint',
@@ -216,6 +220,11 @@ en: {
 'setup.router': 'Router (OpenWrt)',
 'setup.routerSteps': 'Install https-dns-proxy: opkg update && opkg install https-dns-proxy|Set the DoH URL in the config|Restart the service',
 'setup.note': 'The profile only changes DNS settings. Remove it anytime in Settings.',
+'setup.preset': 'Or pick a provider:',
+'setup.tvos': 'tvOS',
+'setup.tvosSteps': 'Open Settings|Go to General > Privacy|Hover over Share Apple TV Analytics without pressing|Press Play on the remote|Select Add Profile|Enter the profile URL shown after download',
+'setup.mdm': 'Using Apple MDM? Deploy the .mobileconfig via your MDM server to all managed devices.',
+'setup.profileUrl': 'Profile URL (for tvOS):',
 // ---- world ping ----
 'wping.title': 'World Ping Test',
 'wping.powered': 'Measures the response time from your browser to NextDNS PoPs around the world (via each PoP\u2019s /info endpoint, like ping.nextdns.io). Values under 100 ms are good, over 250 ms are poor.',
@@ -421,6 +430,10 @@ vi: {
 'webrtc.mdnsNote': 'Trình duyệt hiện đại che IP nội bộ thành tên .local \u2014 đó là bình thường.',
 'webrtc.none': 'Không thu thập được ICE candidate nào.',
 'webrtc.noRtc': 'Trình duyệt này không hỗ trợ WebRTC.',
+'search.placeholder': "Nhấn '/' để tìm công cụ",
+'search.noResult': 'Không tìm thấy công cụ',
+'search.tools': 'Công cụ',
+'search.go': 'Đi tới',
 'setup.title': 'Cài đặt DNS',
 'setup.sub': 'Tạo profile cấu hình cho thiết bị Apple hoặc làm theo hướng dẫn bên dưới.',
 'setup.endpoint': 'Endpoint DNS-over-HTTPS',
@@ -439,6 +452,11 @@ vi: {
 'setup.router': 'Router (OpenWrt)',
 'setup.routerSteps': 'Cài https-dns-proxy: opkg update && opkg install https-dns-proxy|Đặt URL DoH trong config|Khởi động lại dịch vụ',
 'setup.note': 'Profile chỉ đổi cài đặt DNS. Gỡ bất cứ lúc nào trong Cài đặt.',
+'setup.preset': 'Hoặc chọn nhà cung cấp:',
+'setup.tvos': 'tvOS',
+'setup.tvosSteps': 'Mở Cài đặt|Vào Cài đặt chung > Quyền riêng tư|Di tới Chia sẻ phân tích Apple TV (không bấm)|Bấm Play trên remote|Chọn Thêm hồ sơ|Nhập URL profile hiện sau khi tải',
+'setup.mdm': 'Dùng Apple MDM? Triển khai file .mobileconfig qua máy chủ MDM tới mọi thiết bị được quản lý.',
+'setup.profileUrl': 'URL profile (cho tvOS):',
 // ---- kiểm tra ping toàn cầu ----
 'wping.title': 'Kiểm tra ping toàn cầu',
 'wping.powered': 'Đo thời gian phản hồi từ trình duyệt của bạn tới các PoP NextDNS trên toàn thế giới (qua endpoint /info của từng PoP, như ping.nextdns.io). Dưới 100 ms là tốt, trên 250 ms là kém.',
@@ -2404,6 +2422,11 @@ function renderSetup() {
     t(key).split('|').map((s, i) => `<li><span class="setup-step-n">${i + 1}</span>${esc(s)}</li>`).join('')
   const card = (titleKey, stepsKey) =>
     `<div class="dns-card"><h3 class="blat-title">${t(titleKey)}</h3><ol class="setup-steps">${steps(stepsKey)}</ol></div>`
+  const presets = [
+    ['Cloudflare', 'https://cloudflare-dns.com/dns-query'],
+    ['Quad9', 'https://dns.quad9.net/dns-query'],
+    ['AdGuard', 'https://dns.adguard-dns.com/dns-query'],
+  ]
   el.innerHTML =
     `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="setup.title">${t('setup.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="setup.sub">${t('setup.sub')}</p></div>` +
@@ -2412,12 +2435,23 @@ function renderSetup() {
     `<button class="btn" id="setupDl" data-i18n-key="setup.generate">${t('setup.generate')}</button>` +
     `<button class="btn" id="setupCopy" data-i18n-key="setup.copyDoh">${t('setup.copyDoh')}</button>` +
     `</div>` +
-    `<p class="dns-note" data-i18n-key="setup.note">${t('setup.note')}</p></div>` +
+    `<p class="dns-note" data-i18n-key="setup.note">${t('setup.note')}</p>` +
+    `<div class="setup-presets"><span class="dns-note">${t('setup.preset')}</span>` +
+    presets.map(([n, u]) => `<button class="btn btn-sm setup-preset" data-url="${u}">${n}</button>`).join('') +
+    `</div></div>` +
     card('setup.ios', 'setup.iosSteps') +
     card('setup.macos', 'setup.macosSteps') +
     card('setup.windows', 'setup.windowsSteps') +
     card('setup.android', 'setup.androidSteps') +
-    card('setup.router', 'setup.routerSteps')
+    card('setup.router', 'setup.routerSteps') +
+    card('setup.tvos', 'setup.tvosSteps') +
+    `<div class="dns-card"><p class="dns-note">${t('setup.mdm')}</p></div>`
+  document.querySelectorAll('.setup-preset').forEach((b) => {
+    b.addEventListener('click', () => {
+      const inp = $('#setupEndpoint')
+      if (inp) inp.value = b.dataset.url
+    })
+  })
   $('#setupDl').addEventListener('click', downloadMobileconfig)
   $('#setupCopy').addEventListener('click', async () => {
     const input = $('#setupEndpoint')
@@ -3683,15 +3717,110 @@ async function init() {
     if (e.key === 'Escape' && !$('#incidentModal').hidden) closeIncidentModal()
   })
 
+// ---- Universal search (tools + sections across all views) ----
+function searchIndex() {
+  return [
+    { v: 'status', t: t('nav.status'), k: 'status monitor uptime', el: 'statusView' },
+    { v: 'incidents', t: t('nav.incidents'), k: 'incident history su co', el: 'incidentsView' },
+    { v: 'ping', t: t('nav.ping') + ' — World Ping', k: 'ping world latency pop nextdns', el: 'pingView' },
+    { v: 'speedtest', t: t('nav.speedtest'), k: 'speedtest toc do mang vietcdn', el: 'speedtestView' },
+    { v: 'speedtest', t: t('ipinfo.title'), k: 'ip dia chi mang location asn', el: 'ipInfo' },
+    { v: 'speedtest', t: t('conn.title'), k: 'server location vi tri may chu cloudflare', el: 'connInfo' },
+    { v: 'dns', t: t('dns.lookup.title'), k: 'dns lookup tra cuu phan giai', el: 'dnsTools' },
+    { v: 'dns', t: t('leak.title'), k: 'dns leak ro ri edns dnssec', el: 'dnsTools' },
+    { v: 'dns', t: t('quic.title'), k: 'quic http3', el: 'dnsTools' },
+    { v: 'dns', t: t('tls.title'), k: 'tls ssl certificate chung chi', el: 'dnsTools' },
+    { v: 'dns', t: t('webrtc.title'), k: 'webrtc leak ro ri ip stun', el: 'dnsTools' },
+    { v: 'setup', t: t('nav.setup'), k: 'setup cai dat dns', el: 'setupView' },
+    { v: 'setup', t: t('setup.ios'), k: 'ios iphone ipad mobileconfig profile', el: 'setupTools' },
+    { v: 'setup', t: t('setup.macos'), k: 'macos mac mobileconfig profile', el: 'setupTools' },
+    { v: 'setup', t: t('setup.windows'), k: 'windows doh', el: 'setupTools' },
+    { v: 'setup', t: t('setup.android'), k: 'android private dns', el: 'setupTools' },
+    { v: 'setup', t: t('setup.router'), k: 'router openwrt https-dns-proxy', el: 'setupTools' },
+  ]
+}
+
+function renderSearchDropdown(q) {
+  hideSearchDropdown()
+  q = (q || '').trim().toLowerCase()
+  if (q.length < 2) return
+  const hits = searchIndex().filter((it) =>
+    it.t.toLowerCase().includes(q) || it.k.includes(q),
+  ).slice(0, 8)
+  const input = $('#filterInput')
+  if (!input) return
+  const box = document.createElement('div')
+  box.id = 'searchDropdown'
+  box.className = 'search-dropdown'
+  if (!hits.length) {
+    box.innerHTML = `<div class="search-empty">${t('search.noResult')}</div>`
+  } else {
+    box.innerHTML = `<div class="search-head">${t('search.tools')}</div>` + hits.map((h, i) =>
+      `<div class="search-item${i === 0 ? ' active' : ''}" data-view="${h.v}" data-el="${h.el}" role="option" tabindex="-1">` +
+      `<span class="search-item-t">${esc(h.t)}</span><span class="search-go">${t('search.go')} →</span></div>`,
+    ).join('')
+    box.querySelectorAll('.search-item').forEach((el) => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        goSearchHit(el.dataset.view, el.dataset.el)
+      })
+    })
+  }
+  input.parentElement.style.position = 'relative'
+  input.parentElement.appendChild(box)
+}
+
+function hideSearchDropdown() {
+  const d = document.getElementById('searchDropdown')
+  if (d) d.remove()
+}
+
+function goSearchHit(view, elId) {
+  hideSearchDropdown()
+  const input = $('#filterInput')
+  if (input) { input.value = ''; FILTER = ''; }
+  setView(view)
+  // Wait for the view to render, then scroll + flash the target
+  let tries = 0
+  const tick = () => {
+    const el = document.getElementById(elId)
+    if (el && el.offsetParent !== null) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('search-flash')
+      setTimeout(() => el.classList.remove('search-flash'), 1800)
+    } else if (++tries < 20) {
+      setTimeout(tick, 150)
+    }
+  }
+  setTimeout(tick, 100)
+}
+
   const input = $('#filterInput')
   input.addEventListener('input', (e) => {
     if (e.target.value === '/') return
     FILTER = e.target.value
     renderMonitors()
+    renderSearchDropdown(e.target.value)
   })
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') e.target.blur()
+    if (e.key === 'Escape') { e.target.blur(); hideSearchDropdown() }
+    if (e.key === 'Enter') {
+      const first = document.querySelector('.search-item')
+      if (first) { first.click(); e.preventDefault() }
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const items = [...document.querySelectorAll('.search-item')]
+      if (!items.length) return
+      e.preventDefault()
+      let idx = items.findIndex((el) => el.classList.contains('active'))
+      idx = e.key === 'ArrowDown' ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length
+      items.forEach((el) => el.classList.remove('active'))
+      items[idx].classList.add('active')
+      items[idx].scrollIntoView({ block: 'nearest' })
+    }
   })
+  input.addEventListener('blur', () => setTimeout(hideSearchDropdown, 150))
+  input.addEventListener('focus', (e) => { if (e.target.value) renderSearchDropdown(e.target.value) })
   document.addEventListener('keydown', (e) => {
     if (e.key === '/' && document.activeElement !== input) {
       e.preventDefault()
