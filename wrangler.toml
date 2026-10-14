@@ -12,6 +12,11 @@ workers_dev = true
 # so they run from the placed colo (Singapore). The built-in Workers cron is
 # intentionally disabled: placement does not affect the scheduled handler,
 # and it would run from a random global colo with high latency to VN/SEA.
+# NOTE: per Cloudflare docs, an empty crons array (not a removed section)
+# is what actually deletes the trigger on deploy.
+[triggers]
+crons = []
+
 [placement]
 region = "aws:ap-southeast-1"
 
