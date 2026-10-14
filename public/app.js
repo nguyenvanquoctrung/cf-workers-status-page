@@ -1938,6 +1938,8 @@ const ipEnrichCache = {} // ip -> Promise<{reg, geo}>
 function enrichIp(ip) {
   if (!ipEnrichCache[ip]) {
     ipEnrichCache[ip] = (async () => {
+      // Like the original: private/reserved addresses are labeled "Reserved".
+      if (isPrivateIp(ip)) return { reg: 'Reserved', geo: null }
       const [reg, geo] = await Promise.all([
         rdapRegistrant(ip).catch(() => null),
         geoFor(ip).catch(() => null),
