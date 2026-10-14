@@ -1,0 +1,19 @@
+# cf-workers-status-page v2 — wrangler v4 config
+# NOTE: the real KV namespace id is injected by .github/workflows/deploy.yml
+# on every deploy (it creates the namespace if missing). For local dev,
+# `wrangler dev --local` uses local storage and ignores the placeholder.
+
+name = "nextdns"
+main = "src/index.js"
+compatibility_date = "2026-10-13"
+workers_dev = true
+
+[triggers]
+crons = ["*/2 * * * *"]
+
+[[kv_namespaces]]
+binding = "KV_STATUS_PAGE"
+id = "KV_NAMESPACE_ID_PLACEHOLDER"
+
+[assets]
+directory = "public"

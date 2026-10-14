@@ -1,0 +1,61 @@
+settings:
+  title: 'Status Page'
+  url: 'https://nextdns.jeremienguyen.workers.dev' # used for Slack messages
+  logo: logo-192x192.png # image in ./public/ folder
+  daysInHistogram: 30 # number of days you want to display in histogram
+  collectResponseTimes: true # collects avg response times from CRON locations
+
+  allmonitorsOperational: 'All Systems Operational'
+  notAllmonitorsOperational: 'Not All Systems Operational'
+  monitorLabelOperational: 'Operational'
+  monitorLabelNotOperational: 'Not Operational'
+  monitorLabelNoData: 'No data'
+  dayInHistogramNoData: 'No data'
+  dayInHistogramOperational: 'All good'
+  dayInHistogramNotOperational: ' incident(s)' # xx incident(s) recorded
+
+monitors:
+  - id: zepto-sin
+    name: Singapore Zepto
+    description: 'zepto-sin-1.edge.nextdns.io'
+    url: 'https://zepto-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: vultr-sin
+    name: Singapore Vultr
+    description: 'vultr-sin-1.edge.nextdns.io'
+    url: 'https://vultr-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: anexia-sin
+    name: Singapore Anexia
+    description: 'anexia-sin-1.edge.nextdns.io'
+    url: 'https://anexia-sin-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: anexia-hkg
+    name: HongKong Anexia
+    description: 'anexia-hkg-1.edge.nextdns.io'
+    url: 'https://anexia-hkg-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false
+
+  - id: zepto-hkg
+    name: HongKong Zepto
+    description: 'zepto-hkg-1.edge.nextdns.io'
+    url: 'https://zepto-hkg-1.edge.nextdns.io/resolve?name=google.com'
+    method: GET
+    expectStatus: 200
+    followRedirect: false
+    linkable: false

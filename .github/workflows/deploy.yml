@@ -1,0 +1,69 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Ensure KV namespace exists
+        run: |
+          NS_ID=$(npx wrangler kv namespace list --output json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
+              try {
+                const list=JSON.parse(d||'[]');
+                const f=list.find(n=>(n.title||'').includes('KV_STATUS_PAGE'));
+                console.log(f?f.id:'');
+              } catch(e){ console.log(''); }
+            })")
+          if [ -z "$NS_ID" ]; then
+            echo "Creating KV namespace KV_STATUS_PAGE ..."
+            NS_ID=$(npx wrangler kv namespace create KV_STATUS_PAGE --output json | node -e "
+              let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
+                try { console.log(JSON.parse(d).id); } catch(e){ console.log(''); }
+              })")
+          fi
+          if [ -z "$NS_ID" ]; then echo "Failed to resolve KV namespace id"; exit 1; fi
+          echo "KV namespace id: $NS_ID"
+          sed -i "s/KV_NAMESPACE_ID_PLACEHOLDER/$NS_ID/" wrangler.toml
+          grep -q "KV_NAMESPACE_ID_PLACEHOLDER" wrangler.toml && { echo "placeholder not replaced"; exit 1; } || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: Set Worker secrets
+        run: |
+          put_secret() {
+            local name="$1" value="$2"
+            [ -z "$value" ] && value="default-gh-action-secret"
+            printf '%s' "$value" | npx wrangler secret put "$name"
+          }
+          put_secret SECRET_SLACK_WEBHOOK_URL "${{ secrets.SECRET_SLACK_WEBHOOK_URL }}"
+          put_secret SECRET_TELEGRAM_API_TOKEN "${{ secrets.SECRET_TELEGRAM_API_TOKEN }}"
+          put_secret SECRET_TELEGRAM_CHAT_ID "${{ secrets.SECRET_TELEGRAM_CHAT_ID }}"
+          put_secret SECRET_DISCORD_WEBHOOK_URL "${{ secrets.SECRET_DISCORD_WEBHOOK_URL }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
