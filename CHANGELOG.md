@@ -5,6 +5,12 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Groups collapsed by default (`2389253`)
+
+- Monitor groups now start collapsed (click a group header to expand),
+  giving a compact overview on load. An explicit expand/collapse choice is
+  still remembered in localStorage.
+
 ## 2026-10-14 — Phase 7: measure latency from your browser (`345e7d7`)
 
 - New "Latency from your browser" card: measures live RTT from the visitor's
