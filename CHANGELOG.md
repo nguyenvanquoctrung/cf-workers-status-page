@@ -5,6 +5,12 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 20:45 — Fix missing i18n keys
+
+- Added 4 keys that showed as literal text: `speedtest.testing`,
+  `speedtest.testAgain` ("Đo lại"), `ping.measuring`, `ping.progress`.
+  Full key audit now passes (108 used = 108 in dictionary).
+
 ## 2026-10-14 20:20 — Fixes & polish
 
 - **Latency chart x-axis now 24-hour** ("15", "16"…) instead of AM/PM.

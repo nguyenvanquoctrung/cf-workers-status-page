@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 20:45 — Bổ sung key i18n còn thiếu
+
+- Thêm 4 key bị hiện literal text: `speedtest.testing`,
+  `speedtest.testAgain` ("Đo lại"), `ping.measuring`, `ping.progress`.
+  Audit key đầy đủ: 108 key dùng = 108 key trong từ điển.
+
 ## 2026-10-14 20:20 — Sửa lỗi & tinh chỉnh
 
 - **Trục giờ biểu đồ latency dùng 24 giờ** ("15", "16"…) thay vì AM/PM.
