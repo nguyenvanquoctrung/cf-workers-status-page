@@ -17,6 +17,13 @@ const esc = (s) =>
 
 const dayStr = (d) => d.toISOString().split('T')[0]
 
+// "2026-10-14" -> locale date like "10/14/2026" (UptimeFlare style).
+// Built as a local date (not UTC) so timezones can't shift the day.
+const fmtDay = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString()
+}
+
 const MOON =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>'
 const SUN =
@@ -122,12 +129,13 @@ function overallColor(pct) {
   return '#DF484A'
 }
 
-function barColor(pct) {
-  if (pct == null) return 'var(--bar-nodata)'
-  if (pct >= 99.9) return '#3BD671'
-  if (pct >= 99) return '#9DEAB8'
-  if (pct >= 95) return '#F29030'
-  return '#DF484A'
+// UptimeFlare-style bar colors, driven by fail presence with the same
+// day-granularity logic as overallInfo: any recorded fail colors the day
+// non-green (an estimated ~99.5% day must not look "all good").
+function barColor(dd) {
+  if (!dd.hasData || dd.pct == null) return 'var(--bar-nodata)'
+  if (dd.fails === 0) return '#3BD671'
+  return dd.pct >= 99 ? '#F29030' : '#DF484A'
 }
 
 function fmtDur(s) {
@@ -155,6 +163,13 @@ function latencyChart(monitor, data, ci) {
   const n = s.daysInHistogram
   const days = dayStats(data)
   CHARTS[ci] = days
+
+  // Too little data for a meaningful line: show a subtle placeholder
+  // instead of a broken-looking stub (tiny segment / empty axes).
+  const chartable = days.filter((dd) => dd.avg != null).length
+  if (chartable < 2) {
+    return `<div class="chart-nodata">No data yet</div>`
+  }
 
   const W = 600
   const H = 150
@@ -243,8 +258,8 @@ function uptimeStrip(monitor, data, ci) {
     .map(
       (dd) =>
         `<div class="ubar${dd.hasData && dd.fails > 0 ? ' clickable' : ''}"` +
-        ` data-ci="${ci}" data-day="${dd.day}" style="background:${barColor(dd.pct)}"` +
-        ` role="img" aria-label="${esc(dd.day)}"></div>`,
+        ` data-ci="${ci}" data-day="${dd.day}" style="background:${barColor(dd)}"` +
+        ` role="img" aria-label="${esc(fmtDay(dd.day))}"></div>`,
     )
     .join('')
   return (
@@ -280,7 +295,7 @@ function bindCharts() {
         .map((l) => `<span class="tip-avg">${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms</span>`)
         .join('')
       tip.innerHTML =
-        `<span class="tip-date">${dd.day}</span>` +
+        `<span class="tip-date">${fmtDay(dd.day)}</span>` +
         (dd.avg != null ? `<span class="tip-label">${Math.round(dd.avg)}ms avg</span>` : '') +
         `<span class="tip-label2">${label}</span>${avgs}`
       tip.hidden = false
@@ -309,9 +324,9 @@ function bindStrips() {
       if (!dd) return
       let html
       if (!dd.hasData || dd.pct == null) {
-        html = `<span class="tip-date">${dd.day}</span><span class="tip-label2">No Data</span>`
+        html = `<span class="tip-date">${fmtDay(dd.day)}</span><span class="tip-label2">No Data</span>`
       } else {
-        html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${dd.day}</span>`
+        html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${fmtDay(dd.day)}</span>`
         if (dd.downSecs > 0) {
           html += `<span class="tip-avg">Down for ${fmtDur(dd.downSecs)} (click for detail)</span>`
         }
@@ -355,7 +370,7 @@ function openIncidentModal(monitorName, dd) {
   const avgs = dd.locs
     .map((l) => `<div>${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms avg</div>`)
     .join('')
-  $('#incidentModalTitle').textContent = `incidents at ${dd.day}`
+  $('#incidentModalTitle').textContent = `incidents at ${fmtDay(dd.day)}`
   $('#incidentModalBody').innerHTML =
     `<div><strong>Monitor:</strong> ${esc(monitorName)}</div>` +
     `<div><strong>Uptime:</strong> ${dd.pct.toPrecision(4)}%</div>` +

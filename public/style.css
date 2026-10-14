@@ -154,6 +154,10 @@ a:hover { text-decoration: underline; }
   font-size: 12px; font-weight: 700; color: #666;
   margin: 14px 0 2px; text-align: left;
 }
+.chart-nodata {
+  color: var(--muted); font-size: 0.85rem; text-align: center;
+  padding: 1.75rem 0 1.25rem;
+}
 .chart-wrap { position: relative; margin: 0; }
 .chart { display: block; width: 100%; height: auto; cursor: crosshair; }
 .cline { fill: none; stroke: var(--chart-line); stroke-width: 2; }
