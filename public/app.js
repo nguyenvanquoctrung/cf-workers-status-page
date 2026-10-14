@@ -656,7 +656,7 @@ function renderIncidents() {
     .join('')
   $('#incidents').innerHTML =
     `<div class="inc-controls"><select id="incMonitorFilter" aria-label="Filter by monitor">${options}</select></div>` +
-    maintHtml +
+    maints +
     list +
     `<div class="inc-pager">` +
     `<button class="btn" id="incPrev"${month <= minMonth ? ' disabled' : ''}>&larr; Backwards</button>` +

@@ -25,7 +25,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: viettel-sgn
     group: Vietnam
@@ -35,7 +34,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: vultr-sin
     group: International
@@ -45,7 +43,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: lightnode-han
     group: Vietnam
@@ -55,7 +52,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: viettel-han
     group: Vietnam
@@ -65,7 +61,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: zepto-hkg
     group: International
@@ -75,7 +70,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: anexia-sin
     group: International
@@ -85,7 +79,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: anexia-kul
     group: International
@@ -95,7 +88,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: lightnode-kul
     group: International
@@ -105,7 +97,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: vultr-tyo
     group: International
@@ -115,7 +106,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: lightnode-bkk
     group: International
@@ -125,7 +115,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: bangmod-bkk
     group: International
@@ -135,7 +124,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
   - id: hostinginside-tpe
     group: International
@@ -145,7 +133,6 @@ monitors:
     method: GET
     expectStatus: 200
     followRedirect: false
-    linkable: false
 
 # Scheduled maintenances, shown on the Incidents view (UptimeFlare-style).
 # Each entry:

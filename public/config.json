@@ -24,7 +24,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "viettel-sgn",
@@ -35,7 +35,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "vultr-sin",
@@ -46,7 +46,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "lightnode-han",
@@ -57,7 +57,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "viettel-han",
@@ -68,7 +68,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "zepto-hkg",
@@ -79,7 +79,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "anexia-sin",
@@ -90,7 +90,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "anexia-kul",
@@ -101,7 +101,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "lightnode-kul",
@@ -112,7 +112,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "vultr-tyo",
@@ -123,7 +123,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "lightnode-bkk",
@@ -134,7 +134,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "bangmod-bkk",
@@ -145,7 +145,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     },
     {
       "id": "hostinginside-tpe",
@@ -156,7 +156,7 @@
       "method": "GET",
       "expectStatus": 200,
       "followRedirect": false,
-      "linkable": false
+      "linkable": true
     }
   ]
 }

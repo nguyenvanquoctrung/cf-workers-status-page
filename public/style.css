@@ -172,6 +172,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700; font-size: 16px; min-width: 0;
 }
 .monitor-name a, .monitor-name span.name-text { color: var(--text); }
+.monitor-name a.name-text { text-decoration: underline; }
 .monitor-name .micon { flex: none; }
 .overall { font-weight: 700; font-size: 16px; white-space: nowrap; }
 
