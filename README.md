@@ -48,6 +48,16 @@ dependency-free static page in the visual language of
   registrant with ECS subnets, a bottom status bar with live `dns:` query
   counter (ECH shown as n/a — unreadable cross-origin), all powered by their
   WebSocket + nameserver observation
+- **Setup tab** (`#setup`): step-by-step DNS setup guides (iOS/iPadOS,
+  macOS, Windows 11, Android 9+, OpenWrt, tvOS) plus a client-side Apple
+  `.mobileconfig` generator — paste a DoH endpoint, download the install
+  profile (apple.nextdns.io-style); provider presets (Cloudflare, Quad9,
+  AdGuard), MDM note; nothing leaves the browser
+- **Universal search**: the header search finds monitors, tools, sections and
+  setup guides across every tab (`/` focuses, Enter jumps, arrows navigate)
+- **Workbench retro theme** (default light mode): warm beige surfaces,
+  square corners, orange accents, monospace type throughout; dark mode kept;
+  theme-aware shield logo and maps
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
 - **Incidents view** (`#incidents`) with month pager (bounded to the KV data
@@ -62,6 +72,8 @@ dependency-free static page in the visual language of
   reference)
 - Slack / Telegram / Discord notifications on status change (optional, via
   Worker secrets)
+- Monitor checks run from a Singapore-pinned Worker (GitHub Actions triggers
+  `POST /api/check` every 5 min) for low latency to VN/SEA monitors
 - No servers, no frontend build step — Cloudflare Workers + KV only
 
 Full history: [CHANGELOG.md](CHANGELOG.md).

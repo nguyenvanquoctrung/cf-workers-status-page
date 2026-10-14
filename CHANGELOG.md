@@ -5,6 +5,52 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-15 01:04 — Monitor checks pinned to Singapore
+
+- Worker placement pinned to `aws:ap-southeast-1` (verified live:
+  `Cf-Placement: remote-SIN`).
+- Checks no longer run from the built-in Workers cron, which executes on a
+  random global colo (high latency to VN/SEA). New flow: a GitHub Actions
+  workflow POSTs `/api/check` (Bearer `CHECK_SECRET`) every 5 minutes, so
+  every check round originates from Singapore.
+- Result: Singapore monitors now measure ~54-64 ms (previously 150-300 ms
+  from random colos). Rollback tag: `sg-placement-backup`.
+
+## 2026-10-15 00:20 — Phase 16: Workbench retro theme (default light mode)
+
+- New default light theme inspired by trimui.vndns.net's workbench aesthetic:
+  warm beige background (`#ecebe5`), light card surfaces (`#f6f5f0`), crisp
+  1-2px borders, square corners everywhere, orange accent (`#ff8533`),
+  monospace type throughout.
+- No pure-white surfaces remain in light mode; dark mode unchanged.
+- Theme-aware shield logo: orange in light mode, NextDNS blue (`#1a8cff`,
+  sampled from the original logo) in dark mode.
+- Server-location and World Ping maps follow the theme (warm gray land in
+  light, slate in dark); World Ping dots show circular country flags
+  (flagcdn) until measured, then latency colors.
+
+## 2026-10-14 23:33 — Header: responsive without hamburger
+
+- Tried a hamburger menu for narrow screens, then removed it per feedback:
+  the nav now scrolls horizontally when tight, the search field shrinks first,
+  and the brand/nav never get squeezed.
+
+## 2026-10-14 23:28 — Phase 15: Universal search
+
+- The header search box now finds everything, not just monitors: tools,
+  sections and setup guides across all tabs (try "quic", "webrtc", "ios").
+  Enter jumps to the first hit, Up/Down navigate, Esc closes, `/` focuses.
+  Selecting a hit switches to the right tab and flashes the target.
+
+## 2026-10-14 23:26 — Phase 14: Setup tab (`#setup`)
+
+- New **Setup** tab: DNS setup guides (iOS/iPadOS, macOS, Windows 11,
+  Android 9+, OpenWrt, tvOS) plus a client-side Apple `.mobileconfig`
+  generator (DoH endpoint in, downloadable profile out,
+  apple.nextdns.io-style).
+- Provider presets (Cloudflare, Quad9, AdGuard) fill the endpoint in one tap;
+  MDM deployment note included. No data leaves the browser.
+
 ## 2026-10-14 21:15 — Phase 13: World Ping Test + manual Ping
 
 - **World Ping Test** (meter.net-style) in the Ping tab: the browser pings

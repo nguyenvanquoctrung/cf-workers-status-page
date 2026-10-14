@@ -5,6 +5,49 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-15 01:04 — Ghim check monitor về Singapore
+
+- Ghim vị trí Worker về `aws:ap-southeast-1` (đã xác minh live:
+  `Cf-Placement: remote-SIN`).
+- Không còn check bằng cron nội bộ của Workers (chạy ở colo ngẫu nhiên toàn
+  cầu, latency cao về VN/ĐNÁ). Luồng mới: GitHub Actions gọi
+  `POST /api/check` (Bearer `CHECK_SECRET`) mỗi 5 phút, mọi lượt check xuất
+  phát từ Singapore.
+- Kết quả: monitor Singapore đo được ~54-64 ms (trước đây 150-300 ms từ colo
+  ngẫu nhiên). Tag rollback: `sg-placement-backup`.
+
+## 2026-10-15 00:20 — Phase 16: Theme retro Workbench (light mode mặc định)
+
+- Theme sáng mặc định mới theo phong cách workbench của trimui.vndns.net:
+  nền be ấm (`#ecebe5`), mặt card sáng (`#f6f5f0`), viền 1-2px sắc nét, góc
+  vuông toàn trang, điểm nhấn cam (`#ff8533`), font monospace đồng nhất.
+- Light mode không còn mảng trắng thuần nào; dark mode giữ nguyên.
+- Logo khiên đổi màu theo theme: cam ở light mode, xanh NextDNS (`#1a8cff`,
+  lấy đúng từ logo gốc) ở dark mode.
+- Bản đồ Vị trí máy chủ và World Ping đổi màu theo theme; chấm World Ping
+  hiện cờ tròn quốc gia (flagcdn) khi chưa đo, đo xong hiện màu theo độ trễ.
+
+## 2026-10-14 23:33 — Header responsive không cần hamburger
+
+- Đã thử menu hamburger cho màn hình hẹp rồi gỡ theo góp ý: nav tự cuộn
+  ngang khi chật, ô search co lại trước, tiêu đề/nav không bao giờ bị ép.
+
+## 2026-10-14 23:28 — Phase 15: Tìm kiếm toàn trang
+
+- Ô search trên header giờ tìm mọi thứ, không chỉ monitor: công cụ, mục nội
+  dung, hướng dẫn cài đặt trên mọi tab (thử "quic", "webrtc", "ios"). Enter
+  nhảy tới kết quả đầu, lên/xuống di chuyển, Esc đóng, `/` focus. Chọn kết
+  quả sẽ chuyển đúng tab và nháy viền mục tiêu.
+
+## 2026-10-14 23:26 — Phase 14: Tab Cài đặt (`#setup`)
+
+- Tab **Cài đặt** mới: hướng dẫn cài DNS (iOS/iPadOS, macOS, Windows 11,
+  Android 9+, OpenWrt, tvOS) + công cụ tạo profile Apple `.mobileconfig`
+  ngay trên trình duyệt (nhập DoH endpoint, tải file về,
+  kiểu apple.nextdns.io).
+- Nút preset nhà cung cấp (Cloudflare, Quad9, AdGuard) điền endpoint một
+  chạm; có ghi chú triển khai MDM. Không dữ liệu nào rời khỏi trình duyệt.
+
 ## 2026-10-14 21:15 — Phase 13: Kiểm tra ping toàn cầu + Ping thủ công
 
 - **Kiểm tra ping toàn cầu** (kiểu meter.net) trong tab Ping: trình duyệt
