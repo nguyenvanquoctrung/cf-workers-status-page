@@ -1924,6 +1924,17 @@ const NEXTDNS_POPS = [
   { host: 'zepto-zrh-1.edge.nextdns.io', city: 'Zurich', lat: 47.38, lon: 8.54, country: 'Switzerland' },
 ]
 
+// Country name -> flagcdn ISO code (for unmeasured PoP dots: circular flags)
+const WPING_CC = {
+  'Australia': 'au', 'Brazil': 'br', 'Canada': 'ca', 'Chile': 'cl',
+  'Colombia': 'co', 'France': 'fr', 'Germany': 'de', 'Hong Kong': 'hk',
+  'India': 'in', 'Italy': 'it', 'Japan': 'jp', 'Malaysia': 'my',
+  'Netherlands': 'nl', 'Poland': 'pl', 'Singapore': 'sg', 'South Africa': 'za',
+  'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+  'Taiwan': 'tw', 'Thailand': 'th', 'UAE': 'ae', 'United Arab Emirates': 'ae',
+  'United Kingdom': 'gb', 'United States': 'us', 'Vietnam': 'vn', 'Viet Nam': 'vn',
+}
+
 function wpingColor(ms) {
   if (ms == null) return '#888'
   if (ms < 100) return '#22c55e'
@@ -1956,17 +1967,28 @@ function renderWorldPingMap(results) {
       'Z"/>',
   ).join('')
   const dots = results
-    .map((r) => {
+    .map((r, i) => {
       if (r.lat == null || r.lon == null) return ''
       const vals = r.values.filter((v) => v != null)
       const best = vals.length ? Math.min(...vals) : null
       const cx = x(r.lon).toFixed(1),
         cy = y(r.lat).toFixed(1)
-      const color = wpingColor(best)
       const label = best == null ? '-- ms' : best + ' ms'
       const name = (r.country ? r.country + ' · ' : '') + popShort(r.host)
+      let dot
+      if (best == null) {
+        // Not measured yet: circular country flag
+        const cc = WPING_CC[r.country] || ''
+        dot = cc
+          ? `<defs><clipPath id="wpingflag${i}"><circle cx="${cx}" cy="${cy}" r="8"/></clipPath></defs>` +
+            `<image href="https://flagcdn.com/32x24/${cc}.png" x="${+cx - 8}" y="${+cy - 8}" width="16" height="16" preserveAspectRatio="xMidYMid slice" clip-path="url(#wpingflag${i})"/>` +
+            `<circle cx="${cx}" cy="${cy}" r="8" fill="none" stroke="var(--map-land)" stroke-width="1"/>`
+          : `<circle cx="${cx}" cy="${cy}" r="8" fill="#888" opacity="0.85"/>`
+      } else {
+        dot = `<circle cx="${cx}" cy="${cy}" r="8" fill="${wpingColor(best)}" opacity="0.85"/>`
+      }
       return (
-        `<g><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" opacity="0.85"/>` +
+        `<g>${dot}` +
         `<text x="${cx}" y="${+cy + 24}" text-anchor="middle" font-size="14" fill="currentColor">${label}</text>` +
         `<title>${esc(name)}: ${label}</title></g>`
       )
