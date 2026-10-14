@@ -24,6 +24,15 @@ const SUN =
 const INFO =
   '<svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>'
 
+// Tabler outline icons (IconCircleCheck / IconAlertCircle / plain circle)
+const CHECK_PATHS =
+  '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M8 12.5l2.5 2.5l5 -5"/>'
+const ALERT_PATHS =
+  '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 8v4"/><path d="M12 16h.01"/>'
+const CIRCLE_PATHS = '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/>'
+const tabler = (paths, size, color, cls) =>
+  `<svg${cls ? ` class="${cls}"` : ''} xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`
+
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme
   try {
@@ -32,14 +41,40 @@ function setTheme(theme) {
   $('#themeBtn').innerHTML = theme === 'dark' ? SUN : MOON
 }
 
-function statusPill(data) {
-  const s = CONFIG.settings
+// Uptime % over the daysInHistogram window (day granularity: a day counts as
+// "down" when it recorded any failed check). Returns null when no day has data.
+function overallInfo(data) {
+  const n = CONFIG.settings.daysInHistogram
+  let total = 0
+  let down = 0
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  for (let i = 0; i < n; i++) {
+    d.setDate(d.getDate() + 1)
+    const day = dayStr(d)
+    const e = data && data.checks && data.checks[day]
+    if (!e) continue
+    if (data.firstCheck && data.firstCheck > day) continue
+    total++
+    if ((e.fails || 0) > 0) down++
+  }
+  if (total === 0) return null
+  return { pct: ((total - down) / total) * 100 }
+}
+
+function overallColor(pct) {
+  if (pct >= 99.9) return '#059669'
+  if (pct >= 95) return '#f29030'
+  return '#df484a'
+}
+
+function monitorStatusIcon(data) {
   if (!data || typeof data.lastCheck === 'undefined') {
-    return `<span class="pill pill-gray">${esc(s.monitorLabelNoData)}</span>`
+    return tabler(CIRCLE_PATHS, '1.25em', 'var(--muted)', 'micon')
   }
   return data.lastCheck.operational
-    ? `<span class="pill pill-green">${esc(s.monitorLabelOperational)}</span>`
-    : `<span class="pill pill-yellow">${esc(s.monitorLabelNotOperational)}</span>`
+    ? tabler(CHECK_PATHS, '1.25em', '#059669', 'micon')
+    : tabler(ALERT_PATHS, '1.25em', 'var(--red-dark)', 'micon')
 }
 
 let CHARTS = []
@@ -91,19 +126,37 @@ function latencyChart(monitor, data, ci) {
   let hovers = ''
   const step = (W - padX * 2) / (n - 1)
   let seg = []
+  const f1 = (v) => v.toFixed(1)
+  // Catmull-Rom -> cubic Bezier smoothing, UptimeFlare-style smooth latency line
+  const smoothPath = (pts) => {
+    if (pts.length < 3) {
+      return 'M' + pts.map((p) => `${f1(p.x)},${f1(p.y)}`).join('L')
+    }
+    let d = `M${f1(pts[0].x)},${f1(pts[0].y)}`
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)]
+      const p1 = pts[i]
+      const p2 = pts[i + 1]
+      const p3 = pts[Math.min(pts.length - 1, i + 2)]
+      d +=
+        `C${f1(p1.x + (p2.x - p0.x) / 6)},${f1(p1.y + (p2.y - p0.y) / 6)}` +
+        ` ${f1(p2.x - (p3.x - p1.x) / 6)},${f1(p2.y - (p3.y - p1.y) / 6)}` +
+        ` ${f1(p2.x)},${f1(p2.y)}`
+    }
+    return d
+  }
   const flush = () => {
     if (seg.length === 1) {
       const p = seg[0]
-      dots += `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.avg).toFixed(1)}" r="3.5" class="cdot${p.fails > 0 ? ' bad' : ''}"/>`
+      dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="3.5" class="cdot${p.fails > 0 ? ' bad' : ''}"/>`
     } else if (seg.length > 1) {
-      const pts = seg
-        .map((p) => `${X(p.i).toFixed(1)},${Y(p.avg).toFixed(1)}`)
-        .join(' ')
-      line += `<polyline points="${pts}" class="cline" vector-effect="non-scaling-stroke"/>`
-      area += `<polygon points="${X(seg[0].i).toFixed(1)},${base} ${pts} ${X(seg[seg.length - 1].i).toFixed(1)},${base}" class="carea"/>`
+      const pts = seg.map((p) => ({ x: X(p.i), y: Y(p.avg) }))
+      const d = smoothPath(pts)
+      line += `<path d="${d}" class="cline" vector-effect="non-scaling-stroke"/>`
+      area += `<path d="${d}L${f1(pts[pts.length - 1].x)},${base}L${f1(pts[0].x)},${base}Z" class="carea"/>`
       for (const p of seg) {
         if (p.fails > 0) {
-          dots += `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.avg).toFixed(1)}" r="4.5" class="cdot bad"/>`
+          dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="4.5" class="cdot bad"/>`
         }
       }
     }
@@ -180,19 +233,24 @@ function bindCharts() {
 function monitorCard(monitor, data, ci) {
   const nameHtml =
     monitor.linkable === false
-      ? `<span>${esc(monitor.name)}</span>`
-      : `<a href="${esc(monitor.url)}" target="_blank" rel="noopener">${esc(monitor.name)}</a>`
+      ? `<span class="name-text">${esc(monitor.name)}</span>`
+      : `<a class="name-text" href="${esc(monitor.url)}" target="_blank" rel="noopener">${esc(monitor.name)}</a>`
   const descHtml = monitor.description
     ? `<span class="tooltip" tabindex="0">${INFO}<span class="tip">${esc(monitor.description)}</span></span>`
     : ''
 
+  const up = overallInfo(data)
+  const overallHtml = up
+    ? `<span class="overall" style="color:${overallColor(up.pct)}">Overall ${up.pct.toFixed(2)}%</span>`
+    : `<span class="overall" style="color:var(--muted)">${esc(CONFIG.settings.monitorLabelNoData)}</span>`
+
   return (
-    `<div class="card" data-monitor="${esc(monitor.id)}">` +
-    `<div class="monitor-head"><div class="monitor-name">${descHtml}${nameHtml}</div>` +
-    `${statusPill(data)}</div>` +
+    `<section class="monitor" data-monitor="${esc(monitor.id)}">` +
+    `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(data)}${descHtml}${nameHtml}</div>` +
+    `${overallHtml}</div>` +
     `${latencyChart(monitor, data, ci)}` +
     `<div class="hist-legend"><span>${CONFIG.settings.daysInHistogram} days ago</span><span>Today</span></div>` +
-    `</div>`
+    `</section>`
   )
 }
 
@@ -200,17 +258,22 @@ function renderStatusHeader() {
   const s = CONFIG.settings
   const lu = STATE.lastUpdate || {}
   const ok = !!lu.allOperational
-  const cls = ok ? 'banner-green' : 'banner-yellow'
   const text = ok ? s.allmonitorsOperational : s.notAllmonitorsOperational
+  const icon = ok
+    ? tabler(CHECK_PATHS, 64, '#059669')
+    : tabler(ALERT_PATHS, 64, '#b91c1c')
 
   let meta = ''
   if (lu.time) {
     const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
     const loc = LOCATIONS[lu.loc] || lu.loc || ''
-    meta = `<span class="meta">checked ${secs} sec ago${loc ? ` (from ${esc(loc)})` : ''}</span>`
+    meta = `checked ${secs} sec ago${loc ? ` (from ${esc(loc)})` : ''}`
   }
   $('#statusHeader').innerHTML =
-    `<div class="card status-banner ${cls}"><div class="row"><span>${esc(text)}</span>${meta}</div></div>`
+    `<div class="hero"><div class="hero-icon">${icon}</div>` +
+    `<h1 class="hero-title">${esc(text)}</h1>` +
+    (meta ? `<p class="hero-sub">${meta}</p>` : '') +
+    `</div>`
 }
 
 function renderMonitors() {
