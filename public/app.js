@@ -95,7 +95,7 @@ en: {
 'ping.nx.unreachable': 'Could not reach test.nextdns.io.',
 // ---- speedtest ----
 'speedtest.title': 'Speedtest',
-'speedtest.sub': 'Measures your connection to the Cloudflare edge serving this page. Download pulls a 20\u00a0MB test file hosted here; upload sends generated random data to this worker and discards it. Nothing leaves this site.',
+'speedtest.sub': 'Official measurement via VietCDN infrastructure (Real-Debrid servers worldwide). Each server is tested with 1 then 6 parallel connections, fastest first.',
 'speedtest.ping': 'Ping',
 'speedtest.download': 'Download',
 'speedtest.upload': 'Upload',
@@ -304,7 +304,7 @@ vi: {
 'ping.nx.unreachable': 'Không kết nối được test.nextdns.io.',
 // ---- speedtest ----
 'speedtest.title': 'Đo tốc độ mạng',
-'speedtest.sub': 'Đo kết nối của bạn tới Cloudflare edge đang phục vụ trang này. Lượt tải xuống dùng file test 20\u00a0MB lưu tại đây; lượt tải lên gửi dữ liệu ngẫu nhiên tới worker này rồi hủy. Không có gì rời khỏi trang này.',
+'speedtest.sub': 'Đo chính thức qua hạ tầng VietCDN (máy chủ Real-Debrid toàn cầu). Mỗi máy chủ được đo với 1 rồi 6 kết nối song song, xếp nhanh nhất trước.',
 'speedtest.ping': 'Ping',
 'speedtest.download': 'Tải xuống',
 'speedtest.upload': 'Tải lên',
@@ -1287,7 +1287,6 @@ function stDlUrl(url) {
   return url.indexOf('.download.') > 0 ? `${url}/${r}` : `${url}?r=${r}`
 }
 
-const ST = { running: false }
 const ST2 = { running: false, stop: false } // detailed (vietcdn-style) test state
 
 function stMbps(bytes, secs) {
@@ -1308,18 +1307,11 @@ function stRateHtml(mbps) {
 function renderSpeedtest() {
   // Never wipe an in-progress test (e.g. hashchange re-render while the
   // detailed test is running) — rows would vanish mid-measurement.
-  if (ST.running || ST2.running) return
+  if (ST2.running) return
   $('#speedtest').innerHTML =
     `<div class="st-head"><h2 data-i18n-key="speedtest.title">${t('speedtest.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
-    `<div class="st-metrics">` +
-    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.ping">${t('speedtest.ping')}</div><div class="st-value" id="st-ping">—</div></div>` +
-    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.download">${t('speedtest.download')}</div><div class="st-value" id="st-down">—</div></div>` +
-    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.upload">${t('speedtest.upload')}</div><div class="st-value" id="st-up">—</div></div>` +
-    `</div>` +
-    `<div class="st-controls"><button class="btn" id="stStart" data-i18n-key="speedtest.start">${t('speedtest.start')}</button>` +
-    `<span class="st-status" id="stStatus"></span></div>` +
-    `<div class="st-detail"><h3 data-i18n-key="speedtest.detail.title">${t('speedtest.detail.title')}</h3>` +
+    `<div class="st-detail">` +
     `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
@@ -1327,7 +1319,6 @@ function renderSpeedtest() {
     `<div class="st-controls"><button class="btn" id="stDetailStart" data-i18n-key="speedtest.detail.start">${t('speedtest.detail.start')}</button>` +
     `<button class="btn" id="stDetailStop" disabled data-i18n-key="speedtest.detail.stop">${t('speedtest.detail.stop')}</button>` +
     `<span class="st-status" id="stDetailStatus"></span></div></div>`
-  $('#stStart').addEventListener('click', runSpeedtest)
   $('#stDetailStart').addEventListener('click', runDetailedTest)
   $('#stDetailStop').addEventListener('click', () => {
     ST2.stop = true
@@ -1340,7 +1331,7 @@ function renderSpeedtest() {
 // [flag] [name (+📍 closest) (+Multi badge)] [live Mbps / final MB/s].
 // Rows appear progressively as each round starts, numbers update live.
 async function runDetailedTest() {
-  if (ST2.running || ST.running) return
+  if (ST2.running) return
   ST2.running = true
   ST2.stop = false
   const startBtn = $('#stDetailStart')
@@ -1351,7 +1342,6 @@ async function runDetailedTest() {
   const summary = $('#stDetailSummary')
   startBtn.disabled = true
   stopBtn.disabled = false
-  $('#stStart').disabled = true // concurrent tests would skew each other's numbers
   setI18nText(startBtn, 'speedtest.detail.testing')
   rows.innerHTML = ''
   summary.innerHTML = ''
@@ -1420,56 +1410,11 @@ async function runDetailedTest() {
     ST2.stop = false
     startBtn.disabled = false
     stopBtn.disabled = true
-    $('#stStart').disabled = false
     setI18nText(startBtn, 'speedtest.detail.runAgain')
   }
 }
 
-async function runSpeedtest() {
-  if (ST.running || ST2.running) return
-  ST.running = true
-  const btn = $('#stStart')
-  const status = $('#stStatus')
-  btn.disabled = true
-  $('#stDetailStart').disabled = true // concurrent tests would skew each other's numbers
-  setI18nText(btn, 'speedtest.testing')
-  try {
-    status.textContent = t('speedtest.status.ping')
-    const ping = await stPing().catch(() => null)
-    $('#st-ping').textContent = ping == null ? 'failed' : `${Math.round(ping)} ms`
 
-    status.textContent = t('speedtest.status.download')
-    const down = await stDownload((mbps) => {
-      $('#st-down').textContent = `${mbps.toFixed(1)} Mbps`
-    }).catch(() => null)
-    $('#st-down').innerHTML = down == null ? 'failed' : stRateHtml(down)
-
-    status.textContent = t('speedtest.status.upload')
-    const up = await stUpload((mbps) => {
-      $('#st-up').textContent = `${mbps.toFixed(1)} Mbps`
-    }).catch(() => null)
-    $('#st-up').innerHTML = up == null ? 'failed' : stRateHtml(up)
-
-    status.textContent = t('speedtest.detail.done')
-  } finally {
-    ST.running = false
-    btn.disabled = false
-    $('#stDetailStart').disabled = false
-    setI18nText(btn, 'speedtest.testAgain')
-  }
-}
-
-async function stPing() {
-  const samples = []
-  for (let i = 0; i < 3; i++) {
-    const t0 = performance.now()
-    const r = await fetch('api/state', { cache: 'no-store' })
-    if (!r.ok) throw new Error('ping failed')
-    await r.arrayBuffer() // ensure the full response arrived
-    samples.push(performance.now() - t0)
-  }
-  return stMedian3(samples[0], samples[1], samples[2])
-}
 
 async function stDownload(onTick, streams = ST_STREAMS, url = ST_DL_URL, graceMs = ST_GRACE_MS) {
   const t0 = performance.now()
@@ -1532,53 +1477,6 @@ function stUpPayload() {
     stUpBlob = new Blob([buf], { type: 'application/octet-stream' })
   }
   return stUpBlob
-}
-
-async function stUpload(onTick) {
-  const t0 = performance.now()
-  const graceEnd = t0 + ST_GRACE_MS
-  const deadline = t0 + ST_WINDOW_MS
-  const blob = stUpPayload()
-  let bytes = 0
-
-  async function stream() {
-    let fails = 0
-    while (performance.now() < deadline) {
-      const remain = deadline - performance.now()
-      const ctrl = new AbortController()
-      const to = setTimeout(() => ctrl.abort(), Math.max(remain + 500, 1))
-      const start = performance.now()
-      try {
-        const r = await fetch('speedtest/upload', {
-          method: 'POST',
-          body: blob,
-          signal: ctrl.signal,
-        })
-        if (!r.ok) throw new Error('bad upload response')
-        await r.json()
-        if (start >= graceEnd) bytes += blob.size
-        fails = 0
-      } catch (e) {
-        if (performance.now() >= deadline) break // aborted by the deadline
-        if (++fails > 3) throw new Error('upload failed')
-        await new Promise((res) => setTimeout(res, 300))
-      } finally {
-        clearTimeout(to)
-      }
-    }
-  }
-
-  const tick = setInterval(() => {
-    const el = (performance.now() - graceEnd) / 1000
-    if (el > 0 && bytes > 0) onTick(stMbps(bytes, el))
-  }, 250)
-  try {
-    await Promise.all(Array.from({ length: ST_STREAMS }, stream))
-  } finally {
-    clearInterval(tick)
-  }
-  if (bytes === 0) throw new Error('no bytes uploaded')
-  return stMbps(bytes, (deadline - graceEnd) / 1000)
 }
 
 function setView(v) {
@@ -1660,8 +1558,7 @@ function tickHero() {
   const next = heroMeta(lu)
   if (el.textContent !== next) el.textContent = next
   const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-  const measuring = (typeof ST !== 'undefined' && ST.running)
-    || (typeof ST2 !== 'undefined' && ST2.running)
+  const measuring = (typeof ST2 !== 'undefined' && ST2.running)
     || (typeof LEAK !== 'undefined' && LEAK.running)
   if (secs > 1800 && !measuring && !FILTER && Date.now() - OPENED_AT > 30000) location.reload()
 }
