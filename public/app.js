@@ -3040,7 +3040,10 @@ function drawIps() {
         if (leakUiRender !== tok) return
         const r = document.getElementById(`leakIpReg${i}`)
         const g = document.getElementById(`leakIpGeo${i}`)
-        if (r) r.innerHTML = reg ? esc(reg) : '<span class="dns-note">&mdash;</span>'
+        if (r) {
+          if (reg) r.innerHTML = esc(reg)
+          else r.style.display = 'none'
+        }
         if (g) g.textContent = geo || ''
       })
       .catch(() => {})
