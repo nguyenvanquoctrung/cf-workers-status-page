@@ -737,8 +737,45 @@ const ST_WINDOW_MS = 10000
 const ST_GRACE_MS = 1000
 const ST_UP_CHUNK = 2 * 1024 * 1024
 
+// Phase 8c: detailed test servers — vietcdn.net's real servers first
+// (their infrastructure, per Jeremie's decision), then the self-hosted
+// Cloudflare edge row as a fallback that always works. URLs extracted
+// from vietcdn.net's page source (speedtestFiles array); all verified
+// reachable with `Access-Control-Allow-Origin: *` on 2026-10-14.
+// `code` = flagcdn flag code, `cdn` = vietcdn's CDN id (their page pins
+// HKG as the closest server for VN visitors — mirrored here).
+const ST_DETAIL_SERVERS = [
+  { name: 'Netherlands', code: 'nl', cdn: 'DEFAULT', url: 'https://45.download.real-debrid.com/speedtest/testDefault.rar' },
+  { name: 'RBX (France)', code: 'fr', cdn: 'RBX', url: 'https://rbx.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'HKG1 (Hong Kong)', code: 'hk', cdn: 'HKG', url: 'https://hkg1.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'SGP1 (Singapore)', code: 'sg', cdn: 'SGP', url: 'https://sgp1.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'TYO1 (Japan)', code: 'jp', cdn: 'TYO', url: 'https://tyo1.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'LAX1 (USA)', code: 'us', cdn: 'LAX', url: 'https://lax1.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'TLV1 (Israel)', code: 'il', cdn: 'TLV', url: 'https://tlv1.download.real-debrid.com/speedtest/test.rar' },
+  { name: 'Cloudflare (via Real-Debrid)', code: 'cf', cdn: 'CF', url: 'https://45.download.real-debrid.cloud/speedtest/testCloudflare.rar' },
+  { name: 'Cloudflare edge (this site)', code: 'cf', cdn: null, url: ST_DL_URL },
+]
+// vietcdn pins HKG1 as the closest server for visitors in Vietnam.
+const ST_CLOSEST_CDN = 'HKG'
+// vietcdn's worker uses a 1.5s warmup grace for these multi-server rounds.
+const ST_DETAIL_GRACE_MS = 1500
+
+// Flag per row, mirroring vietcdn.net: flagcdn.com flag images, orange
+// cloud badge for Cloudflare rows.
+function stFlagHtml(code) {
+  if (code === 'cf') return '<span class="st-cf">☁</span>'
+  return `<img class="st-flag" src="https://flagcdn.com/56x42/${code}.png" alt="" loading="lazy">`
+}
+
+// Cache-buster style mirrored from vietcdn's worker: path-style for
+// *.download.* hosts, query-style otherwise.
+function stDlUrl(url) {
+  const r = Math.random().toString(36).slice(2)
+  return url.indexOf('.download.') > 0 ? `${url}/${r}` : `${url}?r=${r}`
+}
+
 const ST = { running: false }
-const ST2 = { running: false } // detailed (vietcdn-style) test state
+const ST2 = { running: false, stop: false } // detailed (vietcdn-style) test state
 
 function stMbps(bytes, secs) {
   return ((8 * bytes) / secs / 1048576) * 1.1
@@ -756,6 +793,9 @@ function stRateHtml(mbps) {
 }
 
 function renderSpeedtest() {
+  // Never wipe an in-progress test (e.g. hashchange re-render while the
+  // detailed test is running) — rows would vanish mid-measurement.
+  if (ST.running || ST2.running) return
   $('#speedtest').innerHTML =
     `<div class="st-head"><h2>Speedtest</h2>` +
     `<p class="st-sub">Measures your connection to the Cloudflare edge serving this page. ` +
@@ -769,59 +809,111 @@ function renderSpeedtest() {
     `<div class="st-controls"><button class="btn" id="stStart">Start test</button>` +
     `<span class="st-status" id="stStatus"></span></div>` +
     `<div class="st-detail"><h3>Detailed test</h3>` +
-    `<p class="st-sub">vietcdn-style rounds against the Cloudflare edge serving this page: ` +
-    `one single-connection round, then one 6-connection round. Each row appears when its round finishes.</p>` +
+    `<p class="st-sub">vietcdn-style rounds against 8 Real-Debrid servers plus the Cloudflare edge serving this page. ` +
+    `Each server is measured twice — one single-connection round, then one 6-connection round — and each row appears when its round finishes. ` +
+    `Full run takes about 3 minutes.</p>` +
+    `<p class="st-note">Test files hosted by Real-Debrid (vietcdn.net infrastructure), except the Cloudflare edge row served from this site.</p>` +
+    `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
+    `<div class="st-summary" id="stDetailSummary"></div>` +
     `<div class="st-controls"><button class="btn" id="stDetailStart">Start detailed test</button>` +
+    `<button class="btn" id="stDetailStop" disabled>Stop</button>` +
     `<span class="st-status" id="stDetailStatus"></span></div></div>`
   $('#stStart').addEventListener('click', runSpeedtest)
   $('#stDetailStart').addEventListener('click', runDetailedTest)
+  $('#stDetailStop').addEventListener('click', () => {
+    ST2.stop = true
+  })
 }
 
-// vietcdn-style: sequential single-connection then 6-connection download rounds
-// against the Cloudflare edge. Rows appear progressively as each round finishes.
+// vietcdn-style: for each server (vietcdn's 8 real servers, then the
+// self-hosted Cloudflare edge), a sequential single-connection round
+// followed by a 6-connection round. Row layout mirrors vietcdn.net:
+// [flag] [name (+📍 closest) (+Multi badge)] [live Mbps / final MB/s].
+// Rows appear progressively as each round starts, numbers update live.
 async function runDetailedTest() {
   if (ST2.running || ST.running) return
   ST2.running = true
-  const btn = $('#stDetailStart')
+  ST2.stop = false
+  const startBtn = $('#stDetailStart')
+  const stopBtn = $('#stDetailStop')
   const status = $('#stDetailStatus')
   const rows = $('#stDetailRows')
-  btn.disabled = true
+  const progress = $('#stDetailProgress')
+  const summary = $('#stDetailSummary')
+  startBtn.disabled = true
+  stopBtn.disabled = false
   $('#stStart').disabled = true // concurrent tests would skew each other's numbers
-  btn.textContent = 'Testing…'
+  startBtn.textContent = 'Testing…'
   rows.innerHTML = ''
+  summary.innerHTML = ''
+  progress.style.width = '0%'
+  const rounds = [
+    { label: 'Single connection', multi: false, streams: 1 },
+    { label: '6 parallel connections', multi: true, streams: 6 },
+  ]
+  const total = ST_DETAIL_SERVERS.length
+  const totalRounds = total * rounds.length
+  let doneRounds = 0
+  let best = null // fastest single-connection result {name, mbps}
   try {
-    const rounds = [
-      { label: 'Single connection', streams: 1 },
-      { label: '6 parallel connections', streams: 6 },
-    ]
-    for (const [i, rd] of rounds.entries()) {
-      const rowId = `stDetailRow${i}`
-      rows.insertAdjacentHTML(
-        'beforeend',
-        `<div class="st-drow"><div class="st-drow-head"><strong>${esc(rd.label)}</strong>` +
-          `<span class="st-drow-server">Cloudflare edge (this site)</span></div>` +
-          `<div class="st-drow-value" id="${rowId}"><span class="st-status">measuring…</span></div></div>`,
-      )
-      status.textContent = `Measuring ${rd.label.toLowerCase()}…`
-      try {
-        const mbps = await stDownload((v) => {
-          const el = document.getElementById(rowId)
-          if (el) el.innerHTML = `${v.toFixed(2)} <span class="st-unit">Mbps</span>`
-        }, rd.streams)
-        const el = document.getElementById(rowId)
-        if (el) el.innerHTML = stRateHtml(mbps)
-      } catch (e) {
-        const el = document.getElementById(rowId)
-        if (el) el.textContent = 'failed'
+    for (const [si, srv] of ST_DETAIL_SERVERS.entries()) {
+      for (const [ri, rd] of rounds.entries()) {
+        if (ST2.stop) break
+        const i = si * rounds.length + ri
+        const isClosest = srv.cdn === ST_CLOSEST_CDN
+        rows.insertAdjacentHTML(
+          'beforeend',
+          `<div class="st-drow${isClosest ? ' closest' : ''}">` +
+            `<div class="st-dflag">${stFlagHtml(srv.code)}</div>` +
+            `<div class="st-dname">${isClosest ? '<span class="st-pin">📍</span>' : ''}${esc(srv.name)}` +
+            (rd.multi ? '<span class="st-multi">Multi</span>' : '') +
+            `</div><div class="st-dspeed">` +
+            `<div class="st-mbps" id="stMbps${i}">—</div>` +
+            `<div class="st-mbs" id="stMbs${i}"></div></div></div>`,
+        )
+        status.textContent = `Server ${si + 1}/${total} — ${srv.name}, ${rd.label.toLowerCase()}…`
+        const mbpsEl = () => document.getElementById(`stMbps${i}`)
+        const mbsEl = () => document.getElementById(`stMbs${i}`)
+        try {
+          const mbps = await stDownload((v) => {
+            const n = mbpsEl()
+            if (n) n.textContent = `${v.toFixed(2)} Mbps`
+          }, rd.streams, srv.url, ST_DETAIL_GRACE_MS)
+          const m = mbpsEl()
+          if (m) {
+            if (ST2.stop) {
+              m.textContent = 'stopped'
+            } else {
+              m.textContent = `${mbps.toFixed(2)} Mbps`
+              const s = mbsEl()
+              // vietcdn shows MB/s with 1 decimal
+              if (s) s.textContent = `${Math.round((mbps / 8) * 10) / 10} MB/s`
+              if (!rd.multi && (!best || mbps > best.mbps)) best = { name: srv.name, mbps }
+            }
+          }
+        } catch (e) {
+          const m = mbpsEl()
+          if (m) m.textContent = ST2.stop ? 'stopped' : 'failed'
+        }
+        doneRounds++
+        progress.style.width = `${Math.round((doneRounds / totalRounds) * 100)}%`
       }
+      if (ST2.stop) break
     }
-    status.textContent = 'Done.'
+    if (!ST2.stop && best) {
+      summary.innerHTML =
+        `<span class="st-pin">📍</span> Closest server: <strong>${esc(ST_DETAIL_SERVERS.find((s) => s.cdn === ST_CLOSEST_CDN).name)}</strong>` +
+        ` · Fastest (single connection): <strong>${esc(best.name)}</strong> at ${best.mbps.toFixed(2)} Mbps`
+    }
+    status.textContent = ST2.stop ? 'Stopped.' : 'Done.'
   } finally {
     ST2.running = false
-    btn.disabled = false
+    ST2.stop = false
+    startBtn.disabled = false
+    stopBtn.disabled = true
     $('#stStart').disabled = false
-    btn.textContent = 'Run again'
+    startBtn.textContent = 'Run again'
   }
 }
 
@@ -871,23 +963,20 @@ async function stPing() {
   return stMedian3(samples[0], samples[1], samples[2])
 }
 
-async function stDownload(onTick, streams = ST_STREAMS) {
+async function stDownload(onTick, streams = ST_STREAMS, url = ST_DL_URL, graceMs = ST_GRACE_MS) {
   const t0 = performance.now()
-  const graceEnd = t0 + ST_GRACE_MS
+  const graceEnd = t0 + graceMs
   const deadline = t0 + ST_WINDOW_MS
   let bytes = 0
 
   async function stream() {
     let fails = 0
-    while (performance.now() < deadline) {
+    while (performance.now() < deadline && !ST2.stop) {
       const remain = deadline - performance.now()
       const ctrl = new AbortController()
       const to = setTimeout(() => ctrl.abort(), Math.max(remain + 500, 1))
       try {
-        const r = await fetch(
-          `${ST_DL_URL}?r=${Math.random().toString(36).slice(2)}`,
-          { cache: 'no-store', signal: ctrl.signal },
-        )
+        const r = await fetch(stDlUrl(url), { cache: 'no-store', signal: ctrl.signal })
         if (!r.ok || !r.body) throw new Error('bad download response')
         const reader = r.body.getReader()
         for (;;) {
@@ -895,14 +984,14 @@ async function stDownload(onTick, streams = ST_STREAMS) {
           if (done) break
           const now = performance.now()
           if (now >= graceEnd) bytes += value.byteLength
-          if (now >= deadline) {
+          if (now >= deadline || ST2.stop) {
             reader.cancel().catch(() => {})
             break
           }
         }
         fails = 0
       } catch (e) {
-        if (performance.now() >= deadline) break // aborted by the deadline
+        if (performance.now() >= deadline || ST2.stop) break // aborted by the deadline / Stop
         if (++fails > 3) throw new Error('download failed')
         await new Promise((res) => setTimeout(res, 300))
       } finally {
@@ -1281,18 +1370,51 @@ async function measureBrowserLatency() {
   BLAT_RUNNING = false
 }
 
+// A bad /api/state payload must never blank the page: validate the shape
+// before touching STATE, and guard each render so an exception keeps the
+// last good DOM (next 30s cycle retries).
+function validStatePayload(st) {
+  return (
+    st &&
+    typeof st === 'object' &&
+    st.monitors &&
+    typeof st.monitors === 'object' &&
+    !Array.isArray(st.monitors)
+  )
+}
+
 async function refreshState() {
   try {
     const res = await fetch('api/state', { cache: 'no-store' })
-    if (res.ok) {
-      const st = await res.json()
-      STATE = {
-        monitors: st.monitors || {},
-        lastUpdate: st.lastUpdate || {},
+    if (!res.ok) return // keep last rendered state on HTTP error
+    let st
+    try {
+      st = await res.json()
+    } catch (e) {
+      console.warn('[status] bad /api/state JSON, keeping last state')
+      return
+    }
+    if (!validStatePayload(st)) {
+      console.warn('[status] bad /api/state payload shape, keeping last state')
+      return
+    }
+    STATE = {
+      monitors: st.monitors,
+      lastUpdate: st.lastUpdate || {},
+    }
+    for (const fn of [renderStatusHeader, renderMonitors]) {
+      try {
+        fn()
+      } catch (e) {
+        console.error('[status] render failed, keeping last DOM:', e)
       }
-      renderStatusHeader()
-      renderMonitors()
-      if (VIEW === 'incidents') renderIncidents()
+    }
+    if (VIEW === 'incidents') {
+      try {
+        renderIncidents()
+      } catch (e) {
+        console.error('[status] incidents render failed, keeping last DOM:', e)
+      }
     }
   } catch (e) {
     /* keep last rendered state on network hiccup */
@@ -1435,9 +1557,11 @@ function renderDnsTools() {
     `<div id="dnsResults"></div></div>` +
     `<div class="dns-card"><div class="st-head"><h2>DNS Leak Test</h2>` +
     `<p class="st-sub">Powered by dnscheck.tools infrastructure. Discovers which DNS resolvers ` +
-    `your network actually uses, by watching special test queries arrive at their nameservers.</p></div>` +
+    `your network actually uses, checks DNSSEC validation and connection details &mdash; ` +
+    `mirroring dnscheck.tools.</p></div>` +
     `<div class="st-controls"><button class="btn" id="leakGo">Run leak test</button>` +
     `<span class="st-status" id="leakStatus"></span></div>` +
+    `<div class="leak-pills" id="leakPills"></div>` +
     `<div id="leakResults"></div></div>`
   $('#dnsGo').addEventListener('click', runDnsLookup)
   $('#dnsName').addEventListener('keydown', (e) => {
@@ -1529,13 +1653,22 @@ function renderDnsResults(res, qname, qtype) {
     `</tbody></table></div>`
 }
 
-// ---- DNS leak test (Phase 9, Card 2) ----
-// Replicates the dnscheck.tools main flow: the browser opens a WebSocket to
-// THEIR infrastructure, then fires special test subdomains at it. Their
-// authoritative nameserver observes the DNS queries and pushes details back
-// over the socket. Trigger fetches use mode:'no-cors' (their CORS only allows
-// their own origin) — the DNS still resolves server-side; results arrive via WS.
+// ---- DNS leak test (Phase 9b: mirrors dnscheck.tools main page) ----
+// Logic ported from https://github.com/brianshea2/addr.tools
+// (website/dnscheck.tools/main.js, AGPL-3.0). The original runs first-party;
+// this port runs cross-origin, so the browser "connected" signal used for the
+// DNSSEC matrix is read via <link rel=stylesheet> onload/onerror instead of
+// fetch() r.ok (a plain fetch would reject on CORS regardless of DNS outcome).
+// A calibration probe against a known-good test domain gates the matrix: if it
+// cannot load, the matrix is honestly marked untestable, never faked.
+// ECH status is deliberately omitted: X-ECH-Status is not readable cross-origin.
+const LEAK_ALGS = ['alg13', 'alg14', 'alg15', 'alg18']
+const LEAK_ALG_LABELS = ['ECDSA P-256', 'ECDSA P-384', 'Ed25519', 'ML-DSA-44']
+const LEAK_SIGS = ['badsig', 'expiredsig', 'nosig']
+const LEAK_SIG_LABELS = ['Invalid', 'Expired', 'Missing']
 const LEAK = { running: false }
+// Per-run state (null when idle).
+let LS = null
 
 function randHex8() {
   const b = new Uint8Array(4)
@@ -1543,48 +1676,394 @@ function randHex8() {
   return [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
 }
 
+// Trigger FQDN builders, mirroring the original's query names (kept pure for
+// testability).
+const leakNullipFqdn = (id, s) => `${s}.${id}-nullip.test.dnscheck.tools`
+const leakIpv6Fqdn = (id) => `${id}-nullip.test-ipv6.dnscheck.tools`
+const leakAlgFqdn = (id, alg) => `${id}.test-${alg}.dnscheck.tools`
+const leakSigFqdn = (id, sig, alg) => `${id}-${sig}.test-${alg}.dnscheck.tools`
+
+function leakPill(label, cls, title) {
+  return (
+    `<span class="leak-pill${cls ? ' leak-' + cls : ''}"` +
+    (title ? ` title="${esc(title)}"` : '') +
+    `>${esc(label)}</span>`
+  )
+}
+
+// Status pills in fixed order like the original's status bar: RTT, IPv6, ADoX,
+// EDNS, DNSSEC. Only pills with data are shown.
+function drawPills() {
+  const bar = document.getElementById('leakPills')
+  if (!bar || !LS) return
+  const order = ['rtt', 'ipv6', 'adox', 'edns', 'dnssec']
+  bar.innerHTML = order
+    .map((k) => (LS.pills[k] ? leakPill(LS.pills[k].label, LS.pills[k].cls, LS.pills[k].title) : ''))
+    .join('')
+}
+
+// Cross-origin "connected" probe. Their test domains answer 200 "Connected"
+// but send no CORS headers for our origin, so fetch() is useless here. A
+// <link rel=stylesheet> fires load iff the browser completed DNS+TLS+HTTP
+// (the same signal the original reads as r.ok) and error otherwise. The body
+// is not valid CSS, so it never affects the page.
+function probeConnected(fqdn, timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false
+    const link = document.createElement('link')
+    const timer = setTimeout(() => done(false), timeoutMs)
+    function done(v) {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      try {
+        link.remove()
+      } catch (e) {}
+      resolve(v)
+    }
+    link.rel = 'stylesheet'
+    link.onload = () => done(true)
+    link.onerror = () => done(false)
+    link.href = `https://${fqdn}/`
+    document.head.appendChild(link)
+  })
+}
+
+// Pure derivation of the DNSSEC matrix status, ported from the original's
+// drawDNSSEC. tests[i]: undefined = pending; i<4 = valid-signature tests;
+// i>=4 = bad-signature tests (index 4 + 4*sigIdx + algIdx).
+function dnssecSummary(tests) {
+  let done = true
+  let error = false
+  let fail = false
+  let mldsaFail = false
+  for (let i = 0; i < 16; i++) {
+    const got = tests[i]
+    if (got === undefined) {
+      done = false
+      continue
+    }
+    if (i < 4) {
+      if (!got) error = true
+      continue
+    }
+    if (got && i % 4 === 3) mldsaFail = true
+    else if (got) fail = true
+  }
+  return { done, error, fail, mldsaFail }
+}
+
+// Ported cell logic: got=true means the invalid/expired/unsigned domain
+// CONNECTED (the resolver did not validate) -> FAIL (red); got=false -> PASS
+// (green). ML-DSA-44 is special-cased yellow FAIL* with a footnote, exactly
+// like the original (not yet widely validated).
+function dnssecCellState(i) {
+  const got = LS.dnssec[i]
+  if (got === undefined || i < 4) return null
+  const mldsa = i % 4 === 3
+  if (got && mldsa) return { text: 'FAIL*', cls: 'dsec-warn' }
+  if (got) return { text: 'FAIL', cls: 'dsec-fail' }
+  return { text: 'PASS', cls: 'dsec-pass' }
+}
+
+function drawDNSSEC() {
+  if (!LS) return
+  for (let i = 0; i < 16; i++) {
+    const got = LS.dnssec[i]
+    if (got === undefined || i >= 4) {
+      if (i >= 4) {
+        const st = dnssecCellState(i)
+        const cell = document.getElementById(`dsec-${i}`)
+        if (cell && st) {
+          cell.className = st.cls
+          cell.textContent = st.text
+        }
+      }
+      continue
+    }
+    // i < 4: valid-signature test failed -> whole column ERR (original skips
+    // this algorithm's bad-signature probes, so those cells stay pending).
+    if (!got) {
+      for (let r = 0; r < 3; r++) {
+        const cell = document.getElementById(`dsec-${4 + r * 4 + i}`)
+        if (cell) {
+          cell.className = 'dsec-warn'
+          cell.textContent = 'ERR'
+        }
+      }
+    }
+  }
+  const sum = dnssecSummary(LS.dnssec)
+  const fn = document.getElementById('dsecFootnote')
+  if (fn) fn.hidden = !sum.mldsaFail
+  if (sum.error)
+    LS.pills.dnssec = {
+      label: 'DNSSEC',
+      cls: 'yellow',
+      title: 'Domain Name System Security Extensions\n\nAn error occurred',
+    }
+  else if (sum.fail)
+    LS.pills.dnssec = {
+      label: 'DNSSEC',
+      cls: 'red',
+      title: 'Domain Name System Security Extensions\n\nYour DNS responses are not authenticated',
+    }
+  else if (sum.done)
+    LS.pills.dnssec = {
+      label: 'DNSSEC',
+      cls: 'green',
+      title: 'Domain Name System Security Extensions\n\nYour DNS responses are authenticated',
+    }
+  drawPills()
+}
+
+function dnssecMatrixHtml() {
+  const head =
+    `<tr><th>Signature</th>` + LEAK_ALG_LABELS.map((l) => `<th>${esc(l)}</th>`).join('') + `</tr>`
+  const body = LEAK_SIG_LABELS.map(
+    (sigLabel, sigIdx) =>
+      `<tr><th>${esc(sigLabel)}</th>` +
+      LEAK_ALGS.map(
+        (_, algIdx) =>
+          `<td id="dsec-${4 + 4 * sigIdx + algIdx}" class="dsec-pending"><span>&middot;&middot;&middot;</span></td>`,
+      ).join('') +
+      `</tr>`,
+  ).join('')
+  return (
+    `<div class="dns-table-wrap"><table class="dns-table dsec-table">` +
+    `<caption>DNSSEC Validation Tests</caption>` +
+    `<thead>${head}</thead><tbody>${body}</tbody></table></div>` +
+    `<div class="dns-note dsec-footnote" id="dsecFootnote" hidden>* ML-DSA-44 is a new signature algorithm not yet widely validated.</div>`
+  )
+}
+
+// DNSSEC validation matrix, mirroring the original's testDNS sequence: per
+// algorithm, probe the valid-signature domain; only if it connects, probe its
+// badsig/expiredsig/nosig variants. connected=true on a bad variant means the
+// resolver failed to validate -> FAIL.
+async function runDnssecMatrix(id) {
+  const alive = () => LS && !LS.finished
+  // Calibration: the nullip domain is known-good. If even it won't load as a
+  // stylesheet here, the probe technique is blocked in this browser (or DNS is
+  // down) — mark the matrix untestable instead of guessing.
+  const calOk = await probeConnected(leakNullipFqdn(id, 'a'), 8000)
+  if (!alive()) return
+  if (!calOk) {
+    LS.dnssecSkipped = true
+    const note = document.getElementById('leakDnssecNote')
+    if (note)
+      note.innerHTML =
+        `<span class="dns-note">DNSSEC validation tests could not run in this browser ` +
+        `(cross-origin check blocked) &mdash; resolver results above are unaffected.</span>`
+    return
+  }
+  const valids = await Promise.all(
+    LEAK_ALGS.map((alg, algIdx) =>
+      probeConnected(leakAlgFqdn(id, alg), 10000).then((ok) => {
+        if (!alive()) return false
+        LS.dnssec[algIdx] = ok
+        drawDNSSEC()
+        return ok
+      }),
+    ),
+  )
+  if (!alive()) return
+  await Promise.all(
+    LEAK_ALGS.map((alg, algIdx) => {
+      if (!valids[algIdx]) return Promise.resolve()
+      return Promise.all(
+        LEAK_SIGS.map((sig, sigIdx) =>
+          probeConnected(leakSigFqdn(id, sig, alg), 15000).then((connected) => {
+            if (!alive()) return
+            LS.dnssec[4 + 4 * sigIdx + algIdx] = connected
+            drawDNSSEC()
+          }),
+        ),
+      )
+    }),
+  )
+  if (alive()) LS.dnssecDone = true
+}
+
+// Average DNS round-trip time, ported from the original's testRTT: 5 rounds of
+// fire-and-forget fetches to random unresolvable names across 3 TLDs.
+async function runRtt() {
+  const alive = () => LS && !LS.finished
+  const rtts = []
+  for (let i = 0; i < 5; i++) {
+    for (const tld of ['com', 'net', 'org']) {
+      if (!alive()) return
+      const name = `test-${Math.random().toString(36).slice(2)}.null-addr.${tld}`
+      const start = Date.now()
+      try {
+        await fetch('https://' + name).catch(() => {})
+      } catch (e) {}
+      rtts.push(Date.now() - start)
+      const avg = Math.round(rtts.reduce((a, x) => a + x, 0) / rtts.length)
+      LS.pills.rtt = {
+        label: `${avg}ms`,
+        cls: avg <= 150 ? 'green' : avg <= 500 ? 'yellow' : 'red',
+        title: `Average DNS round-trip time over ${rtts.length} queries`,
+      }
+      drawPills()
+    }
+  }
+}
+
+// "Your IP addresses", ported from the original's testIPs minus the
+// microphone-permission flow: myipv4/myipv6 endpoints (CORS-open, text/plain)
+// plus best-effort WebRTC ICE candidates via STUN.
+function detectIps() {
+  const addIp = (str) => {
+    str = String(str || '').trim()
+    if (!str || !/^[0-9a-fA-F.:]+$/.test(str) || !LS || LS.ips[str]) return
+    LS.ips[str] = true
+    drawIps()
+  }
+  fetch('https://myipv4.addr.tools/plain')
+    .then((r) => {
+      if (!r.ok) throw new Error('bad status')
+      return r.text()
+    })
+    .then(addIp)
+    .catch(() => {})
+  fetch('https://myipv6.addr.tools/plain')
+    .then((r) => {
+      if (!r.ok) throw new Error('bad status')
+      return r.text()
+    })
+    .then(addIp)
+    .catch(() => {})
+  try {
+    if (typeof RTCPeerConnection === 'undefined') return
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:myip.addr.tools:3478' }, { urls: 'stun:stun.l.google.com:19302' }],
+    })
+    pc.addEventListener('icecandidate', ({ candidate }) => {
+      if (!candidate || !candidate.candidate) return
+      const ip = candidate.candidate.split(' ')[4]
+      if (ip && /^[0-9a-fA-F.:]+$/.test(ip) && !ip.endsWith('.local')) addIp(ip)
+    })
+    try {
+      pc.createDataChannel('dummy')
+    } catch (e) {}
+    pc.createOffer()
+      .then((d) => pc.setLocalDescription(d))
+      .catch(() => {})
+    setTimeout(() => {
+      try {
+        pc.close()
+      } catch (e) {}
+    }, 6000)
+  } catch (e) {}
+}
+
+function drawIps() {
+  const el = document.getElementById('leakIps')
+  if (!el || !LS) return
+  const ips = Object.keys(LS.ips)
+  el.innerHTML = ips.length
+    ? `<ul class="leak-ips">` + ips.map((ip) => `<li class="dns-mono">${esc(ip)}</li>`).join('') + `</ul>`
+    : `<span class="dns-note">Detecting&hellip;</span>`
+}
+
 async function runLeakTest() {
   if (LEAK.running) return
   const btn = $('#leakGo')
   const statusEl = $('#leakStatus')
   const out = $('#leakResults')
+  const bar = $('#leakPills')
   if (!btn || !statusEl || !out) return
   LEAK.running = true
   btn.disabled = true
-  out.innerHTML = ''
+  statusEl.innerHTML = ''
+  if (bar) bar.innerHTML = ''
+  out.innerHTML =
+    `<div class="leak-sec-title">Your IP addresses</div><div id="leakIps"></div>` +
+    `<div class="leak-sec-title">DNSSEC Validation Tests</div>` +
+    `<div id="leakDnssec">${dnssecMatrixHtml()}<div class="dns-note" id="leakDnssecNote"></div></div>` +
+    `<div id="leakResolvers"></div>`
+
   const id = randHex8()
-  const seen = new Map() // remoteIp -> {protos:Set, ecs:Set, count}
-  let total = 0
-  let finished = false
-  let ws = null
+  LS = {
+    finished: false,
+    t0: Date.now(),
+    seen: new Map(), // remoteIp -> {protos:Set, ecs:Set, count}
+    ips: {},
+    udpSizes: [],
+    pills: {},
+    dnssec: new Array(16), // undefined = pending
+    dnssecDone: false,
+    dnssecSkipped: false,
+    seenIPv6: false,
+    seenADoX: false,
+    total: 0,
+    ws: null,
+    finTimer: null,
+  }
+  drawIps()
+
   const finish = (timedOut) => {
-    if (finished) return
-    finished = true
-    clearTimeout(timer)
+    const st = LS
+    if (!st || st.finished) return
+    st.finished = true
+    if (st.finTimer) clearInterval(st.finTimer)
     try {
-      if (ws) ws.close()
+      if (st.ws) st.ws.close()
     } catch (e) {}
     LEAK.running = false
     const b2 = $('#leakGo')
     if (b2) b2.disabled = false
-    renderLeakResults(seen, total, timedOut)
+    // IPv6 status when never observed (ported from the original).
+    if (!st.seenIPv6 && !st.pills.ipv6)
+      st.pills.ipv6 = {
+        label: 'IPv6',
+        cls: 'red',
+        title: 'Your DNS resolvers cannot reach nameservers over IPv6',
+      }
+    drawPills()
+    renderLeakResults(st, timedOut)
+    LS = null
   }
-  const timer = setTimeout(() => finish(true), 20000)
+
   const failUnreachable = () => {
-    clearTimeout(timer)
-    finished = true
+    const st = LS
+    if (st && st.finTimer) clearInterval(st.finTimer)
+    if (st) st.finished = true
+    LS = null
     LEAK.running = false
     const b2 = $('#leakGo')
     if (b2) b2.disabled = false
     const s2 = $('#leakStatus')
     if (s2) s2.innerHTML = ''
+    const bar2 = document.getElementById('leakPills')
+    if (bar2) bar2.innerHTML = ''
     const o2 = $('#leakResults')
     if (o2)
       o2.innerHTML = `<div class="dns-err">Leak test unreachable (dnscheck.tools WebSocket blocked) &mdash; DNS Lookup above still works.</div>`
   }
+
+  // Finish once the DNSSEC matrix has settled (or was skipped) and we've
+  // listened a while; hard cap 45s.
+  LS.finTimer = setInterval(() => {
+    const st = LS
+    if (!st || st.finished) {
+      clearInterval(LS ? LS.finTimer : undefined)
+      return
+    }
+    const elapsed = Date.now() - st.t0
+    if ((st.dnssecDone || st.dnssecSkipped) && elapsed >= 12000) {
+      clearInterval(st.finTimer)
+      finish(false)
+    } else if (elapsed >= 45000) {
+      clearInterval(st.finTimer)
+      finish(true)
+    }
+  }, 1000)
+
   statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> Opening channel&hellip;`
   try {
-    ws = await new Promise((resolve, reject) => {
+    LS.ws = await new Promise((resolve, reject) => {
       let w
       try {
         w = new WebSocket(`wss://ws.dnscheck.tools/watch/${id}`)
@@ -1628,52 +2107,98 @@ async function runLeakTest() {
     failUnreachable()
     return
   }
-  ws.onmessage = (ev) => {
+
+  LS.ws.onmessage = (ev) => {
+    const st = LS
+    if (!st || st.finished) return
     try {
       const m = JSON.parse(ev.data)
       if (!m || !m.remoteIp) return
-      let e = seen.get(m.remoteIp)
+      let e = st.seen.get(m.remoteIp)
       if (!e) {
         e = { protos: new Set(), ecs: new Set(), count: 0 }
-        seen.set(m.remoteIp, e)
+        st.seen.set(m.remoteIp, e)
       }
       if (m.proto) e.protos.add(String(m.proto))
       if (m.clientSubnet) e.ecs.add(String(m.clientSubnet))
       e.count++
-      total++
+      st.total++
+      // EDNS support + advertised UDP buffer sizes (ported from the original).
+      if (m.isEdns0 && m.udpSize && !st.udpSizes.includes(m.udpSize)) {
+        st.udpSizes.push(m.udpSize)
+        st.udpSizes.sort((a, b) => a - b)
+        st.pills.edns = {
+          label: 'EDNS',
+          cls: st.udpSizes[0] < 1200 ? 'yellow' : 'green',
+          title: `Extension Mechanisms for DNS\n\nAdvertised UDP buffer sizes: ${st.udpSizes.join(', ')}`,
+        }
+        drawPills()
+      }
+      // IPv6 reachability (ported).
+      if (!st.seenIPv6 && String(m.remoteIp).includes(':')) {
+        st.seenIPv6 = true
+        st.pills.ipv6 = {
+          label: 'IPv6',
+          cls: 'green',
+          title: 'Your DNS resolvers connect to nameservers over IPv6',
+        }
+        drawPills()
+      }
+      // ADoX: encrypted transport to the authoritative nameservers (ported).
+      if (!st.seenADoX && (m.proto === 'TLS' || m.proto === 'QUIC')) {
+        st.seenADoX = true
+        st.pills.adox = {
+          label: 'ADoX',
+          cls: 'blue',
+          title:
+            'Authoritative DoT/DoQ\n\nOne or more queries from your DNS resolvers to our authoritative nameservers used an encrypted transport',
+        }
+        drawPills()
+      }
       const s3 = $('#leakStatus')
       if (s3)
         s3.innerHTML =
-          `<span class="spinner" aria-hidden="true"></span> Listening&hellip; ${total} ` +
-          `quer${total === 1 ? 'y' : 'ies'} seen`
-      if (total >= 8) finish(false)
+          `<span class="spinner" aria-hidden="true"></span> Listening&hellip; ${st.total} ` +
+          `quer${st.total === 1 ? 'y' : 'ies'} seen`
     } catch (e) {
       /* ignore malformed messages */
     }
   }
-  ws.onclose = () => finish(false)
-  ws.onerror = () => {} // surfaced via onclose/timeout; never crash
+  LS.ws.onclose = () => finish(false)
+  LS.ws.onerror = () => {} // surfaced via onclose/timeout; never crash
+
   const s4 = $('#leakStatus')
-  if (s4)
-    s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> Sending test queries&hellip;`
+  if (s4) s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> Sending test queries&hellip;`
+  // Resolver-discovery triggers (ported from the original's testDNS), plus the
+  // IPv6 trigger. no-cors: their CORS only allows their own origin; the DNS
+  // still resolves server-side and results arrive over the WebSocket.
   for (const s of ['a', 'b', 'c', 'd']) {
     try {
-      fetch(`https://${s}.${id}-nullip.test.dnscheck.tools/`, {
-        mode: 'no-cors',
-      }).catch(() => {})
+      fetch(`https://${leakNullipFqdn(id, s)}/`, { mode: 'no-cors' }).catch(() => {})
     } catch (e) {}
   }
+  try {
+    fetch(`https://${leakIpv6Fqdn(id)}/`, { mode: 'no-cors' }).catch(() => {})
+  } catch (e) {}
+
+  // Independent sub-tasks run concurrently (the original runs them in order;
+  // each result is independent, so this only shortens the run).
+  detectIps()
+  runRtt()
+  runDnssecMatrix(id)
 }
 
-function renderLeakResults(seen, total, timedOut) {
+function renderLeakResults(st, timedOut) {
   const statusEl = $('#leakStatus')
-  const out = $('#leakResults')
+  const out = $('#leakResolvers')
   if (!statusEl || !out) return
   statusEl.innerHTML = ''
+  const seen = st.seen
   const n = seen.size
   let html =
+    `<div class="leak-sec-title">Your DNS resolvers</div>` +
     `<div class="dns-meta">Your queries were seen from <b>${n} resolver${n === 1 ? '' : 's'}</b>` +
-    (timedOut ? ' (stopped after 20s)' : '') +
+    (timedOut ? ' (stopped after 45s)' : '') +
     `</div>`
   if (!n) {
     out.innerHTML =
@@ -1683,6 +2208,7 @@ function renderLeakResults(seen, total, timedOut) {
     return
   }
   const entries = [...seen.entries()]
+  const ecsAll = [...new Set(entries.flatMap(([, e]) => [...e.ecs]))]
   html +=
     `<div class="dns-table-wrap"><table class="dns-table"><thead><tr>` +
     `<th>Resolver IP</th><th>Reverse DNS</th><th>Protocol</th><th>ECS subnet</th><th>Queries</th>` +
@@ -1692,12 +2218,16 @@ function renderLeakResults(seen, total, timedOut) {
         ([ip, e], i) =>
           `<tr><td class="dns-mono">${esc(ip)}</td>` +
           `<td class="dns-mono" id="leakPtr${i}"><span class="dns-note">&hellip;</span></td>` +
-          `<td>${esc([...e.protos].join(', ') || '\u2014')}</td>` +
-          `<td class="dns-mono">${esc([...e.ecs].join(', ') || '\u2014')}</td>` +
+          `<td>${esc([...e.protos].join(', ') || '—')}</td>` +
+          `<td class="dns-mono">${esc([...e.ecs].join(', ') || '—')}</td>` +
           `<td class="dns-num">${e.count}</td></tr>`,
       )
       .join('') +
     `</tbody></table></div>`
+  if (ecsAll.length)
+    html +=
+      `<div class="dns-meta">Your DNS resolvers advertise your IP subnet (ECS): ` +
+      `<span class="dns-mono">${esc(ecsAll.join(', '))}</span></div>`
   out.innerHTML = html
   // Best-effort reverse DNS via the lookup providers (RDAP skipped — too heavy).
   entries.forEach(([ip], i) => {
@@ -1712,11 +2242,8 @@ function renderLeakResults(seen, total, timedOut) {
       .then((res) => {
         const c = cell()
         if (!c) return
-        const ptr =
-          res.status === 0 && res.answers.length
-            ? res.answers[0].data.replace(/\.$/, '')
-            : null
-        c.textContent = ptr || '\u2014'
+        const ptr = res.status === 0 && res.answers.length ? res.answers[0].data.replace(/\.$/, '') : null
+        c.textContent = ptr || '—'
       })
       .catch(() => {
         const c = cell()

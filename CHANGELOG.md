@@ -5,6 +5,59 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Phase 9b: leak test mirrors dnscheck.tools
+
+- **DNS Leak Test** card reworked per Jeremie's "as close to the original as
+  possible": logic ported from `brianshea2/addr.tools`
+  `website/dnscheck.tools/main.js`.
+- New **"Your IP addresses"** section: `myipv4`/`myipv6.addr.tools/plain`
+  plus best-effort WebRTC ICE candidates via STUN (no mic prompt).
+- New **DNSSEC Validation Tests** matrix (Invalid/Expired/Missing × ECDSA
+  P-256, ECDSA P-384, Ed25519, ML-DSA-44) with the original's exact pass/fail
+  semantics: per algorithm the valid-signature domain is probed first, then its
+  badsig/expiredsig/nosig variants — a connected bad variant = FAIL (red),
+  blocked = PASS (green), ML-DSA-44 FAIL* yellow with footnote, failed valid
+  domain = column ERR. Cross-origin the "connected" signal is read via
+  `<link rel=stylesheet>` onload/onerror (fetch would reject on CORS); a
+  calibration probe gates the matrix — if blocked, cells honestly show
+  "untestable" instead of faked results.
+- New status pills mirroring the original's status bar: **RTT** (15 probes,
+  same green ≤150ms / yellow ≤500ms / red thresholds), **IPv6**, **ADoX**,
+  **EDNS** (advertised UDP sizes, yellow if <1200), **DNSSEC**. ECH omitted —
+  `X-ECH-Status` is not readable cross-origin.
+- ECS subnets now also shown as their own line ("Your DNS resolvers advertise
+  your IP subnet (ECS)"); resolvers table kept with PTR enrichment.
+
+## 2026-10-14 — Phase 8c: detailed test uses vietcdn's real servers
+
+- "Detailed test" reworked per Jeremie's decision (their-infrastructure-first):
+  now measures against **vietcdn.net's 8 real servers** (Netherlands, RBX,
+  HKG1, SGP1, TYO1, LAX1, TLV1, Cloudflare via Real-Debrid 10&nbsp;GiB test
+  files — URLs taken from vietcdn.net's page source, all verified reachable
+  with `Access-Control-Allow-Origin: *`), plus a final **Cloudflare edge
+  (this site)** row using the self-hosted 20&nbsp;MB file as fallback.
+- Per server: sequential single-connection then 6-connection rounds (10s
+  window, **1.5s warmup grace like the original**, same Mbps formula); rows
+  appear progressively with live Mbps; per-round failures marked "failed"
+  without stopping the run.
+- Row presentation mirrors vietcdn.net: flag per server (flagcdn.com, orange
+  ☁ badge for Cloudflare rows), 📍 pin on HKG1 (their "closest server" pick
+  for VN visitors), **Multi** badge on 6-connection rows, bold live Mbps +
+  1-decimal MB/s, overall progress bar, fastest-single-connection summary
+  line. Deliberately NOT copied: their hardcoded server-IP list, ISP-report
+  note, visitor-IP box, and results telemetry (their API).
+- New **Stop** button (aborts promptly, keeps completed rows) and progress
+  line ("Server 3/9 …"); ~3-minute full run; mutual exclusion with the
+  simple test kept. Note under the section credits Real-Debrid/vietcdn.net
+  infrastructure.
+- QA follow-ups: finished rows are never cleared on completion/stop
+  ("Run again" clears and restarts); `renderSpeedtest()` no longer re-renders
+  while a test is running (hashchange re-render can't wipe rows mid-test);
+  `refreshState()` validates the `/api/state` payload shape and guards each
+  render with try/catch + console logging — a bad payload or render exception
+  keeps the last good DOM and retries on the next cycle instead of blanking
+  the page.
+
 ## 2026-10-14 — Phase 9: DNS Tools tab
 
 - New **DNS Tools** tab (`#dns`, next to Speedtest), frontend-only.
