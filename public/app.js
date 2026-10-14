@@ -7,7 +7,7 @@ let CONFIG = null
 let LOCATIONS = {}
 let STATE = { monitors: {}, lastUpdate: {} }
 let FILTER = ''
-let VIEW = 'status' // 'status' | 'incidents'
+let VIEW = 'status' // 'status' | 'incidents' | 'speedtest'
 let INC_MONTH = null // 'YYYY-MM' for the incidents view; null = current month
 let INC_MONITOR = '' // monitor id filter for the incidents view
 const OPENED_AT = Date.now()
@@ -723,16 +723,226 @@ function renderIncidents() {
   })
 }
 
+// ---- Speedtest (self-hosted, vietcdn.net-style) ----
+// Measures ping/download/upload from the visitor's browser to the
+// Cloudflare edge serving this page. All test data is self-hosted:
+// download pulls public/speedtest-20m.bin (static asset), upload POSTs
+// to the Worker's /speedtest/upload endpoint (reads and discards).
+// Fixed 10s window per phase, 1s warmup grace; Mbps =
+// 8 * bytes/sec * 1.1 / 1048576 (1.1 = protocol overhead compensation).
+
+const ST_DL_URL = 'speedtest-20m.bin'
+const ST_STREAMS = 4
+const ST_WINDOW_MS = 10000
+const ST_GRACE_MS = 1000
+const ST_UP_CHUNK = 2 * 1024 * 1024
+
+const ST = { running: false }
+
+function stMbps(bytes, secs) {
+  return ((8 * bytes) / secs / 1048576) * 1.1
+}
+
+function stMedian3(a, b, c) {
+  return [a, b, c].sort((x, y) => x - y)[1]
+}
+
+function stRateHtml(mbps) {
+  return (
+    `${mbps.toFixed(2)} <span class="st-unit">Mbps</span>` +
+    `<div class="st-sub2">${(mbps / 8).toFixed(2)} MB/s</div>`
+  )
+}
+
+function renderSpeedtest() {
+  $('#speedtest').innerHTML =
+    `<div class="st-head"><h2>Speedtest</h2>` +
+    `<p class="st-sub">Measures your connection to the Cloudflare edge serving this page. ` +
+    `Download pulls a 20&nbsp;MB test file hosted here; upload sends generated random data ` +
+    `to this worker and discards it. Nothing leaves this site.</p></div>` +
+    `<div class="st-metrics">` +
+    `<div class="st-metric"><div class="st-label">Ping</div><div class="st-value" id="st-ping">—</div></div>` +
+    `<div class="st-metric"><div class="st-label">Download</div><div class="st-value" id="st-down">—</div></div>` +
+    `<div class="st-metric"><div class="st-label">Upload</div><div class="st-value" id="st-up">—</div></div>` +
+    `</div>` +
+    `<div class="st-controls"><button class="btn" id="stStart">Start test</button>` +
+    `<span class="st-status" id="stStatus"></span></div>`
+  $('#stStart').addEventListener('click', runSpeedtest)
+}
+
+async function runSpeedtest() {
+  if (ST.running) return
+  ST.running = true
+  const btn = $('#stStart')
+  const status = $('#stStatus')
+  btn.disabled = true
+  btn.textContent = 'Testing…'
+  try {
+    status.textContent = 'Measuring ping…'
+    const ping = await stPing().catch(() => null)
+    $('#st-ping').textContent = ping == null ? 'failed' : `${Math.round(ping)} ms`
+
+    status.textContent = 'Measuring download…'
+    const down = await stDownload((mbps) => {
+      $('#st-down').textContent = `${mbps.toFixed(1)} Mbps`
+    }).catch(() => null)
+    $('#st-down').innerHTML = down == null ? 'failed' : stRateHtml(down)
+
+    status.textContent = 'Measuring upload…'
+    const up = await stUpload((mbps) => {
+      $('#st-up').textContent = `${mbps.toFixed(1)} Mbps`
+    }).catch(() => null)
+    $('#st-up').innerHTML = up == null ? 'failed' : stRateHtml(up)
+
+    status.textContent = 'Done.'
+  } finally {
+    ST.running = false
+    btn.disabled = false
+    btn.textContent = 'Test again'
+  }
+}
+
+async function stPing() {
+  const samples = []
+  for (let i = 0; i < 3; i++) {
+    const t0 = performance.now()
+    const r = await fetch('api/state', { cache: 'no-store' })
+    if (!r.ok) throw new Error('ping failed')
+    await r.arrayBuffer() // ensure the full response arrived
+    samples.push(performance.now() - t0)
+  }
+  return stMedian3(samples[0], samples[1], samples[2])
+}
+
+async function stDownload(onTick) {
+  const t0 = performance.now()
+  const graceEnd = t0 + ST_GRACE_MS
+  const deadline = t0 + ST_WINDOW_MS
+  let bytes = 0
+
+  async function stream() {
+    let fails = 0
+    while (performance.now() < deadline) {
+      const remain = deadline - performance.now()
+      const ctrl = new AbortController()
+      const to = setTimeout(() => ctrl.abort(), Math.max(remain + 500, 1))
+      try {
+        const r = await fetch(
+          `${ST_DL_URL}?r=${Math.random().toString(36).slice(2)}`,
+          { cache: 'no-store', signal: ctrl.signal },
+        )
+        if (!r.ok || !r.body) throw new Error('bad download response')
+        const reader = r.body.getReader()
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const now = performance.now()
+          if (now >= graceEnd) bytes += value.byteLength
+          if (now >= deadline) {
+            reader.cancel().catch(() => {})
+            break
+          }
+        }
+        fails = 0
+      } catch (e) {
+        if (performance.now() >= deadline) break // aborted by the deadline
+        if (++fails > 3) throw new Error('download failed')
+        await new Promise((res) => setTimeout(res, 300))
+      } finally {
+        clearTimeout(to)
+      }
+    }
+  }
+
+  const tick = setInterval(() => {
+    const el = (performance.now() - graceEnd) / 1000
+    if (el > 0 && bytes > 0) onTick(stMbps(bytes, el))
+  }, 250)
+  try {
+    await Promise.all(Array.from({ length: ST_STREAMS }, stream))
+  } finally {
+    clearInterval(tick)
+  }
+  if (bytes === 0) throw new Error('no bytes received')
+  return stMbps(bytes, (deadline - graceEnd) / 1000)
+}
+
+let stUpBlob = null
+function stUpPayload() {
+  if (!stUpBlob) {
+    // crypto.getRandomValues caps at 64KB per call — fill in chunks.
+    const buf = new Uint8Array(ST_UP_CHUNK)
+    for (let i = 0; i < buf.length; i += 65536) {
+      crypto.getRandomValues(buf.subarray(i, Math.min(i + 65536, buf.length)))
+    }
+    stUpBlob = new Blob([buf], { type: 'application/octet-stream' })
+  }
+  return stUpBlob
+}
+
+async function stUpload(onTick) {
+  const t0 = performance.now()
+  const graceEnd = t0 + ST_GRACE_MS
+  const deadline = t0 + ST_WINDOW_MS
+  const blob = stUpPayload()
+  let bytes = 0
+
+  async function stream() {
+    let fails = 0
+    while (performance.now() < deadline) {
+      const remain = deadline - performance.now()
+      const ctrl = new AbortController()
+      const to = setTimeout(() => ctrl.abort(), Math.max(remain + 500, 1))
+      const start = performance.now()
+      try {
+        const r = await fetch('speedtest/upload', {
+          method: 'POST',
+          body: blob,
+          signal: ctrl.signal,
+        })
+        if (!r.ok) throw new Error('bad upload response')
+        await r.json()
+        if (start >= graceEnd) bytes += blob.size
+        fails = 0
+      } catch (e) {
+        if (performance.now() >= deadline) break // aborted by the deadline
+        if (++fails > 3) throw new Error('upload failed')
+        await new Promise((res) => setTimeout(res, 300))
+      } finally {
+        clearTimeout(to)
+      }
+    }
+  }
+
+  const tick = setInterval(() => {
+    const el = (performance.now() - graceEnd) / 1000
+    if (el > 0 && bytes > 0) onTick(stMbps(bytes, el))
+  }, 250)
+  try {
+    await Promise.all(Array.from({ length: ST_STREAMS }, stream))
+  } finally {
+    clearInterval(tick)
+  }
+  if (bytes === 0) throw new Error('no bytes uploaded')
+  return stMbps(bytes, (deadline - graceEnd) / 1000)
+}
+
 function setView(v) {
   VIEW = v
   $('#statusView').hidden = v !== 'status'
   $('#incidentsView').hidden = v !== 'incidents'
+  $('#speedtestView').hidden = v !== 'speedtest'
   document.querySelectorAll('.nav a').forEach((a) => {
     a.classList.toggle('active', a.dataset.view === v)
   })
   document.title =
-    (v === 'incidents' ? 'Incidents — ' : '') + CONFIG.settings.title
+    (v === 'incidents'
+      ? 'Incidents — '
+      : v === 'speedtest'
+        ? 'Speedtest — '
+        : '') + CONFIG.settings.title
   if (v === 'incidents') renderIncidents()
+  if (v === 'speedtest') renderSpeedtest()
 }
 
 function monitorCard(monitor, data, ci) {
@@ -1068,7 +1278,13 @@ async function init() {
       e.preventDefault()
       setView(a.dataset.view)
       try {
-        history.replaceState(null, '', a.dataset.view === 'incidents' ? '#incidents' : '#')
+        const h =
+          a.dataset.view === 'incidents'
+            ? '#incidents'
+            : a.dataset.view === 'speedtest'
+              ? '#speedtest'
+              : '#'
+        history.replaceState(null, '', h)
       } catch (err) {}
     })
   })
@@ -1089,7 +1305,13 @@ async function init() {
   await refreshState()
   render()
   renderBrowserLatency()
-  setView(location.hash === '#incidents' ? 'incidents' : 'status')
+  setView(
+    location.hash === '#incidents'
+      ? 'incidents'
+      : location.hash === '#speedtest'
+        ? 'speedtest'
+        : 'status',
+  )
   setInterval(refreshState, 30000)
   setInterval(tickHero, 1000)
 }

@@ -18,6 +18,10 @@ dependency-free static page in the visual language of
   the recent median exceeds the configured `latencyThresholdMs`
 - **"Latency from your browser"**: one click measures live RTT from the
   visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first
+- **Speedtest tab** (`#speedtest`): self-hosted ping/download/upload test
+  (vietcdn.net-style) against the Cloudflare edge — 20&nbsp;MB random test
+  file, 4 parallel streams, 10s window with 1s warmup grace; no third-party
+  bandwidth
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
 - **Incidents view** (`#incidents`) with month pager (bounded to the KV data

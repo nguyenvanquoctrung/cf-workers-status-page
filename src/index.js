@@ -281,6 +281,18 @@ export default {
       return processChecks(env, ctx)
     }
 
+    if (url.pathname === '/speedtest/upload' && request.method === 'POST') {
+      // Speedtest upload probe: read and discard the body, report bytes.
+      // No KV writes; used by the Speedtest tab's upload measurement.
+      let received = 0
+      try {
+        for await (const chunk of request.body) received += chunk.byteLength
+      } catch (e) {
+        return Response.json({ error: 'failed to read body' }, { status: 400 })
+      }
+      return Response.json({ received })
+    }
+
     return new Response('Not found', { status: 404 })
   },
 

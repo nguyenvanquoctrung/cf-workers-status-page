@@ -5,6 +5,19 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Phase 8: self-hosted speedtest tab
+
+- New **Speedtest** tab next to Incidents (`#speedtest` deep-link): measures
+  **ping** (median of 3 timed `/api/state` fetches), **download** and **upload**
+  from the visitor's browser to the Cloudflare edge, vietcdn.net-style
+  (fixed 10s window, 1s warmup grace, Mbps = 8·bytes/s·1.1/1048576).
+- Fully self-hosted: download pulls a 20&nbsp;MB random-bytes static asset
+  (`public/speedtest-20m.bin`, 4 parallel streams re-requesting as needed);
+  upload POSTs generated 2&nbsp;MB random blobs to the Worker's new
+  `POST /speedtest/upload` endpoint (reads and discards the body, no KV
+  writes). No third-party bandwidth.
+- Button-triggered only, live-updating numbers, per-metric failure isolation.
+
 ## 2026-10-14 — Groups collapsed by default (`2389253`)
 
 - Monitor groups now start collapsed (click a group header to expand),
