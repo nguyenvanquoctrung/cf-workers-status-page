@@ -17,7 +17,9 @@ dependency-free static page in the visual language of
   alerts** — an orange "High latency" pill plus a dashed threshold line when
   the recent median exceeds the configured `latencyThresholdMs`
 - **Ping tab** (`#ping`): one click measures live RTT from the
-  visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first
+  visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first;
+  auto-starts on first open, plus a NextDNS status check (test.nextdns.io-style:
+  using/not-using pill, resolver, your IP, server)
 - **Speedtest tab** (`#speedtest`): self-hosted ping/download/upload test
   (vietcdn.net-style) against the Cloudflare edge — 20&nbsp;MB random test
   file, 4 parallel streams, 10s window with 1s warmup grace; no third-party

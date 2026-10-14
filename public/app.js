@@ -1302,8 +1302,56 @@ function renderBrowserLatency() {
     `<button class="btn" id="blatBtn">Measure now</button>` +
     `<div class="blat-progress" id="blatProgress" hidden></div>` +
     `<div class="blat-results" id="blatResults"></div>` +
+    `</div>` +
+    `<div class="blat">` +
+    `<h3 class="blat-title">NextDNS status</h3>` +
+    `<p class="blat-sub">Powered by test.nextdns.io.</p>` +
+    `<div id="nxStatus"><span class="dns-note">Checking&hellip;</span></div>` +
+    `<div class="st-controls"><button class="btn" id="nxRecheck">Re-check</button></div>` +
     `</div>`
   $('#blatBtn').addEventListener('click', measureBrowserLatency)
+  $('#nxRecheck').addEventListener('click', checkNextdnsStatus)
+  // Like ping.nextdns.io: start automatically on first open.
+  measureBrowserLatency()
+  checkNextdnsStatus()
+}
+
+// NextDNS configuration check, same trick as test.nextdns.io (reformatted):
+// a random subdomain forces the browser to resolve through the visitor's DNS,
+// the backend correlates that DNS query with this HTTPS request and answers
+// with a JSON verdict (CORS-open).
+let NX_CHECKING = false
+async function checkNextdnsStatus() {
+  if (NX_CHECKING) return
+  NX_CHECKING = true
+  const out = $('#nxStatus')
+  const btn = $('#nxRecheck')
+  if (btn) btn.disabled = true
+  out.innerHTML = `<span class="dns-note">Checking&hellip;</span>`
+  try {
+    const id = Array.from({ length: 20 }, () =>
+      'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)],
+    ).join('')
+    const r = await fetch(`https://${id}.test.nextdns.io/`, { cache: 'no-store' })
+    if (!r.ok) throw new Error('bad status')
+    const j = await r.json()
+    const ok = j && j.status === 'ok'
+    const kv = (k, v) =>
+      `<tr><td>${esc(k)}</td><td>${v ? esc(String(v)) : '<span class="dns-note">&mdash;</span>'}</td></tr>`
+    out.innerHTML =
+      `<div class="leak-pills"><span class="leak-pill ${ok ? 'leak-green' : 'leak-yellow'}">` +
+      esc(ok ? 'Using NextDNS' : 'Not using NextDNS') +
+      `</span></div>` +
+      `<table class="dns-table"><tbody>` +
+      kv('Resolver', j.resolver) +
+      kv('Your IP', j.srcIP) +
+      kv('Server', j.server) +
+      `</tbody></table>`
+  } catch (e) {
+    out.innerHTML = `<span class="dns-note">Could not reach test.nextdns.io.</span>`
+  }
+  NX_CHECKING = false
+  if (btn) btn.disabled = false
 }
 
 async function measureOne(monitor) {

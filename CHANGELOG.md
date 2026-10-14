@@ -5,6 +5,17 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
+## 2026-10-14 — Ping tab: auto-run + NextDNS status
+
+- **Ping tab auto-runs on first open** (like ping.nextdns.io); "Measure now"
+  re-runs manually. Results survive tab switches.
+- **NextDNS status section** (test.nextdns.io-style, reformatted to this
+  site's design): same random-subdomain trick as the original — the browser
+  resolves `<random>.test.nextdns.io` through the visitor's DNS and the
+  backend correlates it with the HTTPS request (CORS-open JSON). Shows a
+  Using/Not-using-NextDNS pill plus resolver, your IP and server; credit
+  "Powered by test.nextdns.io", Re-check button included.
+
 ## 2026-10-14 — Ping tab + Vietnam-expanded groups
 
 - **"Latency from your browser" card became a dedicated Ping tab**
