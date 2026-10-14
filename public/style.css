@@ -43,7 +43,7 @@
   --tooltip-text: #1a1b1e;
   --group-open-bg: #25262b;
   --group-hover-bg: #25262b;
-  --logo-fill: #ffa25e;
+  --logo-fill: #1a8cff; /* NextDNS blue in dark mode */
 }
 
 * { box-sizing: border-box; }
