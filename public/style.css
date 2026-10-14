@@ -75,10 +75,11 @@ a:hover { text-decoration: underline; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .logo { height: 32px; width: auto; }
 .site-title { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
-.header-actions { display: flex; align-items: center; gap: 10px; }
+.header-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand { flex-shrink: 0; }
 
 /* ---- header nav (UptimeFlare: 14px/500, hover pill) ---- */
-.nav { display: flex; gap: 5px; align-items: center; }
+.nav { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
 .nav a {
   font-size: 14px; font-weight: 500; color: #495057;
   padding: 8px 12px; border-radius: 4px; line-height: 1;
@@ -574,7 +575,7 @@ a:hover { text-decoration: underline; }
 
 /* Responsive header: hamburger menu */
 .nav-toggle { display: none; }
-@media (max-width: 1280px) {
+@media (max-width: 1400px) {
   .nav-toggle { display: inline-flex; }
   .nav {
     display: none;
@@ -594,7 +595,8 @@ a:hover { text-decoration: underline; }
   .nav.open { display: flex; }
   .nav a { padding: 10px 14px; border-radius: 8px; }
   .header-actions { position: relative; }
-  .filter-wrap { flex: 1; min-width: 120px; }
+  .filter-wrap { flex: 1 1 auto; min-width: 0; }
+  .filter-wrap input { min-width: 0; }
   .filter-wrap input { width: 100%; }
 }
 @media (max-width: 640px) {
