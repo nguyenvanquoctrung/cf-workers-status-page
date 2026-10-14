@@ -1321,18 +1321,30 @@ function renderBrowserLatency() {
 // the backend correlates that DNS query with this HTTPS request and answers
 // with a JSON verdict (CORS-open).
 let NX_CHECKING = false
-async function checkNextdnsStatus() {
+async function checkNextdnsStatus(retried = false) {
   if (NX_CHECKING) return
   NX_CHECKING = true
   const out = $('#nxStatus')
   const btn = $('#nxRecheck')
-  if (btn) btn.disabled = true
-  out.innerHTML = `<span class="dns-note">Checking&hellip;</span>`
+  let failed = false
   try {
+    if (btn) btn.disabled = true
+    out.innerHTML = `<span class="dns-note">Checking&hellip;</span>`
     const id = Array.from({ length: 20 }, () =>
       'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)],
     ).join('')
-    const r = await fetch(`https://${id}.test.nextdns.io/`, { cache: 'no-store' })
+    // Timeout: without it a hung request leaves the button dead forever.
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), 12000)
+    let r
+    try {
+      r = await fetch(`https://${id}.test.nextdns.io/`, {
+        cache: 'no-store',
+        signal: ctl.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
     if (!r.ok) throw new Error('bad status')
     const j = await r.json()
     const ok = j && j.status === 'ok'
@@ -1348,10 +1360,19 @@ async function checkNextdnsStatus() {
       kv('Server', j.server) +
       `</tbody></table>`
   } catch (e) {
-    out.innerHTML = `<span class="dns-note">Could not reach test.nextdns.io.</span>`
+    failed = true
+  } finally {
+    // Always release the lock, even if rendering above threw.
+    NX_CHECKING = false
+    if (btn) btn.disabled = false
   }
-  NX_CHECKING = false
-  if (btn) btn.disabled = false
+  if (failed && !retried) {
+    // One automatic retry with a fresh subdomain — the first attempt
+    // sometimes loses a race with DNS warmup (seen once in QA).
+    await new Promise((res) => setTimeout(res, 800))
+    return checkNextdnsStatus(true)
+  }
+  if (failed) out.innerHTML = `<span class="dns-note">Could not reach test.nextdns.io.</span>`
 }
 
 async function measureOne(monitor) {
