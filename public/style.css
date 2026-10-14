@@ -1,17 +1,18 @@
-/* cf-workers-status-page v2 — UptimeFlare-inspired UI, hand-written, no build step */
+/* cf-workers-status-page v2 — UptimeFlare-faithful UI, hand-written, no build step */
 :root {
-  --bg: #f8f9fa;
+  --bg: #ffffff;
   --card-bg: #ffffff;
-  --card-border: #e9ecef;
-  --divider: #e9ecef;
+  --card-border: #dee2e6;
+  --divider: #dee2e6;
   --text: #212529;
   --muted: #70778c;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -5px rgba(0, 0, 0, 0.05), 0 7px 7px -5px rgba(0, 0, 0, 0.04);
   --green: #059669;
   --red: #df484a;
   --red-dark: #b91c1c;
   --orange: #f29030;
   --chart-line: #70778c;
+  --bar-nodata: #e9ecef;
   --input-bg: #ffffff;
   --input-border: #dee2e6;
   --link: #1c7ed6;
@@ -20,10 +21,10 @@
 }
 [data-theme="dark"] {
   --bg: #1a1b1e;
-  --card-bg: #25262b;
+  --card-bg: #1a1b1e;
   --card-border: #373a40;
-  --divider: #2c2e33;
-  --text: #e9ecef;
+  --divider: #373a40;
+  --text: #c1c2c5;
   --muted: #70778c;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   --green: #059669;
@@ -31,6 +32,7 @@
   --red-dark: #df484a;
   --orange: #f29030;
   --chart-line: #70778c;
+  --bar-nodata: #373a40;
   --input-bg: #25262b;
   --input-border: #373a40;
   --link: #4dabf7;
@@ -50,7 +52,7 @@ body {
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ---- slim top header bar ---- */
+/* ---- slim top header bar (56px, UptimeFlare) ---- */
 .site-header {
   height: 56px;
   background: var(--card-bg);
@@ -72,19 +74,21 @@ a:hover { text-decoration: underline; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
 .icon-btn {
-  width: 2rem; height: 2rem; border-radius: 6px; border: none;
+  width: 2rem; height: 2rem; border-radius: 4px; border: none;
   background: transparent; color: var(--text); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  font-size: 14px; font-weight: 500;
 }
-.icon-btn:hover { background: var(--divider); }
+.icon-btn:hover { background: var(--input-border); }
+[data-theme="dark"] .icon-btn:hover { background: #25262b; }
 .icon-btn svg { width: 1.15rem; height: 1.15rem; }
 .icon-btn:focus { outline: 2px solid var(--link); outline-offset: 2px; }
 
 .filter-wrap { position: relative; }
 .filter-wrap input {
   display: block; width: 220px; padding: 0.45rem 2.1rem 0.45rem 0.8rem;
-  border: 1px solid var(--input-border); border-radius: 6px;
-  background: var(--input-bg); color: var(--text); font-size: 0.875rem;
+  border: 1px solid var(--input-border); border-radius: 4px;
+  background: var(--input-bg); color: var(--text); font-size: 14px;
   font-family: inherit;
 }
 .filter-wrap input:focus { outline: none; border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
@@ -94,25 +98,28 @@ a:hover { text-decoration: underline; }
 }
 .filter-icon svg { width: 1.15rem; height: 1.15rem; }
 
-/* ---- centered hero ---- */
+/* ---- centered hero (UptimeFlare OverallStatus) ---- */
 .page { padding-bottom: 48px; }
-.hero { text-align: center; padding: 72px 16px 0; }
+.hero { text-align: center; padding: 100px 16px 0; }
 .hero-icon svg { display: block; margin: 0 auto; width: 64px; height: 64px; }
-.hero-title { font-size: 2.1rem; font-weight: 700; margin: 16px 0 0; letter-spacing: -0.01em; }
-.hero-sub { color: var(--muted); font-size: 0.95rem; margin: 10px 0 0; }
+.hero-title { font-size: 34px; font-weight: 700; margin: 16px 0 0; letter-spacing: -0.01em; }
+.hero-sub { color: var(--muted); font-size: 16px; font-weight: 700; margin: 10px 0 0; }
 
-/* ---- the one centered card ---- */
+/* ---- the one centered card (865px, shadow-only, UptimeFlare) ---- */
 .monitors-card {
-  max-width: 865px;
-  margin: 36px auto 0;
+  width: 865px;
+  max-width: calc(100% - 32px);
+  margin: 32px auto 0;
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  border: none;
   border-radius: 8px;
   box-shadow: var(--shadow);
-  padding: 6px 24px;
+  padding: 20px;
 }
-.monitor { padding: 20px 4px; }
+.monitor { padding: 18px 4px; }
 .monitor + .monitor { border-top: 1px solid var(--divider); }
+.monitor:first-child { padding-top: 4px; }
+.monitor:last-child { padding-bottom: 4px; }
 
 .monitor-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -120,25 +127,43 @@ a:hover { text-decoration: underline; }
 }
 .monitor-name {
   display: flex; align-items: center; gap: 6px;
-  font-weight: 700; font-size: 1rem; min-width: 0;
+  font-weight: 700; font-size: 16px; min-width: 0;
 }
 .monitor-name a, .monitor-name span.name-text { color: var(--text); }
 .monitor-name .micon { flex: none; }
-.overall { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+.overall { font-weight: 700; font-size: 16px; white-space: nowrap; }
 
-/* ---- latency chart (kept feature, UptimeFlare-styled) ---- */
-.chart-wrap { position: relative; margin: 12px 0 0; }
+/* ---- 90-day uptime bar strip (UptimeFlare DetailBar) ---- */
+.ustrip-wrap { position: relative; margin: 10px 0 5px; }
+.ustrip { display: flex; flex-wrap: nowrap; align-items: flex-end; }
+.ubar {
+  width: 7px; height: 20px; border-radius: 2px;
+  margin: 0 1px; flex: none;
+}
+.ubar.clickable { cursor: pointer; }
+.strip-tip {
+  position: absolute; z-index: 25; pointer-events: none;
+  background: #212529; color: #f8f9fa;
+  border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  padding: 0.35rem 0.6rem; font-size: 0.75rem; line-height: 1.4;
+  width: max-content; max-width: 16rem; white-space: normal; text-align: center;
+}
+
+/* ---- latency chart (UptimeFlare DetailChart style) ---- */
+.chart-title {
+  font-size: 12px; font-weight: 700; color: #666;
+  margin: 14px 0 2px; text-align: left;
+}
+.chart-wrap { position: relative; margin: 0; }
 .chart { display: block; width: 100%; height: auto; cursor: crosshair; }
-.cline { fill: none; stroke: var(--chart-line); stroke-width: 1.5; }
-.carea { fill: var(--chart-line); opacity: 0.12; }
-.cdot { fill: var(--chart-line); }
-.cdot.bad { fill: var(--red); }
+.cline { fill: none; stroke: var(--chart-line); stroke-width: 2; }
+.cdot.bad { fill: #df484a; }
 .hov { fill: transparent; }
 .caxis { stroke: var(--card-border); stroke-width: 1; }
 .cmax { font-size: 11px; fill: var(--muted); font-family: inherit; }
 .chart-tip {
   position: absolute; z-index: 20; pointer-events: none;
-  background: var(--tooltip-bg); color: var(--tooltip-text);
+  background: #212529; color: #f8f9fa;
   border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
   padding: 0.4rem 0.65rem; font-size: 0.75rem; line-height: 1.45;
   width: max-content; max-width: 15rem; white-space: normal;
@@ -149,7 +174,7 @@ a:hover { text-decoration: underline; }
 .tooltip { position: relative; }
 .tooltip .tip {
   display: none; position: absolute; z-index: 20;
-  background: var(--tooltip-bg); color: var(--tooltip-text);
+  background: #212529; color: #f8f9fa;
   border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
   padding: 0.35rem 0.6rem; font-size: 0.75rem; line-height: 1.4;
   width: max-content; max-width: 16rem; white-space: normal; text-align: center;
@@ -158,14 +183,38 @@ a:hover { text-decoration: underline; }
 .tooltip:hover .tip, .tooltip:focus-within .tip { display: block; }
 .tip .tip-date { opacity: 0.75; }
 .tip .tip-label { font-weight: 700; display: block; margin: 0.15rem 0; }
-.tip .tip-label2 { display: block; opacity: 0.9; }
+.tip .tip-label2 { font-weight: 700; display: block; margin: 0.15rem 0; }
 .tip .tip-avg { display: block; font-size: 0.7rem; opacity: 0.85; }
 .info-icon { width: 1.1rem; height: 1.1rem; color: var(--link); flex: none; }
 
-/* ---- minimal footer ---- */
+/* ---- incident modal ---- */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  background: var(--card-bg); color: var(--text);
+  border-radius: 8px; width: 100%; max-width: 640px;
+  max-height: 80vh; overflow: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; border-bottom: 1px solid var(--divider);
+  font-weight: 700; font-size: 1rem;
+}
+.modal-x {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 1.4rem; line-height: 1; padding: 0 0 0 12px;
+}
+.modal-body { padding: 16px 18px; font-size: 0.9rem; line-height: 1.7; }
+
+/* ---- minimal footer (UptimeFlare) ---- */
 .footer {
-  max-width: 865px;
-  margin: 28px auto 0;
+  margin: 20px 0 0;
   padding: 18px 16px 8px;
   border-top: 1px solid var(--card-border);
   text-align: center;
@@ -180,12 +229,16 @@ a:hover { text-decoration: underline; }
   .header-inner { padding: 0 12px; gap: 8px; }
   .site-title { font-size: 0.95rem; }
   .filter-wrap input { width: 140px; }
-  .hero { padding-top: 48px; }
+  .hero { padding-top: 56px; }
   .hero-icon svg { width: 48px; height: 48px; }
   .hero-title { font-size: 1.5rem; }
   .hero-sub { font-size: 0.85rem; }
-  .monitors-card { margin: 24px 16px 0; padding: 4px 16px; }
+  .monitors-card { margin: 24px 16px 0; padding: 16px; }
   .monitor-name { font-size: 0.92rem; }
   .overall { font-size: 0.85rem; }
-  .footer { margin-left: 16px; margin-right: 16px; }
+}
+
+/* UptimeFlare hides the 90-day bar strip on small screens */
+@media (max-width: 540px) {
+  .ustrip-wrap { display: none; }
 }

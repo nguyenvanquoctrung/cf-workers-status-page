@@ -41,6 +41,58 @@ function setTheme(theme) {
   $('#themeBtn').innerHTML = theme === 'dark' ? SUN : MOON
 }
 
+// Per-day stats over the daysInHistogram window. Each entry:
+// { day, avg, fails, locs, hasData, pct, downSecs }
+// pct: day uptime % (null when no data). Downtime is estimated from fail
+// episodes vs total check samples that day (fails counts incident episodes,
+// not samples — this is the most faithful estimate the data model allows).
+function dayStats(data) {
+  const n = CONFIG.settings.daysInHistogram
+  const days = []
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  for (let i = 0; i < n; i++) {
+    d.setDate(d.getDate() + 1)
+    const day = dayStr(d)
+    let avg = null
+    let fails = 0
+    let samples = 0
+    const locs = []
+    let hasData = false
+    if (data && data.firstCheck <= day) {
+      const e = data.checks && data.checks[day]
+      if (e) {
+        hasData = true
+        fails = e.fails || 0
+        let tot = 0
+        let cnt = 0
+        for (const loc of Object.keys(e.res || {})) {
+          const r = e.res[loc]
+          samples += r.n
+          tot += r.a * r.n
+          cnt += r.n
+          locs.push({ loc, a: r.a })
+        }
+        if (cnt > 0) avg = tot / cnt
+      }
+    }
+    let pct = null
+    let downSecs = 0
+    if (hasData) {
+      if (fails === 0) {
+        pct = 100
+      } else {
+        const checks = samples + fails
+        const interval = checks > 0 ? 86400 / checks : 86400
+        downSecs = Math.min(86400, Math.round(fails * interval))
+        pct = Math.max(0, (1 - downSecs / 86400) * 100)
+      }
+    }
+    days.push({ day, avg, fails, locs, hasData, pct, downSecs })
+  }
+  return days
+}
+
 // Uptime % over the daysInHistogram window (day granularity: a day counts as
 // "down" when it recorded any failed check). Returns null when no day has data.
 function overallInfo(data) {
@@ -62,10 +114,28 @@ function overallInfo(data) {
   return { pct: ((total - down) / total) * 100 }
 }
 
+// UptimeFlare 4-tier status colors.
 function overallColor(pct) {
   if (pct >= 99.9) return '#059669'
-  if (pct >= 95) return '#f29030'
-  return '#df484a'
+  if (pct >= 99) return '#3BD671'
+  if (pct >= 95) return '#F29030'
+  return '#DF484A'
+}
+
+function barColor(pct) {
+  if (pct == null) return 'var(--bar-nodata)'
+  if (pct >= 99.9) return '#3BD671'
+  if (pct >= 99) return '#9DEAB8'
+  if (pct >= 95) return '#F29030'
+  return '#DF484A'
+}
+
+function fmtDur(s) {
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.round(s / 60)}m`
+  const h = Math.floor(s / 3600)
+  const m = Math.round((s % 3600) / 60)
+  return m ? `${h}h ${m}m` : `${h}h`
 }
 
 function monitorStatusIcon(data) {
@@ -78,40 +148,16 @@ function monitorStatusIcon(data) {
 }
 
 let CHARTS = []
+let STRIPS = {}
 
 function latencyChart(monitor, data, ci) {
   const s = CONFIG.settings
   const n = s.daysInHistogram
-  const days = []
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  for (let i = 0; i < n; i++) {
-    d.setDate(d.getDate() + 1)
-    const day = dayStr(d)
-    let avg = null
-    let fails = 0
-    let locs = []
-    if (data && data.firstCheck <= day) {
-      const e = data.checks && data.checks[day]
-      if (e) {
-        fails = e.fails || 0
-        let tot = 0
-        let cnt = 0
-        for (const loc of Object.keys(e.res || {})) {
-          const r = e.res[loc]
-          tot += r.a * r.n
-          cnt += r.n
-          locs.push({ loc, a: r.a })
-        }
-        if (cnt > 0) avg = tot / cnt
-      }
-    }
-    days.push({ day, avg, fails, locs })
-  }
+  const days = dayStats(data)
   CHARTS[ci] = days
 
   const W = 600
-  const H = 132
+  const H = 150
   const padT = 14
   const padB = 26
   const padX = 8
@@ -121,7 +167,6 @@ function latencyChart(monitor, data, ci) {
   const base = H - padB
 
   let line = ''
-  let area = ''
   let dots = ''
   let hovers = ''
   const step = (W - padX * 2) / (n - 1)
@@ -146,14 +191,16 @@ function latencyChart(monitor, data, ci) {
     return d
   }
   const flush = () => {
+    // Red incident dots only — no plain dots (UptimeFlare-style)
     if (seg.length === 1) {
       const p = seg[0]
-      dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="3.5" class="cdot${p.fails > 0 ? ' bad' : ''}"/>`
+      if (p.fails > 0) {
+        dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="4.5" class="cdot bad"/>`
+      }
     } else if (seg.length > 1) {
       const pts = seg.map((p) => ({ x: X(p.i), y: Y(p.avg) }))
       const d = smoothPath(pts)
       line += `<path d="${d}" class="cline" vector-effect="non-scaling-stroke"/>`
-      area += `<path d="${d}L${f1(pts[pts.length - 1].x)},${base}L${f1(pts[0].x)},${base}Z" class="carea"/>`
       for (const p of seg) {
         if (p.fails > 0) {
           dots += `<circle cx="${f1(X(p.i))}" cy="${f1(Y(p.avg))}" r="4.5" class="cdot bad"/>`
@@ -176,15 +223,34 @@ function latencyChart(monitor, data, ci) {
   flush()
 
   return (
+    `<div class="chart-title">Response times(ms)</div>` +
     `<div class="chart-wrap" data-ci="${ci}">` +
     `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">` +
     `<text x="${W - padX}" y="${padT - 4}" text-anchor="end" class="cmax">max ${Math.round(maxV)}ms</text>` +
     `<line x1="${padX}" y1="${base}" x2="${W - padX}" y2="${base}" class="caxis" vector-effect="non-scaling-stroke"/>` +
-    area +
     line +
     dots +
     hovers +
     `</svg><div class="chart-tip" hidden></div></div>`
+  )
+}
+
+// 90-day uptime bar strip (UptimeFlare signature element).
+function uptimeStrip(monitor, data, ci) {
+  const days = dayStats(data)
+  STRIPS[ci] = days
+  const bars = days
+    .map(
+      (dd) =>
+        `<div class="ubar${dd.hasData && dd.fails > 0 ? ' clickable' : ''}"` +
+        ` data-ci="${ci}" data-day="${dd.day}" style="background:${barColor(dd.pct)}"` +
+        ` role="img" aria-label="${esc(dd.day)}"></div>`,
+    )
+    .join('')
+  return (
+    `<div class="ustrip-wrap" data-mname="${esc(monitor.name)}">` +
+    `<div class="ustrip" data-ci="${ci}">${bars}</div>` +
+    `<div class="strip-tip" hidden></div></div>`
   )
 }
 
@@ -230,6 +296,80 @@ function bindCharts() {
   })
 }
 
+function bindStrips() {
+  document.querySelectorAll('.ustrip-wrap').forEach((wrap) => {
+    const strip = wrap.querySelector('.ustrip')
+    const tip = wrap.querySelector('.strip-tip')
+    const ci = parseInt(strip.dataset.ci, 10)
+    const lookup = {}
+    for (const dd of STRIPS[ci] || []) lookup[dd.day] = dd
+
+    const showTip = (bar) => {
+      const dd = lookup[bar.dataset.day]
+      if (!dd) return
+      let html
+      if (!dd.hasData || dd.pct == null) {
+        html = `<span class="tip-date">${dd.day}</span><span class="tip-label2">No Data</span>`
+      } else {
+        html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${dd.day}</span>`
+        if (dd.downSecs > 0) {
+          html += `<span class="tip-avg">Down for ${fmtDur(dd.downSecs)} (click for detail)</span>`
+        }
+      }
+      tip.innerHTML = html
+      tip.hidden = false
+      const wr = wrap.getBoundingClientRect()
+      const br = bar.getBoundingClientRect()
+      const tipW = tip.offsetWidth
+      const tipH = tip.offsetHeight
+      let left = br.left - wr.left + br.width / 2 - tipW / 2
+      left = Math.max(4, Math.min(left, wr.width - tipW - 4))
+      tip.style.left = left + 'px'
+      tip.style.top = Math.max(0, bar.offsetTop - tipH - 8) + 'px'
+    }
+
+    strip.querySelectorAll('.ubar').forEach((bar) => {
+      bar.addEventListener('mousemove', () => showTip(bar))
+      bar.addEventListener('mouseleave', () => {
+        tip.hidden = true
+      })
+      bar.addEventListener('click', () => {
+        const dd = lookup[bar.dataset.day]
+        if (dd && dd.downSecs > 0) openIncidentModal(wrap.dataset.mname, dd)
+      })
+    })
+  })
+}
+
+// Drop oldest bars from the left so the strip fits its container width.
+function fitStrips() {
+  document.querySelectorAll('.ustrip').forEach((strip) => {
+    let guard = 200
+    while (strip.scrollWidth > strip.clientWidth + 1 && strip.children.length > 24 && guard-- > 0) {
+      strip.removeChild(strip.firstElementChild)
+    }
+  })
+}
+
+function openIncidentModal(monitorName, dd) {
+  const avgs = dd.locs
+    .map((l) => `<div>${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms avg</div>`)
+    .join('')
+  $('#incidentModalTitle').textContent = `incidents at ${dd.day}`
+  $('#incidentModalBody').innerHTML =
+    `<div><strong>Monitor:</strong> ${esc(monitorName)}</div>` +
+    `<div><strong>Uptime:</strong> ${dd.pct.toPrecision(4)}%</div>` +
+    `<div><strong>Est. downtime:</strong> ${fmtDur(dd.downSecs)}</div>` +
+    `<div><strong>Incident episodes:</strong> ${dd.fails}</div>` +
+    (dd.avg != null ? `<div><strong>Avg response:</strong> ${Math.round(dd.avg)}ms</div>` : '') +
+    (avgs ? `<div style="margin-top:8px"><strong>Per location:</strong>${avgs}</div>` : '')
+  $('#incidentModal').hidden = false
+}
+
+function closeIncidentModal() {
+  $('#incidentModal').hidden = true
+}
+
 function monitorCard(monitor, data, ci) {
   const nameHtml =
     monitor.linkable === false
@@ -241,13 +381,14 @@ function monitorCard(monitor, data, ci) {
 
   const up = overallInfo(data)
   const overallHtml = up
-    ? `<span class="overall" style="color:${overallColor(up.pct)}">Overall ${up.pct.toFixed(2)}%</span>`
+    ? `<span class="overall" style="color:${overallColor(up.pct)}">Overall: ${up.pct.toPrecision(4)}%</span>`
     : `<span class="overall" style="color:var(--muted)">${esc(CONFIG.settings.monitorLabelNoData)}</span>`
 
   return (
     `<section class="monitor" data-monitor="${esc(monitor.id)}">` +
     `<div class="monitor-row"><div class="monitor-name">${monitorStatusIcon(data)}${descHtml}${nameHtml}</div>` +
     `${overallHtml}</div>` +
+    `${uptimeStrip(monitor, data, ci)}` +
     `${latencyChart(monitor, data, ci)}` +
     `<div class="hist-legend"><span>${CONFIG.settings.daysInHistogram} days ago</span><span>Today</span></div>` +
     `</section>`
@@ -266,8 +407,8 @@ function renderStatusHeader() {
   let meta = ''
   if (lu.time) {
     const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-    const loc = LOCATIONS[lu.loc] || lu.loc || ''
-    meta = `checked ${secs} sec ago${loc ? ` (from ${esc(loc)})` : ''}`
+    const date = new Date(lu.time).toLocaleString()
+    meta = `Last updated on: ${esc(date)} (${secs} sec ago)`
   }
   $('#statusHeader').innerHTML =
     `<div class="hero"><div class="hero-icon">${icon}</div>` +
@@ -282,10 +423,13 @@ function renderMonitors() {
     !term || m.name.toLowerCase().includes(term),
   )
   CHARTS = []
+  STRIPS = {}
   $('#monitors').innerHTML = list.length
     ? list.map((m, i) => monitorCard(m, STATE.monitors[m.id], i)).join('')
     : `<div class="empty">No monitors match "${esc(FILTER)}".</div>`
   bindCharts()
+  bindStrips()
+  fitStrips()
 }
 
 function render() {
@@ -324,6 +468,14 @@ async function init() {
 
   $('#themeBtn').addEventListener('click', () => {
     setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')
+  })
+
+  $('#incidentModalClose').addEventListener('click', closeIncidentModal)
+  $('#incidentModal').addEventListener('click', (e) => {
+    if (e.target.id === 'incidentModal') closeIncidentModal()
+  })
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('#incidentModal').hidden) closeIncidentModal()
   })
 
   const input = $('#filterInput')
