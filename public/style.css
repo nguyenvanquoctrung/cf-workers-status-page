@@ -522,7 +522,6 @@ a:hover { text-decoration: underline; }
 .leak-sb-pills { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .leak-sb-pills .leak-pill { border: none; padding: 0; background: none; }
 .leak-sb-dns { color: var(--muted); }
-.leak-credit { margin-top: 10px; }
 .leak-sec-title { font-weight: 700; margin: 18px 0 6px; font-size: 14px; }
 .leak-ips { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .dsec-table { min-width: 460px; }

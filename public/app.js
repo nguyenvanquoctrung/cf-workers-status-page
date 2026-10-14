@@ -1671,6 +1671,11 @@ const LEAK_ALG_LABELS = ['ECDSA P-256', 'ECDSA P-384', 'Ed25519', 'ML-DSA-44']
 const LEAK_SIGS = ['badsig', 'expiredsig', 'nosig']
 const LEAK_SIG_LABELS = ['Invalid', 'Expired', 'Missing']
 const LEAK = { running: false }
+// UI state for the "Your IP addresses" section, kept outside the ephemeral LS
+// run state so "(show more)" keeps working after the test finishes (LS=null).
+let leakUiIps = [] // snapshot of [ip, src] entries
+let leakUiShowMore = false
+let leakUiRender = 0 // enrichment token: stale async fills are dropped
 // Per-run state (null when idle).
 let LS = null
 
@@ -2146,6 +2151,7 @@ function detectIps() {
     str = String(str || '').trim()
     if (!str || !/^[0-9a-fA-F.:]+$/.test(str) || !LS || LS.ips[str]) return
     LS.ips[str] = src || 'net'
+    leakUiIps = Object.entries(LS.ips)
     drawIps()
   }
   fetch('https://myipv4.addr.tools/plain')
@@ -2188,11 +2194,12 @@ function detectIps() {
 
 // Mirrors the original's IP list: registrant name above the IP, "City, Region,
 // CC" beside it. Registrant/geo fill in async (best-effort); the extended
-// WebRTC list hides behind "(show more)".
+// WebRTC list hides behind "(show more)". Uses module-level leakUi* state so
+// the toggle works even after the run ends (LS is nulled on finish).
 function drawIps() {
   const el = document.getElementById('leakIps')
-  if (!el || !LS) return
-  const entries = Object.entries(LS.ips)
+  if (!el) return
+  const entries = leakUiIps
   const wrap = document.getElementById('leakShowMoreWrap')
   if (!entries.length) {
     el.innerHTML = `<span class="dns-note">Detecting&hellip;</span>`
@@ -2201,9 +2208,9 @@ function drawIps() {
   }
   const primary = entries.filter(([, s]) => s !== 'webrtc')
   const extra = entries.filter(([, s]) => s === 'webrtc')
-  const showAll = LS.showMoreIps || !extra.length
+  const showAll = leakUiShowMore || !extra.length
   const list = showAll ? entries : primary
-  const tok = (LS.ipRender = (LS.ipRender || 0) + 1)
+  const tok = ++leakUiRender
   el.innerHTML =
     `<ul class="leak-ips">` +
     list
@@ -2216,15 +2223,13 @@ function drawIps() {
       .join('') +
     `</ul>`
   if (wrap) {
-    if (extra.length && !LS.showMoreIps) {
+    if (extra.length && !leakUiShowMore) {
       wrap.innerHTML = `(<span class="link" id="leakShowMore">show more</span>)`
       const t = document.getElementById('leakShowMore')
       if (t)
         t.addEventListener('click', () => {
-          if (LS) {
-            LS.showMoreIps = true
-            drawIps()
-          }
+          leakUiShowMore = true
+          drawIps()
         })
     } else {
       wrap.innerHTML = ''
@@ -2233,7 +2238,7 @@ function drawIps() {
   list.forEach(([ip], i) => {
     enrichIp(ip)
       .then(({ reg, geo }) => {
-        if (!LS || LS.ipRender !== tok) return
+        if (leakUiRender !== tok) return
         const r = document.getElementById(`leakIpReg${i}`)
         const g = document.getElementById(`leakIpGeo${i}`)
         if (r) r.innerHTML = reg ? esc(reg) : '<span class="dns-note">&mdash;</span>'
@@ -2263,14 +2268,14 @@ async function runLeakTest() {
     `<span class="leak-sb-dns dns-mono" id="leakSbDns">dns: 0</span></div>`
 
   const id = randHex8()
+  leakUiIps = []
+  leakUiShowMore = false
   LS = {
     finished: false,
     runId: id,
     t0: Date.now(),
     seen: new Map(), // remoteIp -> {protos:Set, ecs:Set, count}
     ips: {},
-    showMoreIps: false,
-    ipRender: 0,
     udpSizes: [],
     pills: {},
     dnssec: new Array(16), // undefined = pending
