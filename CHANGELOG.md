@@ -5,100 +5,35 @@ Asia/Saigon (GMT+7).
 
 ## [Unreleased]
 
-## 2026-10-14 — Quarantine NextDNS status card
+## 2026-10-14 — Phase 10: Ping tab (`960be8f`, `43fc8ea`, `3138663`, `dd84210`)
 
-- The test.nextdns.io-style "NextDNS status" card is temporarily hidden
-  (`NX_STATUS_ENABLED = false`): the verdict never arrives on the owner's
-  network (works from test browsers — QA PASS). Code kept intact for
-  re-enabling once the cause is found.
-
-## 2026-10-14 — Ping tab: auto-run + NextDNS status (`43fc8ea`)
-
-- **Ping tab auto-runs on first open** (like ping.nextdns.io); "Measure now"
-  re-runs manually. Results survive tab switches.
-- **NextDNS status section** (test.nextdns.io-style, reformatted to this
-  site's design): same random-subdomain trick as the original — the browser
-  resolves `<random>.test.nextdns.io` through the visitor's DNS and the
-  backend correlates it with the HTTPS request (CORS-open JSON). Shows a
-  Using/Not-using-NextDNS pill plus resolver, your IP and server; credit
-  "Powered by test.nextdns.io", Re-check button included.
-
-## 2026-10-14 — Ping tab + Vietnam-expanded groups (`960be8f`)
-- **"Latency from your browser" card became a dedicated Ping tab**
-  (`#ping`, nav: Status | Incidents | Ping | Speedtest | DNS Tools):
-  same one-click browser-to-POP latency measurement, now with its own view
-  instead of sitting under the monitor groups.
+- **"Latency from your browser" card became a dedicated Ping tab** (`#ping`,
+  nav: Status | Incidents | Ping | Speedtest | DNS Tools) — same one-click
+  browser-to-POP latency measurement, now with its own view.
+- **Auto-runs on first open** (like ping.nextdns.io); "Measure now" re-runs
+  manually; results survive tab switches and reloads (nav click now sets the
+  `#ping` hash — previously fell through to `#`, losing the tab on reload).
 - **Monitor groups default: Vietnam expanded, International collapsed**
-  (was: all collapsed). localStorage still remembers manual toggles.
+  (was: all collapsed); localStorage still remembers manual toggles.
+- A test.nextdns.io-style **"NextDNS status"** card was prototyped (random-
+  subdomain trick, reformatted to this site's design, "Powered by
+  test.nextdns.io") then **quarantined** (`NX_STATUS_ENABLED = false`): the
+  verdict never arrives on the owner's network (QA from test browsers passed).
 
-## 2026-10-14 — Credit-only subtitles, drop tool descriptions (`59da851`)
+## 2026-10-14 — Phase 9d: leak test refinements (`fb97190`, `f830a04`, `a023236`, `87e8035`, `d3b67be`, `59da851`)
 
-- Per owner rule (we use others' infrastructure): subtitles keep the credit
-  line only, no tool descriptions. Detailed test keeps "Test files hosted by
-  Real-Debrid (vietcdn.net infrastructure)…"; DNS Leak Test keeps "Powered by
-  dnscheck.tools infrastructure."; DNS Lookup keeps "Powered by dnscheck.tools
-  (addr.tools) infrastructure."
-
-## 2026-10-14 — Leak test: microphone-permission flow on "(show more)" (`d3b67be`)
-
-- Clicking "(show more)" now shows the original's confirm dialog (RFC 8828
-  explanation); on grant, `getUserMedia({audio:true})` + re-gather ICE
-  candidates with the audio track (may reveal additional IPs), tracks stopped
-  after 1s — no audio recorded. Cancelling just reveals already-gathered
-  addresses. Like the original, an already-granted mic permission is used
-  silently (no extra prompt).
-
-## 2026-10-14 — Leak test: "Reserved" label for private IPs (`87e8035`)
-
-- Private/reserved addresses (e.g. 192.168.x.x from WebRTC) now show the
-  "Reserved" registrant label like dnscheck.tools' expanded view, instead of
-  a blank dash.
-
-## 2026-10-14 — Fix: leak test "(show more)" dead after test finishes (`a023236`)
-
-- Root cause: the show-more state lived in the run state (`LS`), which is
-  nulled when the test ends — clicks after finish did nothing. Split UI
-  state out (`leakUiIps`, `leakUiShowMore`, `leakUiRender`) so the toggle
-  works before, during and after a run; a new run resets the snapshot.
-  Also removed leftover `.leak-credit` CSS.
-
-## 2026-10-14 — Polish leak test UI (`f830a04`)
-
-- Removed the duplicated "DNSSEC Validation Tests" caption (kept the section
-  title) and the "Like this tool? Star us on GitHub." promo line; kept the
-  honest "Powered by dnscheck.tools infrastructure" attribution.
-
-## 2026-10-14 — Fix DNSSEC calibration: probe alg domain, not nullip (`fb97190`)
-
-- Root cause of the all-`...` matrix: calibration probed
-  `a.{id}-nullip.test.dnscheck.tools`, which intentionally resolves to
-  `0.0.0.0` (it only exists to generate observable DNS queries, never as an
-  HTTP endpoint). Calibration now probes `{id}.test-alg15.dnscheck.tools`
-  (a real IP), like the original measures `connected` on its test-alg domains.
-
-## 2026-10-14 — Phase 9c: leak test full info parity (`f478290`)
-
-- **DNSSEC probe fixed (was broken, now works):** the 9b `<link
-  rel=stylesheet>` onload/onerror technique never fired — browsers MIME-check
-  stylesheets and the test domains answer `Content-Type: text/plain`. Replaced
-  with `fetch(url, {mode: 'no-cors', cache: 'no-store'})`: resolve (opaque) =
-  connected, reject = blocked — the exact 1:1 port of the original's
-  first-party `fetch().ok` signal. Applies to the calibration probe and all
-  matrix probes; honest "untestable" fallback kept for genuinely blocked
-  networks.
-- **Full info parity with dnscheck.tools:** "Your IP addresses" now shows the
-  **RDAP registrant** above each IP and **"City, Region, CC"** geolocation
-  beside it (registrant via IANA RDAP bootstrap + per-RIR RDAP, CORS-open;
-  geo via `ip.addr.tools`); extended WebRTC IPs hide behind **"(show more)"**.
-- **"Your DNS resolvers"** grouped by registrant (like the original), each row
-  with reverse DNS, geolocation, protocol and query count; ECS subnets keep
-  their own summary line.
-- New bottom **status bar** mirroring the original: `{rtt}ms IPv6 EDNS DNSSEC
-  ECH` indicators + live **`dns: N`** query counter. **ECH** renders `n/a`
-  with a tooltip — `X-ECH-Status` is only exposed to dnscheck.tools itself,
-  never cross-origin (shown honestly, never faked).
-- Attribution line kept honest: "Like this tool? Star us on GitHub" →
-  `brianshea2/addr.tools`.
+- **DNSSEC calibration fixed:** the matrix probed `a.{id}-nullip` (resolves to
+  `0.0.0.0` by design — DNS-query observable only, never an HTTP endpoint);
+  now probes `{id}.test-alg15.dnscheck.tools` (real IP), like the original.
+- **"(show more)" fixed:** its state lived in the run state nulled at finish —
+  now split into UI state, so the toggle works before, during and after a run.
+- **Microphone-permission flow** on "(show more)" (RFC 8828), like the
+  original: grant → re-gather ICE candidates (may reveal more IPs), tracks
+  stopped after 1s; cancel → reveal already-gathered addresses.
+- Private/reserved IPs labeled **"Reserved"** like the original's expanded view.
+- Polish: removed the duplicated DNSSEC caption and the GitHub promo line
+  (kept "Powered by dnscheck.tools infrastructure"); **credit-only subtitles**
+  everywhere — no tool descriptions, just attributions.
 
 ## 2026-10-14 — Fix: page auto-reload killing measurements (`0f94d5f`)
 
