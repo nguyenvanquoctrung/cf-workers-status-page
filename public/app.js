@@ -443,6 +443,14 @@ const t = (key, vars) => {
   if (vars) for (const k in vars) s = s.split(`{${k}}`).join(String(vars[k]))
   return s
 }
+// Empty an element and drop its i18n tracking, so refreshI18nText() on a
+// later language switch can't resurrect stale progress text.
+function clearStatus(el) {
+  if (!el) return
+  el.innerHTML = ''
+  delete el.dataset.i18nKey
+  delete el.dataset.i18nVars
+}
 // BCP 47 locale for date/number formatting; timezone stays Asia/Saigon.
 const LOCALE = () => (LANG === 'vi' ? 'vi-VN' : 'en-US')
 // Set an element's text from the dictionary and remember the key, so a later
@@ -2029,7 +2037,7 @@ function renderWorldPingMap(results) {
     })
     .join('')
   el.innerHTML =
-    `<svg viewBox="0 0 ${W} ${H}" class="wping-map" role="img" aria-label="${t('wping.mapTitle')}">` +
+    `<svg viewBox="0 0 ${W} ${H}" class="wping-map" role="img" aria-label="${t('wping.mapTitle')}" data-i18n-aria="wping.mapTitle">` +
     `<g fill="#3a3f4b">${land}</g>${dots}</svg>`
 }
 
@@ -2048,11 +2056,11 @@ function renderWorldPingTable(results) {
   const hasDist = rows.some((r) => r.distKm != null)
   el.innerHTML =
     `<table class="wping-table"><thead><tr>` +
-    `<th>${t('wping.col.location')}</th>` +
-    (hasDist ? `<th>${t('wping.col.distance')}</th>` : '') +
-    `<th>${t('wping.col.min')}</th>` +
-    `<th>${t('wping.col.avg')}</th><th>${t('wping.col.max')}</th>` +
-    `<th>${t('wping.col.values')}</th>` +
+    `<th data-i18n-key="wping.col.location">${t('wping.col.location')}</th>` +
+    (hasDist ? `<th data-i18n-key="wping.col.distance">${t('wping.col.distance')}</th>` : '') +
+    `<th data-i18n-key="wping.col.min">${t('wping.col.min')}</th>` +
+    `<th data-i18n-key="wping.col.avg">${t('wping.col.avg')}</th><th data-i18n-key="wping.col.max">${t('wping.col.max')}</th>` +
+    `<th data-i18n-key="wping.col.values">${t('wping.col.values')}</th>` +
     `</tr></thead><tbody>` +
     rows
       .map(
@@ -2153,7 +2161,7 @@ async function runWorldPing() {
   }
   renderWorldPingMap(results)
   renderWorldPingTable(results)
-  if (statusEl) statusEl.innerHTML = ''
+  clearStatus(statusEl)
   if (btn) {
     btn.disabled = false
     setI18nText(btn, 'wping.run')
