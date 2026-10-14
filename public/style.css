@@ -122,10 +122,9 @@ a:hover { text-decoration: underline; }
 .hero-title { font-size: 34px; font-weight: 700; margin: 16px 0 0; letter-spacing: -0.01em; }
 .hero-sub { color: var(--muted); font-size: 16px; font-weight: 700; margin: 10px 0 0; }
 
-/* ---- the one centered card (1140px on desktop — wider than UptimeFlare's
-   865px by user request, less empty side space on PC) ---- */
+/* ---- the one centered card (897px like UptimeFlare with groups; fits the 90-bar strip) ---- */
 .monitors-card {
-  width: 1140px;
+  width: 897px;
   max-width: calc(100% - 32px);
   margin: 32px auto 0;
   background: var(--card-bg);
