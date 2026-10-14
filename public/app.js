@@ -809,9 +809,6 @@ function renderSpeedtest() {
     `<div class="st-controls"><button class="btn" id="stStart">Start test</button>` +
     `<span class="st-status" id="stStatus"></span></div>` +
     `<div class="st-detail"><h3>Detailed test</h3>` +
-    `<p class="st-sub">vietcdn-style rounds against 8 Real-Debrid servers plus the Cloudflare edge serving this page. ` +
-    `Each server is measured twice — one single-connection round, then one 6-connection round — and each row appears when its round finishes. ` +
-    `Full run takes about 3 minutes.</p>` +
     `<p class="st-note">Test files hosted by Real-Debrid (vietcdn.net infrastructure), except the Cloudflare edge row served from this site.</p>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
@@ -1548,8 +1545,7 @@ const DNS_LOOKUP_TYPES = [
 function renderDnsTools() {
   $('#dnsTools').innerHTML =
     `<div class="dns-card"><div class="st-head"><h2>DNS Lookup</h2>` +
-    `<p class="st-sub">Query DNS records for any domain. Primary source: dnscheck.tools ` +
-    `(addr.tools) infrastructure — automatic fallback to Cloudflare DNS-over-HTTPS.</p></div>` +
+    `<p class="st-sub">Powered by dnscheck.tools (addr.tools) infrastructure.</p></div>` +
     `<div class="dns-form">` +
     `<input id="dnsName" type="text" placeholder="example.com" autocomplete="off" spellcheck="false" aria-label="Domain name">` +
     `<select id="dnsType" aria-label="Record type">` +
@@ -1560,9 +1556,7 @@ function renderDnsTools() {
     `<div class="dns-status" id="dnsStatus"></div>` +
     `<div id="dnsResults"></div></div>` +
     `<div class="dns-card"><div class="st-head"><h2>DNS Leak Test</h2>` +
-    `<p class="st-sub">Powered by dnscheck.tools infrastructure. Discovers which DNS resolvers ` +
-    `your network actually uses, checks DNSSEC validation and connection details &mdash; ` +
-    `mirroring dnscheck.tools.</p></div>` +
+    `<p class="st-sub">Powered by dnscheck.tools infrastructure.</p></div>` +
     `<div class="st-controls"><button class="btn" id="leakGo">Run leak test</button>` +
     `<span class="st-status" id="leakStatus"></span></div>` +
     `<div class="leak-pills" id="leakPills"></div>` +
