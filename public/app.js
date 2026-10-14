@@ -2066,10 +2066,15 @@ function dnssecMatrixHtml() {
 // resolver failed to validate -> FAIL.
 async function runDnssecMatrix(id) {
   const alive = () => LS && !LS.finished
-  // Calibration: the nullip domain is known-good. If even it won't load as a
-  // stylesheet here, the probe technique is blocked in this browser (or DNS is
-  // down) — mark the matrix untestable instead of guessing.
-  const calOk = await probeConnected(leakNullipFqdn(id, 'a'), 8000)
+  // Calibration: probe a valid-signature alg domain (resolves to a real IP).
+  // NOTE: never calibrate against the nullip domains — they intentionally
+  // resolve to 0.0.0.0 (that's their purpose: trigger a DNS query without a
+  // real server), so an HTTP fetch to them can never succeed. The original
+  // uses nullip queries only as DNS triggers and measures "connected" on the
+  // alg domains. If even the alg domain won't connect here, the probe
+  // technique is blocked in this browser (or DNS is down) — mark the matrix
+  // untestable instead of guessing.
+  const calOk = await probeConnected(leakAlgFqdn(id, 'alg15'), 8000)
   if (!alive()) return
   if (!calOk) {
     LS.dnssecSkipped = true
