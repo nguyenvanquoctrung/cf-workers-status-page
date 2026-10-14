@@ -1305,13 +1305,14 @@ async function init() {
   await refreshState()
   render()
   renderBrowserLatency()
-  setView(
+  const viewFromHash = () =>
     location.hash === '#incidents'
       ? 'incidents'
       : location.hash === '#speedtest'
         ? 'speedtest'
-        : 'status',
-  )
+        : 'status'
+  setView(viewFromHash())
+  window.addEventListener('hashchange', () => setView(viewFromHash()))
   setInterval(refreshState, 30000)
   setInterval(tickHero, 1000)
 }

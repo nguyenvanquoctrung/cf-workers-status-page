@@ -123,3 +123,8 @@ Asia/Saigon (GMT+7).
 - Modernized to wrangler v4 / modules Worker (`d67af39`); deploy fixes for
   Node 22 and KV namespace creation (`312ee2c`, `adc021e`); 13 NextDNS edge
   monitors configured (`9a7d020`).
+
+## 2026-10-14 — Hash deep-link mid-session (`44733a9`)
+
+- Changing the URL hash mid-session (`#incidents` / `#speedtest`) now switches
+  views via a `hashchange` listener (previously only worked on page load).
