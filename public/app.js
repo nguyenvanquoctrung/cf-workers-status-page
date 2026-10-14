@@ -210,7 +210,8 @@ en: {
 'wping.progress': 'Pinging {done}/{total}\u2026',
 'wping.mapTitle': 'Location of NextDNS PoPs',
 'wping.detailTitle': 'Detailed view',
-'wping.col.location': 'Location',
+'wping.col.location': 'Country',
+'wping.col.server': 'Server',
 'wping.col.distance': 'Distance',
 'wping.col.min': 'min',
 'wping.col.avg': 'avg',
@@ -418,7 +419,8 @@ vi: {
 'wping.progress': 'Đang ping {done}/{total}\u2026',
 'wping.mapTitle': 'Vị trí các PoP NextDNS',
 'wping.detailTitle': 'Chi tiết',
-'wping.col.location': 'Vị trí',
+'wping.col.location': 'Quốc gia',
+'wping.col.server': 'Máy chủ',
 'wping.col.distance': 'Khoảng cách',
 'wping.col.min': 'nhỏ nhất',
 'wping.col.avg': 'trung bình',
@@ -2057,6 +2059,7 @@ function renderWorldPingTable(results) {
   el.innerHTML =
     `<table class="wping-table"><thead><tr>` +
     `<th data-i18n-key="wping.col.location">${t('wping.col.location')}</th>` +
+    `<th data-i18n-key="wping.col.server">${t('wping.col.server')}</th>` +
     (hasDist ? `<th data-i18n-key="wping.col.distance">${t('wping.col.distance')}</th>` : '') +
     `<th data-i18n-key="wping.col.min">${t('wping.col.min')}</th>` +
     `<th data-i18n-key="wping.col.avg">${t('wping.col.avg')}</th><th data-i18n-key="wping.col.max">${t('wping.col.max')}</th>` +
@@ -2065,7 +2068,7 @@ function renderWorldPingTable(results) {
     rows
       .map(
         (r) =>
-          `<tr><td>${r.country ? esc(r.country) + ' · ' : ''}${esc(popShort(r.host))}</td>` +
+          `<tr><td>${r.country ? esc(r.country) : '--'}</td><td>${esc(popShort(r.host))}</td>` +
           (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
