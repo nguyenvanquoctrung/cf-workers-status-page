@@ -10,18 +10,31 @@ dependency-free static page in the visual language of
 ## Features
 
 - **90-day uptime bar strip** per monitor (UptimeFlare color tiers; gray days =
-  no data yet — history grows over time, nothing is fabricated)
+  no data yet and show no tooltip — history grows over time, nothing is
+  fabricated)
+- **12h intraday latency chart** per monitor (smooth 2px line, hour axis, black
+  hover tooltip, gaps on failed checks); per-monitor **latency threshold
+  alerts** — an orange "High latency" pill plus a dashed threshold line when
+  the recent median exceeds the configured `latencyThresholdMs`
+- **"Latency from your browser"**: one click measures live RTT from the
+  visitor's browser to every POP (ping.nextdns.io-style), sorted fastest-first
 - **Monitor groups** (accordion, e.g. 🇻🇳 Vietnam / 🌏 International) with
   per-group "X/Y Operational" counts; collapse state remembered in localStorage
-- **Incidents view** (`#incidents`) with month pager and monitor filter
-- **Live ticker**: hero shows "Last updated on … (N sec ago)" with N ticking
-  every second; page auto-reloads when data is stale
-- **Latency chart** per monitor with red markers on incident days; click a bar
-  for incident details (est. downtime, episodes, avg response, per location)
-- Dark mode toggle, search filter, responsive layout (bar strip hides on small
-  screens like the reference)
-- Slack / Telegram / Discord notifications on status change
+- **Incidents view** (`#incidents`) with month pager (bounded to the KV data
+  window — no paging into months whose data is gone), monitor filter, and
+  **scheduled maintenance windows** (`maintenances:` in `config.yaml`)
+- **Live ticker**: hero shows "Last updated on … (GMT+7) (N sec ago)" with N
+  ticking every second; page auto-reloads when data is stale
+- Time-weighted **Overall %** (UptimeFlare-style math); click a bar for
+  incident details (est. downtime, episodes, avg response, per location)
+- Dark mode (follows the OS by default; manual auto → light → dark toggle),
+  search filter, responsive layout (bar strip hides on small screens like the
+  reference)
+- Slack / Telegram / Discord notifications on status change (optional, via
+  Worker secrets)
 - No servers, no frontend build step — Cloudflare Workers + KV only
+
+Full history: [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works
 
