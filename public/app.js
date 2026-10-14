@@ -2028,7 +2028,7 @@ function renderWorldPingMap(results) {
         cy = y(r.lat).toFixed(1)
       const color = wpingColor(best)
       const label = best == null ? '-- ms' : best + ' ms'
-      const name = popShort(r.host) + (r.country ? ' · ' + r.country : '')
+      const name = (r.country ? r.country + ' · ' : '') + popShort(r.host)
       return (
         `<g><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" opacity="0.85"/>` +
         `<text x="${cx}" y="${+cy + 24}" text-anchor="middle" font-size="14" fill="currentColor">${label}</text>` +
@@ -2065,7 +2065,7 @@ function renderWorldPingTable(results) {
     rows
       .map(
         (r) =>
-          `<tr><td>${esc(popShort(r.host))}${r.country ? ' · ' + esc(r.country) : ''}</td>` +
+          `<tr><td>${r.country ? esc(r.country) + ' · ' : ''}${esc(popShort(r.host))}</td>` +
           (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
