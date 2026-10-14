@@ -211,6 +211,7 @@ en: {
 'wping.mapTitle': 'Location of all test servers',
 'wping.detailTitle': 'Detailed view',
 'wping.col.location': 'Location',
+'wping.col.distance': 'Distance',
 'wping.col.min': 'min',
 'wping.col.avg': 'avg',
 'wping.col.max': 'max',
@@ -418,6 +419,7 @@ vi: {
 'wping.mapTitle': 'Vị trí các máy chủ kiểm tra',
 'wping.detailTitle': 'Chi tiết',
 'wping.col.location': 'Vị trí',
+'wping.col.distance': 'Khoảng cách',
 'wping.col.min': 'nhỏ nhất',
 'wping.col.avg': 'trung bình',
 'wping.col.max': 'lớn nhất',
@@ -1982,6 +1984,17 @@ function wpingColor(ms) {
   return '#eab308'
 }
 
+// Haversine distance in km — for nearest-first ordering.
+function wpingDistKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLa = ((lat2 - lat1) * Math.PI) / 180
+  const dLo = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLa / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLo / 2) ** 2
+  return Math.round(2 * R * Math.asin(Math.sqrt(a)))
+}
+
 function renderWorldPingMap(results) {
   const el = $('#wpingMap')
   if (!el) return
@@ -2027,9 +2040,12 @@ function renderWorldPingTable(results) {
     ms == null
       ? `<span class="dns-note">--</span>`
       : `<b style="color:${wpingColor(ms)}">${ms} ms</b>`
+  const hasDist = rows.some((r) => r.distKm != null)
   el.innerHTML =
     `<table class="wping-table"><thead><tr>` +
-    `<th>${t('wping.col.location')}</th><th>${t('wping.col.min')}</th>` +
+    `<th>${t('wping.col.location')}</th>` +
+    (hasDist ? `<th>${t('wping.col.distance')}</th>` : '') +
+    `<th>${t('wping.col.min')}</th>` +
     `<th>${t('wping.col.avg')}</th><th>${t('wping.col.max')}</th>` +
     `<th>${t('wping.col.values')}</th>` +
     `</tr></thead><tbody>` +
@@ -2037,6 +2053,7 @@ function renderWorldPingTable(results) {
       .map(
         (r) =>
           `<tr><td>${esc(r.city)}</td>` +
+          (hasDist ? `<td>${r.distKm != null ? r.distKm.toLocaleString(LOCALE()) + ' km' : '--'}</td>` : '') +
           `<td>${fmt(r.min)}</td><td>${fmt(r.avg)}</td><td>${fmt(r.max)}</td>` +
           `<td>${r.values.length ? r.values.map((v) => (v == null ? '--' : v)).join(', ') : '--'}</td></tr>`,
       )
@@ -2057,7 +2074,7 @@ function renderWorldPing() {
     `<h4 class="wping-sec" data-i18n-key="wping.detailTitle">${t('wping.detailTitle')}</h4>` +
     `<div id="wpingTable"></div></div>`
   $('#wpingGo').addEventListener('click', runWorldPing)
-  const empty = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null }))
+  const empty = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
   renderWorldPingMap(empty)
   renderWorldPingTable(empty)
 }
@@ -2087,31 +2104,43 @@ async function runWorldPing() {
     btn.disabled = true
     setI18nText(btn, 'wping.testing')
   }
-  const results = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null }))
+  // Nearest-first: get the visitor's approximate location from the edge,
+  // sort servers by haversine distance, then ping strictly sequentially
+  // (parallel probes skew each other's timings).
+  let results = WORLD_PING_SERVERS.map((s) => ({ ...s, values: [], min: null, avg: null, max: null, distKm: null }))
+  try {
+    const r = await fetch('/api/conn', { cache: 'no-store' })
+    const j = await r.json()
+    if (Number.isFinite(+j.latitude) && Number.isFinite(+j.longitude)) {
+      const uLat = +j.latitude,
+        uLon = +j.longitude
+      for (const s of results) s.distKm = wpingDistKm(uLat, uLon, s.lat, s.lon)
+      results.sort((a, b) => a.distKm - b.distKm)
+    }
+  } catch (e) {}
   renderWorldPingMap(results)
   renderWorldPingTable(results)
   let done = 0
-  const total = WORLD_PING_SERVERS.length * 3
+  const total = results.length * 3
   const tick = () => {
     if (statusEl) setI18nText(statusEl, 'wping.progress', { done, total })
   }
   tick()
-  await Promise.all(
-    results.map(async (r) => {
-      for (let i = 0; i < 3; i++) {
-        r.values.push(await wpingProbe('https://' + r.host + '/'))
-        const vals = r.values.filter((v) => v != null)
-        r.min = vals.length ? Math.min(...vals) : null
-        done++
-        tick()
-        renderWorldPingMap(results)
-      }
+  for (const r of results) {
+    for (let i = 0; i < 3; i++) {
+      r.values.push(await wpingProbe('https://' + r.host + '/'))
       const vals = r.values.filter((v) => v != null)
       r.min = vals.length ? Math.min(...vals) : null
-      r.max = vals.length ? Math.max(...vals) : null
-      r.avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null
-    }),
-  )
+      done++
+      tick()
+      renderWorldPingMap(results)
+    }
+    const vals = r.values.filter((v) => v != null)
+    r.min = vals.length ? Math.min(...vals) : null
+    r.max = vals.length ? Math.max(...vals) : null
+    r.avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null
+    renderWorldPingTable(results)
+  }
   renderWorldPingMap(results)
   renderWorldPingTable(results)
   if (statusEl) statusEl.innerHTML = ''

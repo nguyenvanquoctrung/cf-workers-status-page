@@ -287,6 +287,8 @@ export default {
         colo: cf.colo || null,
         country: cf.country || null,
         asOrganization: cf.asOrganization || null,
+        latitude: cf.latitude || null,
+        longitude: cf.longitude || null,
         ip:
           request.headers.get('cf-connecting-ip') ||
           request.headers.get('x-forwarded-for') ||
