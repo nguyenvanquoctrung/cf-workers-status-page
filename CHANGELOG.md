@@ -1,5 +1,7 @@
 # Changelog
 
+**English** | [Bản tiếng Việt](CHANGELOG.vi.md)
+
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 

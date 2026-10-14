@@ -1,5 +1,7 @@
 # Contributor Covenant Code of Conduct
 
+**English** | [Bản tiếng Việt](CODE_OF_CONDUCT.vi.md)
+
 ## Our Pledge
 
 In the interest of fostering an open and welcoming environment, we as
