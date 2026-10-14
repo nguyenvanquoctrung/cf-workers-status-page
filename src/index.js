@@ -275,6 +275,25 @@ export default {
       })
     }
 
+    if (url.pathname === '/api/conn') {
+      // Connection diagnostics for the QUIC/TLS tools: what the edge saw.
+      // No KV, no secrets. httpProtocol is "h3"/"HTTP/3" when the client
+      // arrived over QUIC — the basis of the QUIC support test.
+      const cf = request.cf || {}
+      return Response.json({
+        httpProtocol: cf.httpProtocol || null,
+        tlsVersion: cf.tlsVersion || null,
+        tlsCipher: cf.tlsCipher || null,
+        colo: cf.colo || null,
+        country: cf.country || null,
+        asOrganization: cf.asOrganization || null,
+        ip:
+          request.headers.get('cf-connecting-ip') ||
+          request.headers.get('x-forwarded-for') ||
+          null,
+      })
+    }
+
     if (url.pathname === '/speedtest/upload' && request.method === 'POST') {
       // Speedtest upload probe: read and discard the body, report bytes.
       // No KV writes; used by the Speedtest tab's upload measurement.

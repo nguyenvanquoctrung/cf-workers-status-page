@@ -26,7 +26,7 @@ en: {
 'nav.incidents': 'Incidents',
 'nav.ping': 'Ping',
 'nav.speedtest': 'Speedtest',
-'nav.dns': 'DNS Tools',
+'nav.dns': 'Network Tools',
 'search.placeholder': "Tap '/' to search",
 'lang.toggle': 'Switch language',
 'theme.toggle': 'Theme: {mode} — click to change',
@@ -172,6 +172,36 @@ en: {
 'leak.pill.dnssec.fail': 'Domain Name System Security Extensions\n\nYour DNS responses are not authenticated',
 'leak.pill.dnssec.ok': 'Domain Name System Security Extensions\n\nYour DNS responses are authenticated',
 'leak.dnssec.err': 'ERR',
+// ---- QUIC / HTTP3 test ----
+'quic.title': 'QUIC / HTTP3 Test',
+'quic.powered': 'Checks whether your browser can reach this site over QUIC (HTTP/3).',
+'quic.run': 'Run test',
+'quic.testing': 'Testing\u2026',
+'quic.navProto': 'Page load protocol',
+'quic.attempt': 'Probe {n}',
+'quic.ok': 'QUIC works \u2014 this connection used HTTP/3.',
+'quic.fail': 'No QUIC \u2014 all probes used {proto}. Your network or browser may block UDP/443.',
+'quic.note': 'The test fetches twice so the browser can upgrade via Alt-Svc if UDP/443 is open.',
+// ---- TLS info ----
+'tls.title': 'TLS Connection Info',
+'tls.powered': 'What the Cloudflare edge observed about your connection.',
+'tls.show': 'Show info',
+'tls.version': 'TLS version',
+'tls.cipher': 'Cipher suite',
+'tls.protocol': 'HTTP protocol',
+'tls.colo': 'Edge location',
+'tls.ip': 'Your IP',
+'tls.network': 'Network',
+// ---- WebRTC leak test ----
+'webrtc.title': 'WebRTC Leak Test',
+'webrtc.powered': 'Reveals IP addresses your browser exposes via WebRTC (STUN).',
+'webrtc.run': 'Run test',
+'webrtc.testing': 'Gathering candidates\u2026',
+'webrtc.publicIp': 'Public IP (via STUN)',
+'webrtc.localIps': 'Local IPs',
+'webrtc.mdnsNote': 'Modern browsers mask local IPs as .local names \u2014 that is expected.',
+'webrtc.none': 'No ICE candidates gathered.',
+'webrtc.noRtc': 'WebRTC is not available in this browser.',
 // ---- maintenance ----
 'maint.from': 'From:',
 'maint.defaultTitle': 'Scheduled Maintenance',
@@ -189,7 +219,7 @@ vi: {
 'nav.incidents': 'Sự cố',
 'nav.ping': 'Ping',
 'nav.speedtest': 'Đo tốc độ',
-'nav.dns': 'Công cụ DNS',
+'nav.dns': 'Công cụ mạng',
 'search.placeholder': "Nhấn '/' để tìm kiếm",
 'lang.toggle': 'Chuyển ngôn ngữ',
 'theme.toggle': 'Giao diện: {mode} — nhấn để đổi',
@@ -335,6 +365,36 @@ vi: {
 'leak.pill.dnssec.fail': 'Phần mở rộng bảo mật DNS\n\nPhản hồi DNS của bạn chưa được xác thực',
 'leak.pill.dnssec.ok': 'Phần mở rộng bảo mật DNS\n\nPhản hồi DNS của bạn đã được xác thực',
 'leak.dnssec.err': 'LỖI',
+// ---- Kiểm tra QUIC / HTTP3 ----
+'quic.title': 'Kiểm tra QUIC / HTTP3',
+'quic.powered': 'Kiểm tra trình duyệt có tới được trang này qua QUIC (HTTP/3) không.',
+'quic.run': 'Chạy kiểm tra',
+'quic.testing': 'Đang kiểm tra\u2026',
+'quic.navProto': 'Giao thức tải trang',
+'quic.attempt': 'Lần đo {n}',
+'quic.ok': 'QUIC hoạt động \u2014 kết nối này đã dùng HTTP/3.',
+'quic.fail': 'Không có QUIC \u2014 mọi lần đo đều dùng {proto}. Mạng hoặc trình duyệt có thể chặn UDP/443.',
+'quic.note': 'Bài test fetch 2 lần để trình duyệt kịp nâng cấp qua Alt-Svc nếu UDP/443 mở.',
+// ---- Thông tin TLS ----
+'tls.title': 'Thông tin kết nối TLS',
+'tls.powered': 'Những gì Cloudflare edge quan sát được về kết nối của bạn.',
+'tls.show': 'Xem thông tin',
+'tls.version': 'Phiên bản TLS',
+'tls.cipher': 'Bộ mã hóa',
+'tls.protocol': 'Giao thức HTTP',
+'tls.colo': 'Vị trí edge',
+'tls.ip': 'IP của bạn',
+'tls.network': 'Nhà mạng',
+// ---- Kiểm tra rò rỉ WebRTC ----
+'webrtc.title': 'Kiểm tra rò rỉ WebRTC',
+'webrtc.powered': 'Hiện các địa chỉ IP trình duyệt để lộ qua WebRTC (STUN).',
+'webrtc.run': 'Chạy kiểm tra',
+'webrtc.testing': 'Đang thu thập\u2026',
+'webrtc.publicIp': 'IP công cộng (qua STUN)',
+'webrtc.localIps': 'IP nội bộ',
+'webrtc.mdnsNote': 'Trình duyệt hiện đại che IP nội bộ thành tên .local \u2014 đó là bình thường.',
+'webrtc.none': 'Không thu thập được ICE candidate nào.',
+'webrtc.noRtc': 'Trình duyệt này không hỗ trợ WebRTC.',
 // ---- maintenance ----
 'maint.from': 'Từ:',
 'maint.defaultTitle': 'Bảo trì theo lịch',
@@ -2037,7 +2097,15 @@ const DNS_LOOKUP_TYPES = [
 function renderDnsTools() {
   // Never wipe an in-progress leak test / lookup or existing results on
   // re-render (tab switch, language change) — same guard as ping/speedtest.
-  if (LEAK.running || DNS_LOOKUP_RUNNING || document.getElementById('dnsGo')) return
+  if (
+    LEAK.running ||
+    DNS_LOOKUP_RUNNING ||
+    QUIC_RUNNING ||
+    TLS_RUNNING ||
+    WEBRTC_RUNNING ||
+    document.getElementById('dnsGo')
+  )
+    return
   $('#dnsTools').innerHTML =
     `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="dns.lookup.title">${t('dns.lookup.title')}</h2>` +
     `<p class="st-sub" data-i18n-key="dns.lookup.powered">${t('dns.lookup.powered')}</p></div>` +
@@ -2055,12 +2123,30 @@ function renderDnsTools() {
     `<div class="st-controls"><button class="btn" id="leakGo" data-i18n-key="leak.run">${t('leak.run')}</button>` +
     `<span class="st-status" id="leakStatus"></span></div>` +
     `<div class="leak-pills" id="leakPills"></div>` +
-    `<div id="leakResults"></div></div>`
+    `<div id="leakResults"></div></div>` +
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="quic.title">${t('quic.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="quic.powered">${t('quic.powered')}</p></div>` +
+    `<div class="st-controls"><button class="btn" id="quicGo" data-i18n-key="quic.run">${t('quic.run')}</button>` +
+    `<span class="st-status" id="quicStatus"></span></div>` +
+    `<div id="quicResults"></div></div>` +
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="tls.title">${t('tls.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="tls.powered">${t('tls.powered')}</p></div>` +
+    `<div class="st-controls"><button class="btn" id="tlsGo" data-i18n-key="tls.show">${t('tls.show')}</button>` +
+    `<span class="st-status" id="tlsStatus"></span></div>` +
+    `<div id="tlsResults"></div></div>` +
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="webrtc.title">${t('webrtc.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="webrtc.powered">${t('webrtc.powered')}</p></div>` +
+    `<div class="st-controls"><button class="btn" id="webrtcGo" data-i18n-key="webrtc.run">${t('webrtc.run')}</button>` +
+    `<span class="st-status" id="webrtcStatus"></span></div>` +
+    `<div id="webrtcResults"></div></div>`
   $('#dnsGo').addEventListener('click', runDnsLookup)
   $('#dnsName').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') runDnsLookup()
   })
   $('#leakGo').addEventListener('click', runLeakTest)
+  $('#quicGo').addEventListener('click', runQuicTest)
+  $('#tlsGo').addEventListener('click', runTlsInfo)
+  $('#webrtcGo').addEventListener('click', runWebrtcTest)
 }
 
 let DNS_LOOKUP_RUNNING = false
@@ -3123,6 +3209,147 @@ function renderLeakResults(st, timedOut) {
       out.innerHTML = html + `</tbody></table></div>` + ecsLine
     })
     .catch(() => {})
+}
+
+let QUIC_RUNNING = false
+async function runQuicTest() {
+  if (QUIC_RUNNING) return
+  const statusEl = $('#quicStatus')
+  const out = $('#quicResults')
+  if (!statusEl || !out) return
+  QUIC_RUNNING = true
+  const btn = $('#quicGo')
+  if (btn) btn.disabled = true
+  out.innerHTML = ''
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('quic.testing')}`
+  try {
+    const rows = []
+    // 1. How did the page itself load? (client-observed)
+    try {
+      const nav = performance.getEntriesByType('navigation')[0]
+      if (nav && nav.nextHopProtocol) rows.push([t('quic.navProto'), nav.nextHopProtocol])
+    } catch (e) {}
+    // 2-3. Server-observed probes. Cloudflare advertises h3 via Alt-Svc, so
+    // the second probe gives the browser a chance to upgrade if UDP/443 is open.
+    for (let i = 1; i <= 2; i++) {
+      const r = await fetch('/api/conn?probe=' + i, { cache: 'no-store' })
+      const j = await r.json()
+      rows.push([t('quic.attempt', { n: i }), j.httpProtocol || '?'])
+      if (i === 1) await new Promise((res) => setTimeout(res, 2500))
+    }
+    const seenH3 = rows.some(([, p]) => /h3|http\/3/i.test(String(p)))
+    const lastProto = String(rows[rows.length - 1][1])
+    out.innerHTML =
+      rows.map(([k, v]) => `<div class="dns-meta">${k}: <b>${esc(v)}</b></div>`).join('') +
+      (seenH3
+        ? `<div class="dns-meta"><b>\u2713 ${t('quic.ok')}</b></div>`
+        : `<div class="dns-err"><b>\u2717</b> ${t('quic.fail', { proto: esc(lastProto) })}</div>`) +
+      `<div class="dns-note">${t('quic.note')}</div>`
+  } catch (e) {
+    out.innerHTML = `<div class="dns-err">${esc(e && e.message ? e.message : '?')}</div>`
+  } finally {
+    statusEl.innerHTML = ''
+    QUIC_RUNNING = false
+    if (btn) btn.disabled = false
+  }
+}
+
+let TLS_RUNNING = false
+async function runTlsInfo() {
+  if (TLS_RUNNING) return
+  const statusEl = $('#tlsStatus')
+  const out = $('#tlsResults')
+  if (!statusEl || !out) return
+  TLS_RUNNING = true
+  const btn = $('#tlsGo')
+  if (btn) btn.disabled = true
+  out.innerHTML = ''
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('quic.testing')}`
+  try {
+    const r = await fetch('/api/conn', { cache: 'no-store' })
+    const j = await r.json()
+    const rows = [
+      [t('tls.version'), j.tlsVersion],
+      [t('tls.cipher'), j.tlsCipher],
+      [t('tls.protocol'), j.httpProtocol],
+      [t('tls.colo'), j.colo],
+      [t('tls.ip'), j.ip],
+      [t('tls.network'), j.asOrganization],
+    ]
+    out.innerHTML = rows
+      .map(([k, v]) => `<div class="dns-meta">${k}: <b>${esc(v || '?')}</b></div>`)
+      .join('')
+  } catch (e) {
+    out.innerHTML = `<div class="dns-err">${esc(e && e.message ? e.message : '?')}</div>`
+  } finally {
+    statusEl.innerHTML = ''
+    TLS_RUNNING = false
+    if (btn) btn.disabled = false
+  }
+}
+
+let WEBRTC_RUNNING = false
+async function runWebrtcTest() {
+  if (WEBRTC_RUNNING) return
+  const statusEl = $('#webrtcStatus')
+  const out = $('#webrtcResults')
+  if (!statusEl || !out) return
+  if (!window.RTCPeerConnection) {
+    out.innerHTML = `<div class="dns-err">${t('webrtc.noRtc')}</div>`
+    return
+  }
+  WEBRTC_RUNNING = true
+  const btn = $('#webrtcGo')
+  if (btn) btn.disabled = true
+  out.innerHTML = ''
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('webrtc.testing')}`
+  const found = { srflx: new Set(), relay: new Set(), host: new Set() }
+  let pc = null
+  try {
+    pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
+    pc.createDataChannel('x')
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, 8000)
+      pc.onicecandidate = (e) => {
+        if (!e.candidate) {
+          clearTimeout(timer)
+          resolve()
+          return
+        }
+        // candidate:<foundation> <comp> <proto> <prio> <ip> <port> typ <type> ...
+        const parts = e.candidate.candidate.split(' ')
+        const type = parts[7] || '?'
+        const ip = parts[4] || '?'
+        if (found[type]) found[type].add(ip)
+        else found.host.add(ip + ' (' + type + ')')
+      }
+      pc.createOffer()
+        .then((o) => pc.setLocalDescription(o))
+        .catch(() => {
+          clearTimeout(timer)
+          resolve()
+        })
+    })
+    const pub = [...found.srflx, ...found.relay]
+    const local = [...found.host]
+    let html = ''
+    if (pub.length)
+      html += `<div class="dns-meta">${t('webrtc.publicIp')}: <b>${pub.map(esc).join(', ')}</b></div>`
+    if (local.length)
+      html += `<div class="dns-meta">${t('webrtc.localIps')}: <b>${local.map(esc).join(', ')}</b></div>`
+    if (!pub.length && !local.length) html = `<div class="dns-empty">${t('webrtc.none')}</div>`
+    else html += `<div class="dns-note">${t('webrtc.mdnsNote')}</div>`
+    out.innerHTML = html
+  } catch (e) {
+    out.innerHTML = `<div class="dns-err">${esc(e && e.message ? e.message : '?')}</div>`
+  } finally {
+    try {
+      if (pc) pc.close()
+    } catch (e) {}
+    statusEl.innerHTML = ''
+    WEBRTC_RUNNING = false
+    if (btn) btn.disabled = false
+  }
 }
 
 async function init() {

@@ -5,6 +5,21 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 21:00 — Phase 12: QUIC / TLS / WebRTC network tools
+
+- **QUIC / HTTP3 Test**: checks whether the browser reaches the site over
+  QUIC — combines client-observed page-load protocol
+  (`performance.nextHopProtocol`) with two server-observed probes to the new
+  `/api/conn` endpoint (Alt-Svc upgrade needs a round trip).
+- **TLS Connection Info**: TLS version, cipher suite, HTTP protocol, edge
+  colo, client IP and network as observed by the Cloudflare edge
+  (`request.cf`), via `/api/conn` — no KV, no secrets.
+- **WebRTC Leak Test**: gathers ICE candidates via STUN
+  (stun.l.google.com:19302), shows public IP (srflx) and local IPs (host),
+  notes mDNS obfuscation.
+- Tab renamed **DNS Tools → Network Tools** (`#dns` hash kept).
+- Full VI/EN i18n for all new strings (22 keys × 2).
+
 ## 2026-10-14 20:45 — Fix missing i18n keys
 
 - Added 4 keys that showed as literal text: `speedtest.testing`,

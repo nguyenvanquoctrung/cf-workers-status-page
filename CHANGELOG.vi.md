@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 21:00 — Phase 12: Công cụ mạng QUIC / TLS / WebRTC
+
+- **Kiểm tra QUIC / HTTP3**: kiểm tra trình duyệt có tới được trang qua QUIC
+  không — kết hợp giao thức tải trang phía client
+  (`performance.nextHopProtocol`) với 2 lần đo phía server tới endpoint mới
+  `/api/conn` (nâng cấp Alt-Svc cần một round trip).
+- **Thông tin kết nối TLS**: phiên bản TLS, bộ mã hóa, giao thức HTTP, vị
+  trí edge, IP và nhà mạng của client theo Cloudflare edge quan sát
+  (`request.cf`), qua `/api/conn` — không KV, không secret.
+- **Kiểm tra rò rỉ WebRTC**: thu thập ICE candidates qua STUN
+  (stun.l.google.com:19302), hiện IP công cộng (srflx) và IP nội bộ (host),
+  ghi chú về mDNS obfuscation.
+- Tab đổi tên **DNS Tools → Công cụ mạng** (giữ hash `#dns`).
+- i18n VI/EN đầy đủ cho mọi chuỗi mới (22 key × 2).
+
 ## 2026-10-14 20:45 — Bổ sung key i18n còn thiếu
 
 - Thêm 4 key bị hiện literal text: `speedtest.testing`,

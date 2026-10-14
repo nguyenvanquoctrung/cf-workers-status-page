@@ -33,7 +33,7 @@ dependency-free static page in the visual language of
   servers (Real-Debrid 10&nbsp;GiB files) plus the Cloudflare edge row —
   sequential single-connection then 6-connection rounds per server, rows
   appearing progressively like vietcdn, with Stop and per-server progress
-- **DNS Tools tab** (`#dns`): **DNS Lookup** — query any record type for any
+- **Network Tools tab** (`#dns`): **QUIC / HTTP3 Test** — checks whether your browser reaches the site over QUIC (page-load protocol + two server-observed probes via `/api/conn`); **TLS Connection Info** — TLS version, cipher suite, HTTP protocol, edge colo, your IP/network as seen by Cloudflare; **WebRTC Leak Test** — reveals IPs your browser exposes via WebRTC ICE candidates (STUN); **DNS Lookup** — query any record type for any
   domain via dnscheck.tools (addr.tools) infrastructure with automatic
   fallback to Cloudflare DNS-over-HTTPS (swappable provider order); **DNS
   Leak Test** — mirrors dnscheck.tools: your IP addresses with RDAP registrant
