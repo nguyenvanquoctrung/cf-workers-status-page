@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại ở đây. Ngày giờ theo
 múi giờ Asia/Saigon (GMT+7).
 
+## 2026-10-14 19:30–20:15 — Phase 11: Giao diện Việt/Anh
+
+- **Chuyển đổi ngôn ngữ VI/EN đầy đủ** (nút `#langBtn` trên header, lưu qua
+  localStorage, mặc định tiếng Việt): 111 chuỗi × 2 ngôn ngữ, bao phủ nav,
+  hero, biểu đồ, sự cố, ping, speedtest, tra cứu DNS, leak test, ma trận
+  DNSSEC, thẻ bảo trì, tooltip, lỗi và trạng thái trống.
+- **Ngày/giờ/số theo locale** (`vi-VN` vs `en-US`, múi giờ vẫn Asia/Saigon)
+  cho tooltip, nhãn ngày, pager tháng và ticker "N giây trước".
+- **Đổi ngôn ngữ không xóa bài đo**: status/incidents render lại toàn bộ;
+  ping/speedtest/dns cập nhật text tại chỗ qua `data-i18n-key` (nút nhớ key
+  theo state), nên bài đo đang chạy và kết quả được giữ nguyên.
+
 ## 2026-10-14 19:35 — Sửa lỗi: biểu đồ latency bỏ sót điểm mới
 
 - **Biểu đồ latency 12 giờ chỉ vẽ cụm điểm cũ nhất** (chart trông như "chết"

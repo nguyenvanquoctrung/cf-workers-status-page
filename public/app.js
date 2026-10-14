@@ -19,12 +19,352 @@ try {
   const saved = localStorage.getItem('lang')
   if (saved === 'en' || saved === 'vi') LANG = saved
 } catch (e) {}
-const I18N = { en: {}, vi: {} }
+const I18N = {
+en: {
+// ---- nav & chrome ----
+'nav.status': 'Status',
+'nav.incidents': 'Incidents',
+'nav.ping': 'Ping',
+'nav.speedtest': 'Speedtest',
+'nav.dns': 'DNS Tools',
+'search.placeholder': "Tap '/' to search",
+'lang.toggle': 'Switch language',
+'theme.toggle': 'Theme: {mode} — click to change',
+'theme.auto': 'Auto',
+'theme.light': 'Light',
+'theme.dark': 'Dark',
+'doc.title': 'Status Page',
+'footer.powered': 'Powered by <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, made with ❤ by <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Get Your Status Page</a>',
+// ---- hero / status ----
+'hero.allOperational': 'All Systems Operational',
+'hero.notAllOperational': 'Not All Systems Operational',
+'hero.lastUpdated': 'Last updated on: {ts} ({ago} sec ago)',
+'hero.ago': '{n} sec ago',
+'monitor.operational': 'Operational',
+'monitor.notOperational': 'Not Operational',
+'monitor.noData': 'No data',
+'monitor.overall': 'Overall: {pct}%',
+'group.count': '{ok}/{total} Operational',
+'status.empty': 'No monitors match "{q}".',
+'status.loadError': 'Failed to load status page: {err}',
+// ---- chart ----
+'chart.title': 'Response times(ms)',
+'chart.noData': 'No data yet',
+'chart.tip.down': 'Down for {dur} (click for detail)',
+'chart.tip.uptime': '{pct}% at {ts}',
+'chart.pill.high': 'High latency',
+'chart.pill.title': 'Median latency {med}ms over last {n} checks (threshold {thr}ms)',
+// ---- day strip ----
+'day.noData': 'No data',
+'day.allGood': 'All good',
+'day.incidents': ' {n} incident(s)',
+// ---- incidents ----
+'incidents.filterAll': 'All monitors',
+'incidents.filterLabel': 'Filter by monitor',
+'incidents.back': '← Backwards',
+'incidents.forward': 'Forward →',
+'incidents.none': 'No incidents recorded in {month}.',
+'incidents.estDowntime': 'Est. downtime {d}',
+'incidents.episodes': '{n} incident episode{s}',
+'incidents.avg': ' · {ms}ms avg',
+'incidents.alert': '🚨 {n} incidents at {ts}',
+'incidents.note': 'Incident history is kept for the last {n} days.',
+'incident.monitor': 'Monitor:',
+'incident.uptime': 'Uptime:',
+'incident.estDowntime': 'Est. downtime:',
+'incident.episodes': 'Incident episodes:',
+'incident.avgResponse': 'Avg response:',
+'incident.perLocation': 'Per location:',
+'incident.locAvg': '{ms}ms avg',
+'incident.close': 'Close',
+// ---- ping ----
+'ping.title': 'Ping',
+'ping.sub': 'Measures latency from your browser to each monitored endpoint.',
+'ping.measure': 'Measure now',
+'ping.measureAgain': 'Measure again',
+'ping.nx.using': 'Using NextDNS',
+'ping.nx.notUsing': 'Not using NextDNS',
+'ping.failed': 'failed',
+'ping.server': 'server: {ms} ms',
+'ping.nx.title': 'NextDNS status',
+'ping.nx.powered': 'Powered by test.nextdns.io.',
+'ping.nx.checking': 'Checking…',
+'ping.nx.recheck': 'Re-check',
+'ping.nx.unreachable': 'Could not reach test.nextdns.io.',
+// ---- speedtest ----
+'speedtest.title': 'Speedtest',
+'speedtest.sub': 'Measures your connection to the Cloudflare edge serving this page. Download pulls a 20\u00a0MB test file hosted here; upload sends generated random data to this worker and discards it. Nothing leaves this site.',
+'speedtest.ping': 'Ping',
+'speedtest.download': 'Download',
+'speedtest.upload': 'Upload',
+'speedtest.start': 'Start test',
+'speedtest.detail.title': 'Detailed test',
+'speedtest.detail.note': 'Test files hosted by Real-Debrid (vietcdn.net infrastructure), except the Cloudflare edge row served from this site.',
+'speedtest.detail.start': 'Start detailed test',
+'speedtest.detail.stop': 'Stop',
+'speedtest.closest': '📍 Closest server: <strong>{name}</strong>',
+'speedtest.fastest': ' · Fastest (single connection): <strong>{name}</strong> at {mbps} Mbps',
+'speedtest.detail.progress': 'Server {i}/{total} — {name}, {round}…',
+'speedtest.detail.stopped': 'stopped',
+'speedtest.detail.failed': 'failed',
+'speedtest.detail.stoppedDone': 'Stopped.',
+'speedtest.detail.done': 'Done.',
+'speedtest.detail.testing': 'Testing…',
+'speedtest.detail.runAgain': 'Run again',
+'speedtest.detail.multi': 'Multi',
+'speedtest.status.ping': 'Measuring ping…',
+'speedtest.status.download': 'Measuring download…',
+'speedtest.status.upload': 'Measuring upload…',
+// ---- dns lookup ----
+'dns.lookup.title': 'DNS Lookup',
+'dns.lookup.powered': 'Powered by dnscheck.tools (addr.tools) infrastructure.',
+'dns.lookup.domainLabel': 'Domain name',
+'dns.lookup.typeLabel': 'Record type',
+'dns.lookup.button': 'Lookup',
+'dns.lookup.enterDomain': 'Enter a domain name or IP address.',
+'dns.lookup.ptrHint': 'For PTR, enter an IP address or a valid reverse-DNS name.',
+'dns.lookup.invalid': '\u201c{name}\u201d doesn\u2019t look like a valid domain name.',
+'dns.lookup.querying': 'Querying {name} {type}\u2026',
+'dns.lookup.failed': 'Lookup failed: {err}. Both providers unreachable \u2014 check your connection and try again.',
+'dns.lookup.noRecords': 'No records found (NXDOMAIN) \u2014 \u201c{name}\u201d does not exist.',
+'dns.lookup.noTypeRecords': 'No {type} records for \u201c{name}\u201d ({via}).',
+'dns.lookup.col.name': 'Name',
+'dns.lookup.col.type': 'Type',
+'dns.lookup.col.ttl': 'TTL',
+'dns.lookup.col.data': 'Data',
+'dns.lookup.fallback': '(fallback)',
+'dns.lookup.netError': 'network error',
+// ---- leak test ----
+'leak.title': 'DNS Leak Test',
+'leak.powered': 'Powered by dnscheck.tools infrastructure.',
+'leak.run': 'Run leak test',
+'leak.status.opening': 'Opening channel\u2026',
+'leak.status.listening': 'Listening\u2026 {n} quer… seen',
+'leak.status.sending': 'Sending test queries\u2026',
+'leak.status.detecting': 'Detecting\u2026',
+'leak.unreachable': 'Leak test unreachable (dnscheck.tools WebSocket blocked) \u2014 DNS Lookup above still works.',
+'leak.resolvers.title': 'Your DNS resolvers',
+'leak.resolvers.seen': 'Your queries were seen from <b>{n} resolver{s}</b>',
+'leak.resolvers.none': 'No resolvers observed\u2026 \u2014 your network may block the test queries, or the channel closed early.',
+'leak.resolvers.ecs': 'Your DNS resolvers advertise your IP subnet (ECS):',
+'leak.resolvers.col.ip': 'Resolver IP',
+'leak.resolvers.col.ptr': 'Reverse DNS',
+'leak.resolvers.col.loc': 'Location',
+'leak.resolvers.col.proto': 'Protocol',
+'leak.resolvers.col.queries': 'Queries',
+'leak.ips.title': 'Your IP addresses',
+'leak.showMore': 'show more',
+'leak.dnssec.title': 'DNSSEC Validation Tests',
+'leak.dnssec.unavailable': 'DNSSEC validation tests could not run in this browser (network blocked or DNS unavailable) \u2014 resolver results above are unaffected.',
+'leak.dnssec.footnote': '* ML-DSA-44 is a new signature algorithm not yet widely validated.',
+'leak.dnssec.sigHeader': 'Signature',
+'leak.dns.avg': 'Average DNS round-trip time over {n} queries',
+'leak.resolvers.timedOut': ' (timed out)',
+'leak.pill.ipv6.no': 'Your DNS resolvers cannot reach nameservers over IPv6',
+'leak.pill.ipv6.yes': 'Your DNS resolvers connect to nameservers over IPv6',
+'leak.pill.edns': 'Extension Mechanisms for DNS\n\nAdvertised UDP buffer sizes: {sizes}',
+'leak.pill.adox': 'Authoritative DoT/DoQ\n\nOne or more queries from your DNS resolvers to our authoritative nameservers used an encrypted transport',
+'leak.pill.dnssec.err': 'Domain Name System Security Extensions\n\nAn error occurred',
+'leak.pill.dnssec.fail': 'Domain Name System Security Extensions\n\nYour DNS responses are not authenticated',
+'leak.pill.dnssec.ok': 'Domain Name System Security Extensions\n\nYour DNS responses are authenticated',
+'leak.dnssec.err': 'ERR',
+// ---- maintenance ----
+'maint.from': 'From:',
+'maint.defaultTitle': 'Scheduled Maintenance',
+'maint.untilNotice': 'Until further notice',
+'maint.to': 'To:',
+'maint.affected': 'Affected components:',
+// ---- common ----
+'common.showMore': '(show more)',
+'common.reserved': 'Reserved',
+'common.cityRegion': 'City, Region, CC',
+},
+vi: {
+// ---- nav & chrome ----
+'nav.status': 'Trạng thái',
+'nav.incidents': 'Sự cố',
+'nav.ping': 'Ping',
+'nav.speedtest': 'Đo tốc độ',
+'nav.dns': 'Công cụ DNS',
+'search.placeholder': "Nhấn '/' để tìm kiếm",
+'lang.toggle': 'Chuyển ngôn ngữ',
+'theme.toggle': 'Giao diện: {mode} — nhấn để đổi',
+'theme.auto': 'Tự động',
+'theme.light': 'Sáng',
+'theme.dark': 'Tối',
+'doc.title': 'Trang trạng thái',
+'footer.powered': 'Vận hành bởi <a href="https://workers.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Workers</a>, tạo với ❤ bởi <a href="https://github.com/nguyenvanquoctrung" target="_blank" rel="noopener">nguyenvanquoctrung</a> · <a href="https://github.com/nguyenvanquoctrung/cf-workers-status-page" target="_blank" rel="noopener">Tạo trang Status của bạn</a>',
+// ---- hero / status ----
+'hero.allOperational': 'Mọi hệ thống hoạt động bình thường',
+'hero.notAllOperational': 'Có hệ thống đang gặp sự cố',
+'hero.lastUpdated': 'Cập nhật lúc: {ts} ({ago} giây trước)',
+'hero.ago': '{n} giây trước',
+'monitor.operational': 'Hoạt động',
+'monitor.notOperational': 'Gián đoạn',
+'monitor.noData': 'Chưa có dữ liệu',
+'monitor.overall': 'Tổng: {pct}%',
+'group.count': '{ok}/{total} hoạt động',
+'status.empty': 'Không có monitor nào khớp "{q}".',
+'status.loadError': 'Không tải được trang trạng thái: {err}',
+// ---- chart ----
+'chart.title': 'Thời gian phản hồi (ms)',
+'chart.noData': 'Chưa có dữ liệu',
+'chart.tip.down': 'Gián đoạn {dur} (nhấn để xem chi tiết)',
+'chart.tip.uptime': '{pct}% lúc {ts}',
+'chart.pill.high': 'Độ trễ cao',
+'chart.pill.title': 'Độ trễ trung vị {med}ms trong {n} lần kiểm tra gần nhất (ngưỡng {thr}ms)',
+// ---- day strip ----
+'day.noData': 'Không có dữ liệu',
+'day.allGood': 'Ổn định',
+'day.incidents': ' {n} sự cố',
+// ---- incidents ----
+'incidents.filterAll': 'Tất cả monitor',
+'incidents.filterLabel': 'Lọc theo monitor',
+'incidents.back': '← Tháng trước',
+'incidents.forward': 'Tháng sau →',
+'incidents.none': 'Không ghi nhận sự cố nào trong {month}.',
+'incidents.estDowntime': 'Gián đoạn ước tính {d}',
+'incidents.episodes': '{n} đợt sự cố',
+'incidents.avg': ' · trung bình {ms}ms',
+'incidents.alert': '🚨 {n} sự cố lúc {ts}',
+'incidents.note': 'Lịch sử sự cố được lưu {n} ngày gần nhất.',
+'incident.monitor': 'Monitor:',
+'incident.uptime': 'Uptime:',
+'incident.estDowntime': 'Gián đoạn ước tính:',
+'incident.avgResponse': 'Phản hồi trung bình:',
+'incident.episodes': 'Các đợt sự cố:',
+'incident.perLocation': 'Theo vị trí:',
+'incident.locAvg': '{ms}ms trung bình',
+'incident.close': 'Đóng',
+// ---- ping ----
+'ping.title': 'Ping',
+'ping.sub': 'Đo độ trễ từ trình duyệt của bạn tới từng endpoint được giám sát.',
+'ping.measure': 'Đo ngay',
+'ping.measureAgain': 'Đo lại',
+'ping.nx.using': 'Đang dùng NextDNS',
+'ping.nx.notUsing': 'Không dùng NextDNS',
+'ping.failed': 'thất bại',
+'ping.server': 'máy chủ: {ms} ms',
+'ping.nx.title': 'Trạng thái NextDNS',
+'ping.nx.powered': 'Dữ liệu từ test.nextdns.io.',
+'ping.nx.checking': 'Đang kiểm tra…',
+'ping.nx.recheck': 'Kiểm tra lại',
+'ping.nx.unreachable': 'Không kết nối được test.nextdns.io.',
+// ---- speedtest ----
+'speedtest.title': 'Đo tốc độ mạng',
+'speedtest.sub': 'Đo kết nối của bạn tới Cloudflare edge đang phục vụ trang này. Lượt tải xuống dùng file test 20\u00a0MB lưu tại đây; lượt tải lên gửi dữ liệu ngẫu nhiên tới worker này rồi hủy. Không có gì rời khỏi trang này.',
+'speedtest.ping': 'Ping',
+'speedtest.download': 'Tải xuống',
+'speedtest.upload': 'Tải lên',
+'speedtest.start': 'Bắt đầu đo',
+'speedtest.detail.title': 'Đo chi tiết',
+'speedtest.detail.note': 'File test do Real-Debrid lưu trữ (hạ tầng vietcdn.net), trừ hàng Cloudflare edge dùng worker này.',
+'speedtest.detail.start': 'Bắt đầu đo chi tiết',
+'speedtest.detail.stop': 'Dừng',
+'speedtest.closest': '📍 Máy chủ gần nhất: <strong>{name}</strong>',
+'speedtest.fastest': ' · Nhanh nhất (1 kết nối): <strong>{name}</strong> đạt {mbps} Mbps',
+'speedtest.detail.progress': 'Máy chủ {i}/{total} — {name}, {round}…',
+'speedtest.detail.stopped': 'đã dừng',
+'speedtest.detail.failed': 'thất bại',
+'speedtest.detail.stoppedDone': 'Đã dừng.',
+'speedtest.detail.done': 'Xong.',
+'speedtest.detail.testing': 'Đang đo…',
+'speedtest.detail.runAgain': 'Đo lại',
+'speedtest.detail.multi': 'Đa luồng',
+'speedtest.status.ping': 'Đang đo ping…',
+'speedtest.status.download': 'Đang đo tải xuống…',
+'speedtest.status.upload': 'Đang đo tải lên…',
+// ---- dns lookup ----
+'dns.lookup.title': 'Tra cứu DNS',
+'dns.lookup.powered': 'Hạ tầng bởi dnscheck.tools (addr.tools).',
+'dns.lookup.domainLabel': 'Tên miền',
+'dns.lookup.typeLabel': 'Loại bản ghi',
+'dns.lookup.button': 'Tra cứu',
+'dns.lookup.enterDomain': 'Nhập tên miền hoặc địa chỉ IP.',
+'dns.lookup.ptrHint': 'Với PTR, nhập địa chỉ IP hoặc tên reverse-DNS hợp lệ.',
+'dns.lookup.invalid': '\u201c{name}\u201d không giống tên miền hợp lệ.',
+'dns.lookup.querying': 'Đang truy vấn {name} {type}\u2026',
+'dns.lookup.failed': 'Tra cứu thất bại: {err}. Không kết nối được cả hai nhà cung cấp \u2014 kiểm tra mạng và thử lại.',
+'dns.lookup.noRecords': 'Không tìm thấy bản ghi (NXDOMAIN) \u2014 \u201c{name}\u201d không tồn tại.',
+'dns.lookup.noTypeRecords': 'Không có bản ghi {type} cho \u201c{name}\u201d ({via}).',
+'dns.lookup.col.name': 'Tên',
+'dns.lookup.col.type': 'Loại',
+'dns.lookup.col.ttl': 'TTL',
+'dns.lookup.col.data': 'Dữ liệu',
+'dns.lookup.fallback': '(dự phòng)',
+'dns.lookup.netError': 'lỗi mạng',
+// ---- leak test ----
+'leak.title': 'Kiểm tra rò rỉ DNS',
+'leak.powered': 'Hạ tầng bởi dnscheck.tools.',
+'leak.run': 'Chạy kiểm tra',
+'leak.status.opening': 'Đang mở kênh\u2026',
+'leak.status.listening': 'Đang lắng nghe\u2026 đã thấy {n} truy vấn',
+'leak.status.sending': 'Đang gửi truy vấn kiểm tra\u2026',
+'leak.status.detecting': 'Đang nhận diện\u2026',
+'leak.unreachable': 'Không chạy được kiểm tra rò rỉ (WebSocket dnscheck.tools bị chặn) \u2014 Tra cứu DNS bên trên vẫn dùng được.',
+'leak.resolvers.title': 'DNS resolver của bạn',
+'leak.resolvers.seen': 'Truy vấn của bạn được thấy từ <b>{n} resolver</b>',
+'leak.resolvers.none': 'Không quan sát được resolver nào\u2026 \u2014 mạng của bạn có thể chặn truy vấn kiểm tra, hoặc kênh đã đóng sớm.',
+'leak.resolvers.ecs': 'DNS resolver của bạn để lộ subnet IP (ECS):',
+'leak.resolvers.col.ip': 'IP Resolver',
+'leak.resolvers.col.ptr': 'Reverse DNS',
+'leak.resolvers.col.loc': 'Vị trí',
+'leak.resolvers.col.proto': 'Giao thức',
+'leak.resolvers.col.queries': 'Truy vấn',
+'leak.ips.title': 'Địa chỉ IP của bạn',
+'leak.showMore': 'xem thêm',
+'leak.dnssec.title': 'Kiểm tra xác thực DNSSEC',
+'leak.dnssec.unavailable': 'Không chạy được kiểm tra DNSSEC trên trình duyệt này (mạng bị chặn hoặc không có DNS) \u2014 kết quả resolver bên trên không bị ảnh hưởng.',
+'leak.dnssec.footnote': '* ML-DSA-44 là thuật toán chữ ký mới, chưa được kiểm chứng rộng rãi.',
+'leak.dnssec.sigHeader': 'Chữ ký',
+'leak.dns.avg': 'Thời gian khứ hồi DNS trung bình trên {n} truy vấn',
+'leak.resolvers.timedOut': ' (hết giờ)',
+'leak.pill.ipv6.no': 'DNS resolver của bạn không kết nối được tới nameserver qua IPv6',
+'leak.pill.ipv6.yes': 'DNS resolver của bạn kết nối tới nameserver qua IPv6',
+'leak.pill.edns': 'Cơ chế mở rộng cho DNS\n\nKích thước bộ đệm UDP: {sizes}',
+'leak.pill.adox': 'DoT/DoQ tới máy chủ có thẩm quyền\n\nMột hoặc nhiều truy vấn từ DNS resolver của bạn tới máy chủ có thẩm quyền dùng kênh mã hóa',
+'leak.pill.dnssec.err': 'Phần mở rộng bảo mật DNS\n\nĐã xảy ra lỗi',
+'leak.pill.dnssec.fail': 'Phần mở rộng bảo mật DNS\n\nPhản hồi DNS của bạn chưa được xác thực',
+'leak.pill.dnssec.ok': 'Phần mở rộng bảo mật DNS\n\nPhản hồi DNS của bạn đã được xác thực',
+'leak.dnssec.err': 'LỖI',
+// ---- maintenance ----
+'maint.from': 'Từ:',
+'maint.defaultTitle': 'Bảo trì theo lịch',
+'maint.untilNotice': 'Cho đến khi có thông báo mới',
+'maint.to': 'Đến:',
+'maint.affected': 'Thành phần bị ảnh hưởng:',
+// ---- common ----
+'common.showMore': '(xem thêm)',
+'common.reserved': 'Riêng',
+'common.cityRegion': 'Thành phố, Vùng, CC',
+}
+}
 // t('key') or t('key', {name: value}) for "{name}" placeholders.
 const t = (key, vars) => {
   let s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.en[key] ?? key
   if (vars) for (const k in vars) s = s.split(`{${k}}`).join(String(vars[k]))
   return s
+}
+// BCP 47 locale for date/number formatting; timezone stays Asia/Saigon.
+const LOCALE = () => (LANG === 'vi' ? 'vi-VN' : 'en-US')
+// Set an element's text from the dictionary and remember the key, so a later
+// language switch can refresh it in place without re-rendering (which would
+// wipe in-progress measurements or existing results).
+function setI18nText(el, key, vars) {
+  if (!el) return
+  el.textContent = t(key, vars)
+  el.dataset.i18nKey = key
+  if (vars) el.dataset.i18nVars = JSON.stringify(vars)
+  else delete el.dataset.i18nVars
+}
+function refreshI18nText() {
+  document.querySelectorAll('[data-i18n-key]').forEach((el) => {
+    const vars = el.dataset.i18nVars ? JSON.parse(el.dataset.i18nVars) : undefined
+    el.textContent = t(el.dataset.i18nKey, vars)
+  })
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAria))
+  })
 }
 function setLang(l) {
   LANG = l === 'en' ? 'en' : 'vi'
@@ -33,18 +373,29 @@ function setLang(l) {
   } catch (e) {}
   document.documentElement.lang = LANG === 'vi' ? 'vi' : 'en'
   applyStaticI18n()
-  // Re-render everything in the new language.
-  render()
-  setView(VIEW)
+  if (typeof applyTheme === 'function') applyTheme()
+  // Re-render data-driven views (status, incidents) fully — safe.
+  // Measurement views (ping/speedtest/dns) refresh static text in place so
+  // running tests and existing results are never wiped.
+  if (VIEW === 'status' || VIEW === 'incidents') {
+    render()
+    setView(VIEW)
+  } else {
+    refreshI18nText()
+  }
   const lb = $('#langBtn')
   if (lb) lb.textContent = LANG === 'vi' ? 'EN' : 'VI'
 }
-// Static (non-view) chrome: nav labels, search placeholder, lang button.
+// Static (non-view) chrome: nav labels, search placeholder, lang button,
+// footer, document title.
 function applyStaticI18n() {
   document.querySelectorAll('.nav a').forEach((a) => {
     const v = a.dataset.view
     if (v && I18N[LANG]['nav.' + v]) a.textContent = I18N[LANG]['nav.' + v]
   })
+  document.title = t('doc.title')
+  const footer = document.querySelector('.footer div')
+  if (footer) footer.innerHTML = t('footer.powered')
   const fi = $('#filterInput')
   const ph = I18N[LANG]['search.placeholder']
   if (fi && ph) fi.placeholder = ph
@@ -94,21 +445,22 @@ const dayStr = (d) => d.toISOString().split('T')[0]
 // Built as a local date (not UTC) so timezones can't shift the day.
 const fmtDay = (iso) => {
   const [y, m, d] = iso.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString()
+  return new Date(y, m - 1, d).toLocaleDateString(LOCALE())
 }
 
 // "14:56:16 14/10/2026" in Asia/Saigon.
 const fmtDateTime = (ms) => {
   const d = new Date(ms)
-  const date = d.toLocaleDateString('en-GB', { timeZone: TIME_ZONE })
-  const time = d.toLocaleTimeString('en-GB', { timeZone: TIME_ZONE, hour12: false })
+  const loc = LANG === 'vi' ? 'vi-VN' : 'en-GB'
+  const date = d.toLocaleDateString(loc, { timeZone: TIME_ZONE })
+  const time = d.toLocaleTimeString(loc, { timeZone: TIME_ZONE, hour12: false })
   return `${time} ${date}`
 }
 
 // Hero subtitle, shared by the initial render and the 1s ticker.
 function heroMeta(lu) {
   const secs = Math.max(0, Math.round((Date.now() - lu.time) / 1000))
-  return `Last updated on: ${fmtDateTime(lu.time)} (${TZ_LABEL}) (${secs} sec ago)`
+  return t('hero.lastUpdated', { ts: `${fmtDateTime(lu.time)} (${TZ_LABEL})`, ago: secs })
 }
 
 const MOON =
@@ -152,13 +504,13 @@ function applyTheme() {
   const btn = $('#themeBtn')
   if (btn) {
     btn.innerHTML = eff === 'dark' ? SUN : MOON
-    const label =
+    const modeName =
       mode === 'auto'
-        ? `Auto (${eff === 'dark' ? 'dark' : 'light'})`
+        ? `${t('theme.auto')} (${eff === 'dark' ? t('theme.dark') : t('theme.light')})`
         : mode === 'dark'
-          ? 'Dark'
-          : 'Light'
-    btn.title = `Theme: ${label} — click to change`
+          ? t('theme.dark')
+          : t('theme.light')
+    btn.title = t('theme.toggle', { mode: modeName })
     btn.setAttribute('aria-label', btn.title)
   }
 }
@@ -299,8 +651,8 @@ function latencyPill(monitor, data) {
   const med = latencyMedianMs(data)
   const n = ((data && data.latency) || []).filter((p) => p && Number.isFinite(p.ms)).slice(-12)
     .length
-  const tip = `Median latency ${Math.round(med)}ms over last ${n} checks (threshold ${monitor.latencyThresholdMs}ms)`
-  return `<span class="lat-pill" title="${esc(tip)}">High latency</span>`
+  const tip = t('chart.pill.title', { med: Math.round(med), n, thr: monitor.latencyThresholdMs })
+  return `<span class="lat-pill" title="${esc(tip)}">${t('chart.pill.high')}</span>`
 }
 
 // ---- Scheduled maintenances (UptimeFlare-style). Display only: config-driven
@@ -353,12 +705,12 @@ function maintenanceCard(mt) {
   return (
     `<div class="maint">` +
     `<div class="maint-head">${tabler(TRIANGLE_PATHS, 22, color)}` +
-    `<strong>${esc(mt.title || 'Scheduled Maintenance')}</strong>` +
-    `<span class="maint-dates"><span><b>From:</b> ${esc(fmtMaintTs(mt.start))}</span>` +
-    `<span><b>To:</b> ${esc(mt.end ? fmtMaintTs(mt.end) : 'Until further notice')}</span></span></div>` +
+    `<strong>${esc(mt.title || t('maint.defaultTitle'))}</strong>` +
+    `<span class="maint-dates"><span><b>${t('maint.from')}</b> ${esc(fmtMaintTs(mt.start))}</span>` +
+    `<span><b>${t('maint.to')}</b> ${esc(mt.end ? fmtMaintTs(mt.end) : t('maint.untilNotice'))}</span></span></div>` +
     (mt.body ? `<div class="maint-body">${esc(mt.body)}</div>` : '') +
     (names.length
-      ? `<div class="maint-aff"><b>Affected components:</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`
+      ? `<div class="maint-aff"><b>${t('maint.affected')}</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`
       : '') +
     `</div>`
   )
@@ -397,7 +749,7 @@ function niceStep(v) {
 
 // Hour tick label in Asia/Saigon, 12h format without leading zero: "3AM", "12PM"
 function hourLabel(ts) {
-  const parts = new Intl.DateTimeFormat('en-US', {
+  const parts = new Intl.DateTimeFormat(LOCALE(), {
     timeZone: TIME_ZONE,
     hour: 'numeric',
     hour12: true,
@@ -411,13 +763,13 @@ function hourLabel(ts) {
 // "Oct 14, 2026, 8:37:44 am (GMT+7)"
 function fmtTs(ts) {
   const d = new Date(ts * 1000)
-  const date = d.toLocaleDateString('en-US', {
+  const date = d.toLocaleDateString(LOCALE(), {
     timeZone: TIME_ZONE,
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
-  let time = d.toLocaleTimeString('en-US', {
+  let time = d.toLocaleTimeString(LOCALE(), {
     timeZone: TIME_ZONE,
     hour: 'numeric',
     minute: '2-digit',
@@ -436,9 +788,9 @@ function latencyChart(monitor, data, ci) {
   const pts = ((data && data.latency) || []).filter((p) => p && p.t >= from - 1)
   CHARTS[ci] = { pts, from, now }
 
-  const title = `<div class="chart-title">Response times(ms)</div>`
+  const title = `<div class="chart-title">${t('chart.title')}</div>`
   if (pts.length < 2) {
-    return title + `<div class="chart-nodata">No data yet</div>`
+    return title + `<div class="chart-nodata">${t('chart.noData')}</div>`
   }
 
   const W = 600
@@ -601,9 +953,9 @@ function bindStrips() {
         tip.hidden = true
         return
       }
-      let html = `<span class="tip-label2">${dd.pct.toPrecision(4)}% at ${fmtDay(dd.day)}</span>`
+      let html = `<span class="tip-label2">${t('chart.tip.uptime', { pct: dd.pct.toPrecision(4), ts: fmtDay(dd.day) })}</span>`
       if (dd.downSecs > 0) {
-        html += `<span class="tip-avg">Down for ${fmtDur(dd.downSecs)} (click for detail)</span>`
+        html += `<span class="tip-avg">${t('chart.tip.down', { dur: fmtDur(dd.downSecs) })}</span>`
       }
       tip.innerHTML = html
       tip.hidden = false
@@ -642,16 +994,16 @@ function fitStrips() {
 
 function openIncidentModal(monitorName, dd) {
   const avgs = dd.locs
-    .map((l) => `<div>${esc(LOCATIONS[l.loc] || l.loc)}: ${Math.round(l.a)}ms avg</div>`)
+    .map((l) => `<div>${esc(LOCATIONS[l.loc] || l.loc)}: ${t('incident.locAvg', { ms: Math.round(l.a) })}</div>`)
     .join('')
-  $('#incidentModalTitle').textContent = `🚨 ${monitorName} incidents at ${fmtDay(dd.day)}`
+  $('#incidentModalTitle').textContent = t('incidents.alert', { n: monitorName, ts: fmtDay(dd.day) })
   $('#incidentModalBody').innerHTML =
-    `<div><strong>Monitor:</strong> ${esc(monitorName)}</div>` +
-    `<div><strong>Uptime:</strong> ${dd.pct.toPrecision(4)}%</div>` +
-    `<div><strong>Est. downtime:</strong> ${fmtDur(dd.downSecs)}</div>` +
-    `<div><strong>Incident episodes:</strong> ${dd.fails}</div>` +
-    (dd.avg != null ? `<div><strong>Avg response:</strong> ${Math.round(dd.avg)}ms</div>` : '') +
-    (avgs ? `<div style="margin-top:8px"><strong>Per location:</strong>${avgs}</div>` : '')
+    `<div><strong>${t('incident.monitor')}</strong> ${esc(monitorName)}</div>` +
+    `<div><strong>${t('incident.uptime')}</strong> ${dd.pct.toPrecision(4)}%</div>` +
+    `<div><strong>${t('incident.estDowntime')}</strong> ${fmtDur(dd.downSecs)}</div>` +
+    `<div><strong>${t('incident.episodes')}</strong> ${dd.fails}</div>` +
+    (dd.avg != null ? `<div><strong>${t('incident.avgResponse')}</strong> ${Math.round(dd.avg)}ms</div>` : '') +
+    (avgs ? `<div style="margin-top:8px"><strong>${t('incident.perLocation')}</strong>${avgs}</div>` : '')
   $('#incidentModal').hidden = false
 }
 
@@ -710,7 +1062,7 @@ function monthShift(ym, delta) {
 
 function fmtMonth(ym) {
   const [y, m] = ym.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, 1).toLocaleDateString(LOCALE(), {
     year: 'numeric',
     month: 'long',
   })
@@ -725,7 +1077,7 @@ function renderIncidents() {
       e.day.startsWith(month) && (!INC_MONITOR || e.monitor.id === INC_MONITOR),
   )
   const options =
-    `<option value="">All monitors</option>` +
+    `<option value="">${t('incidents.filterAll')}</option>` +
     CONFIG.monitors
       .map(
         (m) =>
@@ -740,13 +1092,13 @@ function renderIncidents() {
             `<div class="incident-head"><span class="incident-dot"></span>` +
             `<strong>${esc(e.monitor.name)}</strong>` +
             `<span class="incident-date">${fmtDay(e.day)}</span></div>` +
-            `<div class="incident-body">Est. downtime ${fmtDur(e.downSecs)} &middot; ` +
-            `${e.fails} incident episode${e.fails === 1 ? '' : 's'}` +
-            (e.avg != null ? ` &middot; ${Math.round(e.avg)}ms avg` : '') +
+            `<div class="incident-body">${t('incidents.estDowntime', { d: fmtDur(e.downSecs) })} &middot; ` +
+            t('incidents.episodes', { n: e.fails, s: e.fails === 1 ? '' : 's' }) +
+            (e.avg != null ? t('incidents.avg', { ms: Math.round(e.avg) }) : '') +
             `</div></div>`,
         )
         .join('')
-    : `<div class="no-incidents">No incidents recorded in ${esc(fmtMonth(month))}.</div>`
+    : `<div class="no-incidents">${t('incidents.none', { month: esc(fmtMonth(month)) })}</div>`
   const maints = allMaintenances()
     .filter(
       (mt) => maintOverlapsMonth(mt, month) && (!INC_MONITOR || maintCovers(mt, INC_MONITOR)),
@@ -755,15 +1107,15 @@ function renderIncidents() {
     .map(maintenanceCard)
     .join('')
   $('#incidents').innerHTML =
-    `<div class="inc-controls"><select id="incMonitorFilter" aria-label="Filter by monitor">${options}</select></div>` +
+    `<div class="inc-controls"><select id="incMonitorFilter" aria-label="${t('incidents.filterLabel')}">${options}</select></div>` +
     maints +
     list +
     `<div class="inc-pager">` +
-    `<button class="btn" id="incPrev"${month <= minMonth ? ' disabled' : ''}>&larr; Backwards</button>` +
+    `<button class="btn" id="incPrev"${month <= minMonth ? ' disabled' : ''}>${t('incidents.back')}</button>` +
     `<span class="month-label">${esc(fmtMonth(month))}</span>` +
-    `<button class="btn" id="incNext"${month >= maxMonth ? ' disabled' : ''}>Forward &rarr;</button>` +
+    `<button class="btn" id="incNext"${month >= maxMonth ? ' disabled' : ''}>${t('incidents.forward')}</button>` +
     `</div>` +
-    `<div class="inc-note">${esc(`Incident history is kept for the last ${CONFIG.settings.daysInHistogram} days.`)}</div>`
+    `<div class="inc-note">${t('incidents.note', { n: CONFIG.settings.daysInHistogram })}</div>`
   $('#incMonitorFilter').addEventListener('change', (e) => {
     INC_MONITOR = e.target.value
     renderIncidents()
@@ -852,24 +1204,22 @@ function renderSpeedtest() {
   // detailed test is running) — rows would vanish mid-measurement.
   if (ST.running || ST2.running) return
   $('#speedtest').innerHTML =
-    `<div class="st-head"><h2>Speedtest</h2>` +
-    `<p class="st-sub">Measures your connection to the Cloudflare edge serving this page. ` +
-    `Download pulls a 20&nbsp;MB test file hosted here; upload sends generated random data ` +
-    `to this worker and discards it. Nothing leaves this site.</p></div>` +
+    `<div class="st-head"><h2 data-i18n-key="speedtest.title">${t('speedtest.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
     `<div class="st-metrics">` +
-    `<div class="st-metric"><div class="st-label">Ping</div><div class="st-value" id="st-ping">—</div></div>` +
-    `<div class="st-metric"><div class="st-label">Download</div><div class="st-value" id="st-down">—</div></div>` +
-    `<div class="st-metric"><div class="st-label">Upload</div><div class="st-value" id="st-up">—</div></div>` +
+    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.ping">${t('speedtest.ping')}</div><div class="st-value" id="st-ping">—</div></div>` +
+    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.download">${t('speedtest.download')}</div><div class="st-value" id="st-down">—</div></div>` +
+    `<div class="st-metric"><div class="st-label" data-i18n-key="speedtest.upload">${t('speedtest.upload')}</div><div class="st-value" id="st-up">—</div></div>` +
     `</div>` +
-    `<div class="st-controls"><button class="btn" id="stStart">Start test</button>` +
+    `<div class="st-controls"><button class="btn" id="stStart" data-i18n-key="speedtest.start">${t('speedtest.start')}</button>` +
     `<span class="st-status" id="stStatus"></span></div>` +
-    `<div class="st-detail"><h3>Detailed test</h3>` +
-    `<p class="st-note">Test files hosted by Real-Debrid (vietcdn.net infrastructure), except the Cloudflare edge row served from this site.</p>` +
+    `<div class="st-detail"><h3 data-i18n-key="speedtest.detail.title">${t('speedtest.detail.title')}</h3>` +
+    `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
     `<div class="st-summary" id="stDetailSummary"></div>` +
-    `<div class="st-controls"><button class="btn" id="stDetailStart">Start detailed test</button>` +
-    `<button class="btn" id="stDetailStop" disabled>Stop</button>` +
+    `<div class="st-controls"><button class="btn" id="stDetailStart" data-i18n-key="speedtest.detail.start">${t('speedtest.detail.start')}</button>` +
+    `<button class="btn" id="stDetailStop" disabled data-i18n-key="speedtest.detail.stop">${t('speedtest.detail.stop')}</button>` +
     `<span class="st-status" id="stDetailStatus"></span></div></div>`
   $('#stStart').addEventListener('click', runSpeedtest)
   $('#stDetailStart').addEventListener('click', runDetailedTest)
@@ -896,7 +1246,7 @@ async function runDetailedTest() {
   startBtn.disabled = true
   stopBtn.disabled = false
   $('#stStart').disabled = true // concurrent tests would skew each other's numbers
-  startBtn.textContent = 'Testing…'
+  setI18nText(startBtn, 'speedtest.detail.testing')
   rows.innerHTML = ''
   summary.innerHTML = ''
   progress.style.width = '0%'
@@ -919,12 +1269,12 @@ async function runDetailedTest() {
           `<div class="st-drow${isClosest ? ' closest' : ''}">` +
             `<div class="st-dflag">${stFlagHtml(srv.code)}</div>` +
             `<div class="st-dname">${isClosest ? '<span class="st-pin">📍</span>' : ''}${esc(srv.name)}` +
-            (rd.multi ? '<span class="st-multi">Multi</span>' : '') +
+            (rd.multi ? '<span class="st-multi">' + t('speedtest.detail.multi') + '</span>' : '') +
             `</div><div class="st-dspeed">` +
             `<div class="st-mbps" id="stMbps${i}">—</div>` +
             `<div class="st-mbs" id="stMbs${i}"></div></div></div>`,
         )
-        status.textContent = `Server ${si + 1}/${total} — ${srv.name}, ${rd.label.toLowerCase()}…`
+        status.textContent = t('speedtest.detail.progress', { i: si + 1, total, name: srv.name, round: rd.label.toLowerCase() })
         const mbpsEl = () => document.getElementById(`stMbps${i}`)
         const mbsEl = () => document.getElementById(`stMbs${i}`)
         try {
@@ -935,7 +1285,7 @@ async function runDetailedTest() {
           const m = mbpsEl()
           if (m) {
             if (ST2.stop) {
-              m.textContent = 'stopped'
+              m.textContent = t('speedtest.detail.stopped')
             } else {
               m.textContent = `${mbps.toFixed(2)} Mbps`
               const s = mbsEl()
@@ -946,7 +1296,7 @@ async function runDetailedTest() {
           }
         } catch (e) {
           const m = mbpsEl()
-          if (m) m.textContent = ST2.stop ? 'stopped' : 'failed'
+          if (m) m.textContent = ST2.stop ? t('speedtest.detail.stopped') : t('speedtest.detail.failed')
         }
         doneRounds++
         progress.style.width = `${Math.round((doneRounds / totalRounds) * 100)}%`
@@ -955,17 +1305,17 @@ async function runDetailedTest() {
     }
     if (!ST2.stop && best) {
       summary.innerHTML =
-        `<span class="st-pin">📍</span> Closest server: <strong>${esc(ST_DETAIL_SERVERS.find((s) => s.cdn === ST_CLOSEST_CDN).name)}</strong>` +
-        ` · Fastest (single connection): <strong>${esc(best.name)}</strong> at ${best.mbps.toFixed(2)} Mbps`
+        t('speedtest.closest', { name: esc(ST_DETAIL_SERVERS.find((s) => s.cdn === ST_CLOSEST_CDN).name) }) +
+        t('speedtest.fastest', { name: esc(best.name), mbps: best.mbps.toFixed(2) })
     }
-    status.textContent = ST2.stop ? 'Stopped.' : 'Done.'
+    status.textContent = ST2.stop ? t('speedtest.detail.stoppedDone') : t('speedtest.detail.done')
   } finally {
     ST2.running = false
     ST2.stop = false
     startBtn.disabled = false
     stopBtn.disabled = true
     $('#stStart').disabled = false
-    startBtn.textContent = 'Run again'
+    setI18nText(startBtn, 'speedtest.detail.runAgain')
   }
 }
 
@@ -976,30 +1326,30 @@ async function runSpeedtest() {
   const status = $('#stStatus')
   btn.disabled = true
   $('#stDetailStart').disabled = true // concurrent tests would skew each other's numbers
-  btn.textContent = 'Testing…'
+  setI18nText(btn, 'speedtest.testing')
   try {
-    status.textContent = 'Measuring ping…'
+    status.textContent = t('speedtest.status.ping')
     const ping = await stPing().catch(() => null)
     $('#st-ping').textContent = ping == null ? 'failed' : `${Math.round(ping)} ms`
 
-    status.textContent = 'Measuring download…'
+    status.textContent = t('speedtest.status.download')
     const down = await stDownload((mbps) => {
       $('#st-down').textContent = `${mbps.toFixed(1)} Mbps`
     }).catch(() => null)
     $('#st-down').innerHTML = down == null ? 'failed' : stRateHtml(down)
 
-    status.textContent = 'Measuring upload…'
+    status.textContent = t('speedtest.status.upload')
     const up = await stUpload((mbps) => {
       $('#st-up').textContent = `${mbps.toFixed(1)} Mbps`
     }).catch(() => null)
     $('#st-up').innerHTML = up == null ? 'failed' : stRateHtml(up)
 
-    status.textContent = 'Done.'
+    status.textContent = t('speedtest.detail.done')
   } finally {
     ST.running = false
     btn.disabled = false
     $('#stDetailStart').disabled = false
-    btn.textContent = 'Test again'
+    setI18nText(btn, 'speedtest.testAgain')
   }
 }
 
@@ -1137,14 +1487,14 @@ function setView(v) {
   })
   document.title =
     (v === 'incidents'
-      ? 'Incidents — '
+      ? t('nav.incidents') + ' — '
       : v === 'ping'
-        ? 'Ping — '
+        ? t('nav.ping') + ' — '
         : v === 'speedtest'
-          ? 'Speedtest — '
+          ? t('nav.speedtest') + ' — '
           : v === 'dns'
-            ? 'DNS Tools — '
-            : '') + CONFIG.settings.title
+            ? t('nav.dns') + ' — '
+            : '') + t('doc.title')
   if (v === 'incidents') renderIncidents()
   if (v === 'ping') renderBrowserLatency()
   if (v === 'speedtest') renderSpeedtest()
@@ -1159,8 +1509,8 @@ function monitorCard(monitor, data, ci) {
 
   const up = overallInfo(data)
   const overallHtml = up
-    ? `<span class="overall" style="color:${overallColor(up.pct)}">Overall: ${up.pct.toPrecision(4)}%</span>`
-    : `<span class="overall" style="color:var(--muted)">${esc(CONFIG.settings.monitorLabelNoData)}</span>`
+    ? `<span class="overall" style="color:${overallColor(up.pct)}">${t('monitor.overall', { pct: up.pct.toPrecision(4) })}</span>`
+    : `<span class="overall" style="color:var(--muted)">${t('monitor.noData')}</span>`
 
   return (
     `<section class="monitor" data-monitor="${esc(monitor.id)}">` +
@@ -1173,10 +1523,9 @@ function monitorCard(monitor, data, ci) {
 }
 
 function renderStatusHeader() {
-  const s = CONFIG.settings
   const lu = STATE.lastUpdate || {}
   const ok = !!lu.allOperational
-  const text = ok ? s.allmonitorsOperational : s.notAllmonitorsOperational
+  const text = ok ? t('hero.allOperational') : t('hero.notAllOperational')
   const icon = ok
     ? tabler(CHECK_PATHS, 64, '#059669')
     : tabler(ALERT_PATHS, 64, '#b91c1c')
@@ -1239,7 +1588,7 @@ function groupSection(name, monitors, expanded) {
     `<button class="mgroup-head" aria-expanded="${expanded ? 'true' : 'false'}">` +
     `<span class="mgroup-name">${esc(groupLabel(name))}</span>` +
     `<span class="mgroup-right"><span class="mgroup-count" style="color:${color}">` +
-    `${ids.length - down}/${ids.length} Operational</span>${CHEVRON}</span>` +
+    `${t('group.count', { ok: ids.length - down, total: ids.length })}</span>${CHEVRON}</span>` +
     `</button>` +
     `<div class="mgroup-panel">${cards}</div>` +
     `</div>`
@@ -1279,7 +1628,7 @@ function renderMonitors() {
   STRIPS = {}
   CI_COUNTER = 0
   if (!list.length) {
-    $('#monitors').innerHTML = `<div class="empty">No monitors match "${esc(FILTER)}".</div>`
+    $('#monitors').innerHTML = `<div class="empty">${t('status.empty', { q: esc(FILTER) })}</div>`
     return
   }
   // groups in first-appearance order (config order)
@@ -1309,7 +1658,7 @@ function renderMonitors() {
 }
 
 function render() {
-  document.title = CONFIG.settings.title
+  document.title = t('doc.title')
   $('#pageTitle').textContent = CONFIG.settings.title
   const logo = $('#logo')
   if (CONFIG.settings.logo) {
@@ -1356,18 +1705,18 @@ function renderBrowserLatency() {
   if (BLAT_RUNNING || document.getElementById('blatBtn')) return
   $('#browserLatency').innerHTML =
     `<div class="blat">` +
-    `<h3 class="blat-title">Ping</h3>` +
-    `<p class="blat-sub">Measures latency from your browser to each monitored endpoint.</p>` +
-    `<button class="btn" id="blatBtn">Measure now</button>` +
+    `<h3 class="blat-title" data-i18n-key="ping.title">${t('ping.title')}</h3>` +
+    `<p class="blat-sub" data-i18n-key="ping.sub">${t('ping.sub')}</p>` +
+    `<button class="btn" id="blatBtn" data-i18n-key="ping.measure">${t('ping.measure')}</button>` +
     `<div class="blat-progress" id="blatProgress" hidden></div>` +
     `<div class="blat-results" id="blatResults"></div>` +
     `</div>` +
     (NX_STATUS_ENABLED
       ? `<div class="blat">` +
-        `<h3 class="blat-title">NextDNS status</h3>` +
-        `<p class="blat-sub">Powered by test.nextdns.io.</p>` +
-        `<div id="nxStatus"><span class="dns-note">Checking&hellip;</span></div>` +
-        `<div class="st-controls"><button class="btn" id="nxRecheck">Re-check</button></div>` +
+        `<h3 class="blat-title">${t('ping.nx.title')}</h3>` +
+        `<p class="blat-sub">${t('ping.nx.powered')}</p>` +
+        `<div id="nxStatus"><span class="dns-note">${t('ping.nx.checking')}</span></div>` +
+        `<div class="st-controls"><button class="btn" id="nxRecheck">${t('ping.nx.recheck')}</button></div>` +
         `</div>`
       : '')
   $('#blatBtn').addEventListener('click', measureBrowserLatency)
@@ -1390,7 +1739,7 @@ async function checkNextdnsStatus(retried = false) {
   let failed = false
   try {
     if (btn) btn.disabled = true
-    out.innerHTML = `<span class="dns-note">Checking&hellip;</span>`
+    out.innerHTML = `<span class="dns-note">${t('ping.nx.checking')}</span>`
     const id = Array.from({ length: 20 }, () =>
       'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)],
     ).join('')
@@ -1413,7 +1762,7 @@ async function checkNextdnsStatus(retried = false) {
       `<tr><td>${esc(k)}</td><td>${v ? esc(String(v)) : '<span class="dns-note">&mdash;</span>'}</td></tr>`
     out.innerHTML =
       `<div class="leak-pills"><span class="leak-pill ${ok ? 'leak-green' : 'leak-yellow'}">` +
-      esc(ok ? 'Using NextDNS' : 'Not using NextDNS') +
+      esc(ok ? t('ping.nx.using') : t('ping.nx.notUsing')) +
       `</span></div>` +
       `<table class="dns-table"><tbody>` +
       kv('Resolver', j.resolver) +
@@ -1433,7 +1782,7 @@ async function checkNextdnsStatus(retried = false) {
     await new Promise((res) => setTimeout(res, 800))
     return checkNextdnsStatus(true)
   }
-  if (failed) out.innerHTML = `<span class="dns-note">Could not reach test.nextdns.io.</span>`
+  if (failed) out.innerHTML = `<span class="dns-note">${t('ping.nx.unreachable')}</span>`
 }
 
 async function measureOne(monitor) {
@@ -1465,18 +1814,18 @@ async function measureBrowserLatency() {
   const prog = $('#blatProgress')
   const out = $('#blatResults')
   btn.disabled = true
-  btn.textContent = 'Measuring…'
+  setI18nText(btn, 'ping.measuring')
   prog.hidden = false
   out.innerHTML = ''
   const monitors = CONFIG.monitors.filter((m) => infoUrlFor(m))
   const total = monitors.length
   let done = 0
-  prog.textContent = `Measuring 0/${total}…`
+  setI18nText(prog, 'ping.progress', { done: 0, total })
   const results = await Promise.all(
     monitors.map((m) =>
       measureOne(m).then((r) => {
         done++
-        prog.textContent = `Measuring ${done}/${total}…`
+        setI18nText(prog, 'ping.progress', { done, total })
         return r
       }),
     ),
@@ -1490,7 +1839,7 @@ async function measureBrowserLatency() {
           `<div class="blat-row${i === 0 ? ' blat-fastest' : ''}">` +
           `<span class="blat-name">${i === 0 ? '■ ' : ''}${esc(r.monitor.name)}</span>` +
           `<span class="blat-ms">${r.ms} ms` +
-          (r.serverMs != null ? ` <span class="blat-server">server: ${r.serverMs} ms</span>` : '') +
+          (r.serverMs != null ? ` <span class="blat-server">${t('ping.server', { ms: r.serverMs })}</span>` : '') +
           `</span></div>`,
       )
       .join('') +
@@ -1499,12 +1848,12 @@ async function measureBrowserLatency() {
         (r) =>
           `<div class="blat-row blat-failed">` +
           `<span class="blat-name">${esc(r.monitor.name)}</span>` +
-          `<span class="blat-ms">failed</span></div>`,
+          `<span class="blat-ms">${t('ping.failed')}</span></div>`,
       )
       .join('')
   prog.hidden = true
   btn.disabled = false
-  btn.textContent = 'Measure again'
+  setI18nText(btn, 'ping.measureAgain')
   BLAT_RUNNING = false
 }
 
@@ -1681,20 +2030,20 @@ const DNS_LOOKUP_TYPES = [
 
 function renderDnsTools() {
   $('#dnsTools').innerHTML =
-    `<div class="dns-card"><div class="st-head"><h2>DNS Lookup</h2>` +
-    `<p class="st-sub">Powered by dnscheck.tools (addr.tools) infrastructure.</p></div>` +
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="dns.lookup.title">${t('dns.lookup.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="dns.lookup.powered">${t('dns.lookup.powered')}</p></div>` +
     `<div class="dns-form">` +
-    `<input id="dnsName" type="text" placeholder="example.com" autocomplete="off" spellcheck="false" aria-label="Domain name">` +
-    `<select id="dnsType" aria-label="Record type">` +
+    `<input id="dnsName" type="text" placeholder="example.com" autocomplete="off" spellcheck="false" data-i18n-aria="dns.lookup.domainLabel" aria-label="${t('dns.lookup.domainLabel')}">` +
+    `<select id="dnsType" data-i18n-aria="dns.lookup.typeLabel" aria-label="${t('dns.lookup.typeLabel')}">` +
     DNS_LOOKUP_TYPES.map((t) => `<option value="${t}">${t}</option>`).join('') +
     `</select>` +
-    `<button class="btn" id="dnsGo">Lookup</button>` +
+    `<button class="btn" id="dnsGo" data-i18n-key="dns.lookup.button">${t('dns.lookup.button')}</button>` +
     `</div>` +
     `<div class="dns-status" id="dnsStatus"></div>` +
     `<div id="dnsResults"></div></div>` +
-    `<div class="dns-card"><div class="st-head"><h2>DNS Leak Test</h2>` +
-    `<p class="st-sub">Powered by dnscheck.tools infrastructure.</p></div>` +
-    `<div class="st-controls"><button class="btn" id="leakGo">Run leak test</button>` +
+    `<div class="dns-card"><div class="st-head"><h2 data-i18n-key="leak.title">${t('leak.title')}</h2>` +
+    `<p class="st-sub" data-i18n-key="leak.powered">${t('leak.powered')}</p></div>` +
+    `<div class="st-controls"><button class="btn" id="leakGo" data-i18n-key="leak.run">${t('leak.run')}</button>` +
     `<span class="st-status" id="leakStatus"></span></div>` +
     `<div class="leak-pills" id="leakPills"></div>` +
     `<div id="leakResults"></div></div>`
@@ -1717,31 +2066,30 @@ async function runDnsLookup() {
   const qtype = typeEl.value
   out.innerHTML = ''
   if (!qname) {
-    statusEl.innerHTML = `<span class="dns-err">Enter a domain name or IP address.</span>`
+    statusEl.innerHTML = `<span class="dns-err">${t('dns.lookup.enterDomain')}</span>`
     return
   }
   if (qtype === 'PTR') {
     const arpa = ipv4ToArpa(qname) || ipv6ToArpa(qname)
     if (arpa) qname = arpa
     else if (!validDnsName(qname)) {
-      statusEl.innerHTML = `<span class="dns-err">For PTR, enter an IP address or a valid reverse-DNS name.</span>`
+      statusEl.innerHTML = `<span class="dns-err">${t('dns.lookup.ptrHint')}</span>`
       return
     }
   } else if (!validDnsName(qname)) {
-    statusEl.innerHTML = `<span class="dns-err">&ldquo;${esc(qname)}&rdquo; doesn&rsquo;t look like a valid domain name.</span>`
+    statusEl.innerHTML = `<span class="dns-err">${t('dns.lookup.invalid', { name: esc(qname) })}</span>`
     return
   }
   DNS_LOOKUP_RUNNING = true
   $('#dnsGo').disabled = true
-  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> Querying ${esc(qname)} ${esc(qtype)}&hellip;`
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('dns.lookup.querying', { name: esc(qname), type: esc(qtype) })}`
   try {
     const res = await dnsQuery(qname, qtype)
     renderDnsResults(res, qname, qtype)
   } catch (e) {
     statusEl.innerHTML = ''
     out.innerHTML =
-      `<div class="dns-err">Lookup failed: ${esc(e && e.message ? e.message : 'network error')}. ` +
-      `Both providers unreachable &mdash; check your connection and try again.</div>`
+      `<div class="dns-err">${t('dns.lookup.failed', { err: esc(e && e.message ? e.message : t('dns.lookup.netError')) })}</div>`
   } finally {
     DNS_LOOKUP_RUNNING = false
     const b = $('#dnsGo')
@@ -1755,13 +2103,13 @@ function renderDnsResults(res, qname, qtype) {
   if (!statusEl || !out) return
   const meta =
     `<div class="dns-meta">${esc(qname)} ${esc(qtype)} &middot; ${res.ms} ms &middot; via ${esc(res.via)}` +
-    (res.fallback ? ` <span class="dns-note">(fallback)</span>` : '') +
+    (res.fallback ? ` <span class="dns-note">${t('dns.lookup.fallback')}</span>` : '') +
     `</div>`
   statusEl.innerHTML = ''
   if (res.status === 3) {
     out.innerHTML =
       meta +
-      `<div class="dns-empty">No records found (NXDOMAIN) &mdash; &ldquo;${esc(qname)}&rdquo; does not exist.</div>`
+      `<div class="dns-empty">${t('dns.lookup.noRecords', { name: esc(qname) })}</div>`
     return
   }
   if (res.status !== 0 || !res.answers.length) {
@@ -1769,13 +2117,13 @@ function renderDnsResults(res, qname, qtype) {
       res.status === 2 ? 'server failure (SERVFAIL)' : `DNS status ${res.status}`
     out.innerHTML =
       meta +
-      `<div class="dns-empty">No ${esc(qtype)} records for &ldquo;${esc(qname)}&rdquo; (${why}).</div>`
+      `<div class="dns-empty">${t('dns.lookup.noTypeRecords', { type: esc(qtype), name: esc(qname), via: why })}</div>`
     return
   }
   out.innerHTML =
     meta +
     `<div class="dns-table-wrap"><table class="dns-table"><thead><tr>` +
-    `<th>Name</th><th>Type</th><th>TTL</th><th>Data</th>` +
+    `<th>${t('dns.lookup.col.name')}</th><th>${t('dns.lookup.col.type')}</th><th>${t('dns.lookup.col.ttl')}</th><th>${t('dns.lookup.col.data')}</th>` +
     `</tr></thead><tbody>` +
     res.answers
       .map(
@@ -2070,7 +2418,7 @@ function enrichIp(ip) {
   if (!ipEnrichCache[ip]) {
     ipEnrichCache[ip] = (async () => {
       // Like the original: private/reserved addresses are labeled "Reserved".
-      if (isPrivateIp(ip)) return { reg: 'Reserved', geo: null }
+      if (isPrivateIp(ip)) return { reg: t('common.reserved'), geo: null }
       const [reg, geo] = await Promise.all([
         rdapRegistrant(ip).catch(() => null),
         geoFor(ip).catch(() => null),
@@ -2149,7 +2497,7 @@ function drawDNSSEC() {
         const cell = document.getElementById(`dsec-${4 + r * 4 + i}`)
         if (cell) {
           cell.className = 'dsec-warn'
-          cell.textContent = 'ERR'
+          cell.textContent = t('leak.dnssec.err')
         }
       }
     }
@@ -2161,26 +2509,26 @@ function drawDNSSEC() {
     LS.pills.dnssec = {
       label: 'DNSSEC',
       cls: 'yellow',
-      title: 'Domain Name System Security Extensions\n\nAn error occurred',
+      title: t('leak.pill.dnssec.err'),
     }
   else if (sum.fail)
     LS.pills.dnssec = {
       label: 'DNSSEC',
       cls: 'red',
-      title: 'Domain Name System Security Extensions\n\nYour DNS responses are not authenticated',
+      title: t('leak.pill.dnssec.fail'),
     }
   else if (sum.done)
     LS.pills.dnssec = {
       label: 'DNSSEC',
       cls: 'green',
-      title: 'Domain Name System Security Extensions\n\nYour DNS responses are authenticated',
+      title: t('leak.pill.dnssec.ok'),
     }
   drawPills()
 }
 
 function dnssecMatrixHtml() {
   const head =
-    `<tr><th>Signature</th>` + LEAK_ALG_LABELS.map((l) => `<th>${esc(l)}</th>`).join('') + `</tr>`
+    `<tr><th>${t('leak.dnssec.sigHeader')}</th>` + LEAK_ALG_LABELS.map((l) => `<th>${esc(l)}</th>`).join('') + `</tr>`
   const body = LEAK_SIG_LABELS.map(
     (sigLabel, sigIdx) =>
       `<tr><th>${esc(sigLabel)}</th>` +
@@ -2193,7 +2541,7 @@ function dnssecMatrixHtml() {
   return (
     `<div class="dns-table-wrap"><table class="dns-table dsec-table">` +
     `<thead>${head}</thead><tbody>${body}</tbody></table></div>` +
-    `<div class="dns-note dsec-footnote" id="dsecFootnote" hidden>* ML-DSA-44 is a new signature algorithm not yet widely validated.</div>`
+    `<div class="dns-note dsec-footnote" id="dsecFootnote" hidden>${t('leak.dnssec.footnote')}</div>`
   )
 }
 
@@ -2218,8 +2566,7 @@ async function runDnssecMatrix(id) {
     const note = document.getElementById('leakDnssecNote')
     if (note)
       note.innerHTML =
-        `<span class="dns-note">DNSSEC validation tests could not run in this browser ` +
-        `(network blocked or DNS unavailable) &mdash; resolver results above are unaffected.</span>`
+        `<span class="dns-note">${t('leak.dnssec.unavailable')}</span>`
     return
   }
   const valids = await Promise.all(
@@ -2268,7 +2615,7 @@ async function runRtt() {
       LS.pills.rtt = {
         label: `${avg}ms`,
         cls: avg <= 150 ? 'green' : avg <= 500 ? 'yellow' : 'red',
-        title: `Average DNS round-trip time over ${rtts.length} queries`,
+        title: t('leak.dns.avg', { n: rtts.length }),
       }
       drawPills()
     }
@@ -2413,7 +2760,7 @@ function drawIps() {
   const entries = leakUiIps
   const wrap = document.getElementById('leakShowMoreWrap')
   if (!entries.length) {
-    el.innerHTML = `<span class="dns-note">Detecting&hellip;</span>`
+    el.innerHTML = `<span class="dns-note">${t('leak.status.detecting')}</span>`
     if (wrap) wrap.innerHTML = ''
     return
   }
@@ -2435,7 +2782,7 @@ function drawIps() {
     `</ul>`
   if (wrap) {
     if (extra.length && !leakUiShowMore) {
-      wrap.innerHTML = `(<span class="link" id="leakShowMore">show more</span>)`
+      wrap.innerHTML = `(<span class="link" id="leakShowMore">${t('leak.showMore')}</span>)`
       const t = document.getElementById('leakShowMore')
       if (t) t.addEventListener('click', askForMicAndReveal)
     } else {
@@ -2467,8 +2814,8 @@ async function runLeakTest() {
   statusEl.innerHTML = ''
   if (bar) bar.innerHTML = ''
   out.innerHTML =
-    `<div class="leak-sec-title">Your IP addresses <span id="leakShowMoreWrap"></span></div><div id="leakIps"></div>` +
-    `<div class="leak-sec-title">DNSSEC Validation Tests</div>` +
+    `<div class="leak-sec-title">${t('leak.ips.title')} <span id="leakShowMoreWrap"></span></div><div id="leakIps"></div>` +
+    `<div class="leak-sec-title">${t('leak.dnssec.title')}</div>` +
     `<div id="leakDnssec">${dnssecMatrixHtml()}<div class="dns-note" id="leakDnssecNote"></div></div>` +
     `<div id="leakResolvers"></div>` +
     `<div class="leak-statusbar"><span class="leak-sb-pills" id="leakSbPills"></span>` +
@@ -2512,7 +2859,7 @@ async function runLeakTest() {
       st.pills.ipv6 = {
         label: 'IPv6',
         cls: 'red',
-        title: 'Your DNS resolvers cannot reach nameservers over IPv6',
+        title: t('leak.pill.ipv6.no'),
       }
     drawPills()
     renderLeakResults(st, timedOut)
@@ -2533,7 +2880,7 @@ async function runLeakTest() {
     if (bar2) bar2.innerHTML = ''
     const o2 = $('#leakResults')
     if (o2)
-      o2.innerHTML = `<div class="dns-err">Leak test unreachable (dnscheck.tools WebSocket blocked) &mdash; DNS Lookup above still works.</div>`
+      o2.innerHTML = `<div class="dns-err">${t('leak.unreachable')}</div>`
   }
 
   // Finish once the DNSSEC matrix has settled (or was skipped) and we've
@@ -2554,7 +2901,7 @@ async function runLeakTest() {
     }
   }, 1000)
 
-  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> Opening channel&hellip;`
+  statusEl.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('leak.status.opening')}`
   try {
     LS.ws = await new Promise((resolve, reject) => {
       let w
@@ -2623,7 +2970,7 @@ async function runLeakTest() {
         st.pills.edns = {
           label: 'EDNS',
           cls: st.udpSizes[0] < 1200 ? 'yellow' : 'green',
-          title: `Extension Mechanisms for DNS\n\nAdvertised UDP buffer sizes: ${st.udpSizes.join(', ')}`,
+          title: t('leak.pill.edns', { sizes: st.udpSizes.join(', ') }),
         }
         drawPills()
       }
@@ -2633,7 +2980,7 @@ async function runLeakTest() {
         st.pills.ipv6 = {
           label: 'IPv6',
           cls: 'green',
-          title: 'Your DNS resolvers connect to nameservers over IPv6',
+          title: t('leak.pill.ipv6.yes'),
         }
         drawPills()
       }
@@ -2644,15 +2991,14 @@ async function runLeakTest() {
           label: 'ADoX',
           cls: 'blue',
           title:
-            'Authoritative DoT/DoQ\n\nOne or more queries from your DNS resolvers to our authoritative nameservers used an encrypted transport',
+            t('leak.pill.adox'),
         }
         drawPills()
       }
       const s3 = $('#leakStatus')
       if (s3)
         s3.innerHTML =
-          `<span class="spinner" aria-hidden="true"></span> Listening&hellip; ${st.total} ` +
-          `quer${st.total === 1 ? 'y' : 'ies'} seen`
+          `<span class="spinner" aria-hidden="true"></span> ${t('leak.status.listening', { n: st.total })}`
       const sbd = document.getElementById('leakSbDns')
       if (sbd) sbd.textContent = `dns: ${st.total}`
     } catch (e) {
@@ -2663,7 +3009,7 @@ async function runLeakTest() {
   LS.ws.onerror = () => {} // surfaced via onclose/timeout; never crash
 
   const s4 = $('#leakStatus')
-  if (s4) s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> Sending test queries&hellip;`
+  if (s4) s4.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${t('leak.status.sending')}`
   // Resolver-discovery triggers (ported from the original's testDNS), plus the
   // IPv6 trigger. no-cors: their CORS only allows their own origin; the DNS
   // still resolves server-side and results arrive over the WebSocket.
@@ -2692,25 +3038,25 @@ function renderLeakResults(st, timedOut) {
   const seen = st.seen
   const n = seen.size
   const meta =
-    `<div class="leak-sec-title">Your DNS resolvers</div>` +
-    `<div class="dns-meta">Your queries were seen from <b>${n} resolver${n === 1 ? '' : 's'}</b>` +
+    `<div class="leak-sec-title">${t('leak.resolvers.title')}</div>` +
+    `<div class="dns-meta">${t('leak.resolvers.seen', { n, s: n === 1 ? '' : 's' })}` +
     (timedOut ? ' (stopped after 45s)' : '') +
     `</div>`
   if (!n) {
     out.innerHTML =
       meta +
-      `<div class="dns-empty">No resolvers observed${timedOut ? ' (timed out)' : ''} &mdash; ` +
+      `<div class="dns-empty">${t('leak.resolvers.none', { to: timedOut ? t('leak.resolvers.timedOut') : '' })} &mdash; ` +
       `your network may block the test queries, or the channel closed early.</div>`
     return
   }
   const entries = [...seen.entries()]
   const ecsAll = [...new Set(entries.flatMap(([, e]) => [...e.ecs]))]
   const ecsLine = ecsAll.length
-    ? `<div class="dns-meta">Your DNS resolvers advertise your IP subnet (ECS): ` +
+    ? `<div class="dns-meta">${t('leak.resolvers.ecs')} ` +
       `<span class="dns-mono">${esc(ecsAll.join(', '))}</span></div>`
     : ''
   const headRow =
-    `<tr><th>Resolver IP</th><th>Reverse DNS</th><th>Location</th><th>Protocol</th><th>Queries</th></tr>`
+    `<tr><th>${t('leak.resolvers.col.ip')}</th><th>${t('leak.resolvers.col.ptr')}</th><th>${t('leak.resolvers.col.loc')}</th><th>${t('leak.resolvers.col.proto')}</th><th>${t('leak.resolvers.col.queries')}</th></tr>`
   // Immediate render with placeholders; enrich async, then regroup by registrant.
   out.innerHTML =
     meta +
@@ -2861,5 +3207,5 @@ async function init() {
 
 init().catch((e) => {
   $('#monitors').innerHTML =
-    `<div class="empty">Failed to load status page: ${esc(e.message)}</div>`
+    `<div class="empty">${t('status.loadError', { err: esc(e.message) })}</div>`
 })

@@ -9,6 +9,7 @@ Giám sát website/API của bạn bằng một trang trạng thái serverless n
 
 ## Tính năng
 
+- **Giao diện Việt/Anh** — chuyển ngôn ngữ một chạm trên header (lưu lại, mặc định tiếng Việt); ngày/giờ/số theo locale đang dùng (múi giờ vẫn Asia/Saigon); đổi ngôn ngữ không xóa bài đo đang chạy hay kết quả
 - **Dải thanh uptime 90 ngày** cho mỗi monitor (bậc màu kiểu UptimeFlare; ngày xám = chưa có dữ liệu và không hiện tooltip — lịch sử tích lũy dần theo thời gian, không bịa số liệu)
 - **Biểu đồ latency 12h trong ngày** cho mỗi monitor (đường mượt 2px, trục giờ, tooltip đen khi rê chuột, khoảng trống khi check lỗi); **cảnh báo ngưỡng latency** cho từng monitor — pill cam "High latency" kèm đường ngưỡng đứt nét khi median gần đây vượt quá `latencyThresholdMs` đã cấu hình
 - **Tab Ping** (`#ping`): một cú nhấp đo RTT trực tiếp từ trình duyệt của khách tới mọi POP (kiểu ping.nextdns.io), xếp từ nhanh nhất trước; tự chạy khi mở tab lần đầu. (Đã thử nghiệm mục kiểm tra trạng thái NextDNS kiểu test.nextdns.io nhưng đang tạm cách ly — không ổn định trên mạng của chủ sở hữu.)

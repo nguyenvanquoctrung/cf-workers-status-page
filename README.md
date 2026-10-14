@@ -11,6 +11,10 @@ dependency-free static page in the visual language of
 
 ## Features
 
+- **Vietnamese/English UI** — one-click language switch in the header
+  (persisted, defaults to Vietnamese); dates, numbers and timestamps follow
+  the active locale (timezone stays Asia/Saigon); switching language never
+  wipes a running measurement or its results
 - **90-day uptime bar strip** per monitor (UptimeFlare color tiers; gray days =
   no data yet and show no tooltip — history grows over time, nothing is
   fabricated)

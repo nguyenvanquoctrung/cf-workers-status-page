@@ -5,6 +5,18 @@
 All notable changes to this project are documented here. Dates are in
 Asia/Saigon (GMT+7).
 
+## 2026-10-14 19:30–20:15 — Phase 11: Vietnamese/English UI
+
+- **Full VI/EN language switch** (`#langBtn` in header, persists via
+  localStorage, default Vietnamese): 111 UI strings × 2 languages covering
+  nav, hero, charts, incidents, ping, speedtest, DNS lookup, leak test,
+  DNSSEC matrix, maintenance cards, tooltips, errors and empty states.
+- **Locale-aware dates/numbers** (`vi-VN` vs `en-US`, timezone stays
+  Asia/Saigon) for tooltips, day labels, month pager and "N sec ago" ticker.
+- **Language switch never wipes measurements**: status/incidents re-render
+  fully; ping/speedtest/dns refresh static text in place via `data-i18n-key`
+  (buttons remember their state key), so running tests and results survive.
+
 ## 2026-10-14 19:35 — Fix: latency chart dropping recent points
 
 - **12h latency chart rendered only the oldest cluster of points** (chart
