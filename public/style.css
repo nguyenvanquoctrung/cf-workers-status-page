@@ -21,6 +21,7 @@
   --group-open-bg: #ecebe5;
   --group-hover-bg: #ecebe5;
   --logo-fill: #ff8533;
+  --map-land: #cfccc0;
 }
 [data-theme="dark"] {
   --bg: #1a1b1e;
@@ -44,6 +45,7 @@
   --group-open-bg: #25262b;
   --group-hover-bg: #25262b;
   --logo-fill: #1a8cff; /* NextDNS blue in dark mode */
+  --map-land: #3a3f4b;
 }
 
 * { box-sizing: border-box; }
@@ -564,7 +566,8 @@ a:hover { text-decoration: underline; }
 /* Connection info card (speed.cloudflare.com-style server location) */
 .conn-card { margin: 18px 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
 .conn-card .blat-title { margin: 0 0 12px; }
-.conn-map { border-radius: 8px; overflow: hidden; background: var(--bg-soft, #f4f4f5); }
+.conn-map { border-radius: 0; overflow: hidden; background: transparent; }
+.map-land { fill: var(--map-land); }
 .conn-map svg { display: block; width: 100%; height: auto; }
 .conn-rows { margin-top: 12px; display: grid; gap: 8px; }
 .conn-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }

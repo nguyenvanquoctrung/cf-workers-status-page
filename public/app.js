@@ -1389,13 +1389,13 @@ async function renderConnInfo() {
   let markers = ''
   const uLat = +j.latitude, uLon = +j.longitude
   if (Number.isFinite(uLat) && Number.isFinite(uLon)) {
-    markers += `<circle cx="${x(uLon).toFixed(1)}" cy="${y(uLat).toFixed(1)}" r="5" fill="#f97316" opacity="0.9"><title>${t('conn.you')}</title></circle>`
+    markers += `<circle cx="${x(uLon).toFixed(1)}" cy="${y(uLat).toFixed(1)}" r="5" fill="var(--orange)" opacity="0.9"><title>${t('conn.you')}</title></circle>`
   }
   if (colo) {
     const cx = x(colo.lon).toFixed(1), cy = y(colo.lat).toFixed(1)
-    markers += `<g><circle cx="${cx}" cy="${cy}" r="6" fill="#dc2626"/><circle cx="${cx}" cy="${cy}" r="11" fill="#dc2626" opacity="0.25"/></g>`
+    markers += `<g><circle cx="${cx}" cy="${cy}" r="6" fill="var(--red)"/><circle cx="${cx}" cy="${cy}" r="11" fill="var(--red)" opacity="0.25"/></g>`
     if (Number.isFinite(uLat) && Number.isFinite(uLon)) {
-      markers += `<line x1="${x(uLon).toFixed(1)}" y1="${y(uLat).toFixed(1)}" x2="${cx}" y2="${cy}" stroke="#dc2626" stroke-width="1.5" opacity="0.6"/>`
+      markers += `<line x1="${x(uLon).toFixed(1)}" y1="${y(uLat).toFixed(1)}" x2="${cx}" y2="${cy}" stroke="var(--red)" stroke-width="1.5" opacity="0.6"/>`
     }
   }
   const row = (label, val) =>
@@ -1403,7 +1403,7 @@ async function renderConnInfo() {
   el.innerHTML =
     `<h3 class="blat-title" data-i18n-key="conn.title">${t('conn.title')}</h3>` +
     `<div class="conn-map"><svg viewBox="0 0 ${W} ${H}" class="wping-map" role="img" aria-label="${t('conn.title')}">` +
-    `<g fill="#d4d4d8">${land}</g>${markers}</svg></div>` +
+    `<g class="map-land">${land}</g>${markers}</svg></div>` +
     `<div class="conn-rows">` +
     row(t('conn.via'), isV6 ? 'IPv6' : 'IPv4') +
     row(t('conn.server'), colo ? esc(colo.city + ', ' + colo.country) : esc(j.colo || '--')) +
@@ -1974,7 +1974,7 @@ function renderWorldPingMap(results) {
     .join('')
   el.innerHTML =
     `<svg viewBox="0 0 ${W} ${H}" class="wping-map" role="img" aria-label="${t('wping.mapTitle')}" data-i18n-aria="wping.mapTitle">` +
-    `<g fill="#3a3f4b">${land}</g>${dots}</svg>`
+    `<g class="map-land">${land}</g>${dots}</svg>`
 }
 
 function renderWorldPingTable(results) {
