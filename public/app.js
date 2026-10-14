@@ -1262,6 +1262,7 @@ async function renderConnInfo() {
   const el = $('#connInfo')
   if (!el || el.dataset.done) return
   el.dataset.done = '1'
+  el.hidden = false
   let j = null
   try {
     const r = await fetch('/api/conn', { cache: 'no-store' })
@@ -1385,15 +1386,14 @@ function renderSpeedtest() {
     `<p class="st-sub" data-i18n-key="speedtest.sub">${t('speedtest.sub')}</p></div>` +
     `<div class="st-detail">` +
     `<p class="st-note" data-i18n-key="speedtest.detail.note">${t('speedtest.detail.note')}</p>` +
-    `<div id="connInfo" class="conn-card"></div>` +
     `<div class="st-progress"><div class="st-progress-fill" id="stDetailProgress"></div></div>` +
     `<div id="stDetailRows"></div>` +
     `<div class="st-summary" id="stDetailSummary"></div>` +
     `<div class="st-controls"><button class="btn" id="stDetailStart" data-i18n-key="speedtest.detail.start">${t('speedtest.detail.start')}</button>` +
     `<button class="btn" id="stDetailStop" disabled data-i18n-key="speedtest.detail.stop">${t('speedtest.detail.stop')}</button>` +
-    `<span class="st-status" id="stDetailStatus"></span></div></div>`
+    `<span class="st-status" id="stDetailStatus"></span></div></div>` +
+    `<div id="connInfo" class="conn-card" hidden></div>`
   $('#stDetailStart').addEventListener('click', runDetailedTest)
-  renderConnInfo()
   $('#stDetailStop').addEventListener('click', () => {
     ST2.stop = true
   })
@@ -1430,6 +1430,7 @@ async function runDetailedTest() {
   let best = null // fastest single-connection result {name, mbps}
   try {
     for (const [si, srv] of ST_DETAIL_SERVERS.entries()) {
+      if (srv.cdn === null) renderConnInfo() // Cloudflare edge row: show server-location card
       for (const [ri, rd] of rounds.entries()) {
         if (ST2.stop) break
         const i = si * rounds.length + ri
