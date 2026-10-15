@@ -19,10 +19,11 @@ múi giờ Asia/Saigon (GMT+7).
   (`ctx.waitUntil` gây lỗi HTTP 500); xóa cả section `[triggers]` KHÔNG gỡ
   được cron trigger — phải set `crons = []` (theo docs Cloudflare);
   workflow deploy giờ còn gọi API xóa trigger sau mỗi lần deploy.
-- Trạng thái 2026-10-15 12:10: placement và `/api/check` đã xác minh chạy tốt
-  (kích tay chạy từ SIN), nhưng lịch 5 phút của GitHub Actions không tự
-  chạy — check về thưa thớt, biểu đồ latency bị đứt quãng đúng theo dữ liệu
-  thật. Đang tìm nguyên nhân.
+- Trạng thái 2026-10-15 12:20: lịch GitHub Actions chỉ chạy mỗi ~2.5-4h
+  thay vì 5 phút (scheduler delay nặng), biểu đồ bị đứt quãng theo dữ liệu
+  thật. Đã chuyển sang cron job trên VM của chủ site, gọi `/api/check`
+  mỗi 5 phút; tắt lịch GitHub (giữ nút chạy tay). Check đã đều trở lại từ
+  SIN, biểu đồ đang đầy dần.
 
 ## 2026-10-15 00:20 — Phase 16: Theme retro Workbench (light mode mặc định)
 

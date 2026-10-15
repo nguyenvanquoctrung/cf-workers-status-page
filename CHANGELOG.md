@@ -20,10 +20,12 @@ Asia/Saigon (GMT+7).
   NOT delete a cron trigger — it must be set to `crons = []` (per Cloudflare
   docs); the deploy workflow now also clears triggers via the schedules API
   after every deploy.
-- Status 2026-10-15 12:10: placement and `/api/check` verified working
-  (manual triggers run from SIN), but the GitHub Actions 5-minute schedule
-  is not firing on its own — checks arrive sporadically, leaving real gaps
-  in the latency charts. Under investigation.
+- Status 2026-10-15 12:20: the GitHub Actions schedule fired only every
+  ~2.5-4h instead of every 5 min (scheduler severely delayed), leaving real
+  gaps in the charts. Replaced with a cron job on the owner's VM that POSTs
+  `/api/check` every 5 min; the GH workflow schedule is disabled (manual
+  dispatch kept). Checks now run every 5 min from SIN; charts filling back
+  in.
 
 ## 2026-10-15 00:20 — Phase 16: Workbench retro theme (default light mode)
 
