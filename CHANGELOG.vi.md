@@ -15,6 +15,14 @@ múi giờ Asia/Saigon (GMT+7).
   phát từ Singapore.
 - Kết quả: monitor Singapore đo được ~54-64 ms (trước đây 150-300 ms từ colo
   ngẫu nhiên). Tag rollback: `sg-placement-backup`.
+- Các fix dọc đường: handler `fetch` thiếu tham số `ctx`
+  (`ctx.waitUntil` gây lỗi HTTP 500); xóa cả section `[triggers]` KHÔNG gỡ
+  được cron trigger — phải set `crons = []` (theo docs Cloudflare);
+  workflow deploy giờ còn gọi API xóa trigger sau mỗi lần deploy.
+- Trạng thái 2026-10-15 12:10: placement và `/api/check` đã xác minh chạy tốt
+  (kích tay chạy từ SIN), nhưng lịch 5 phút của GitHub Actions không tự
+  chạy — check về thưa thớt, biểu đồ latency bị đứt quãng đúng theo dữ liệu
+  thật. Đang tìm nguyên nhân.
 
 ## 2026-10-15 00:20 — Phase 16: Theme retro Workbench (light mode mặc định)
 

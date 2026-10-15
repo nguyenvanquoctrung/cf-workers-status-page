@@ -15,6 +15,15 @@ Asia/Saigon (GMT+7).
   every check round originates from Singapore.
 - Result: Singapore monitors now measure ~54-64 ms (previously 150-300 ms
   from random colos). Rollback tag: `sg-placement-backup`.
+- Fixes along the way: the `fetch` handler was missing the `ctx` parameter
+  (`ctx.waitUntil` threw HTTP 500); removing the `[triggers]` section does
+  NOT delete a cron trigger — it must be set to `crons = []` (per Cloudflare
+  docs); the deploy workflow now also clears triggers via the schedules API
+  after every deploy.
+- Status 2026-10-15 12:10: placement and `/api/check` verified working
+  (manual triggers run from SIN), but the GitHub Actions 5-minute schedule
+  is not firing on its own — checks arrive sporadically, leaving real gaps
+  in the latency charts. Under investigation.
 
 ## 2026-10-15 00:20 — Phase 16: Workbench retro theme (default light mode)
 
