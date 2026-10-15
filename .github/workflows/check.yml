@@ -5,8 +5,11 @@ name: Run monitor checks
 # the SIN colo (low latency to VN/SEA monitors) instead of a random
 # global colo like the built-in Workers cron would.
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # schedule disabled 2026-10-15: GitHub's scheduler only fired this workflow
+  # every ~2.5h instead of every 5 min. Triggering is now done by an external
+  # cron (see repo docs). Kept workflow_dispatch for manual runs.
+  # schedule:
+  #   - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
