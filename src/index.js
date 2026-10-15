@@ -1,9 +1,12 @@
 /**
  * cf-workers-status-page v2 — Cloudflare Worker (modules format)
  *
- * - `scheduled` (CRON): checks every monitor, stores results in KV under the
- *   SAME key as v1 (`monitors_data_v1_1`) so existing history is preserved.
- * - `fetch`: serves JSON API; static frontend is served via Workers Static Assets.
+ * - `fetch`: serves JSON API + `POST /api/check` (Bearer CHECK_SECRET) to
+ *   trigger a check cycle; static frontend is served via Workers Static Assets.
+ *   Checks are triggered externally every 5 min (cron on the owner's VM) so
+ *   they run from the placement-pinned colo (Singapore), not a random colo.
+ *   Results are stored in KV under the SAME key as v1 (`monitors_data_v1_1`)
+ *   so existing history is preserved.
  *
  * Notifications: Slack / Telegram / Discord (optional, via Worker secrets).
  */
@@ -330,9 +333,5 @@ export default {
     }
 
     return new Response('Not found', { status: 404 })
-  },
-
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(processChecks(env, ctx))
   },
 }
